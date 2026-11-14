@@ -333,6 +333,80 @@ export interface ProfileFact {
   createdAt: string;
 }
 
+export type DocumentCheckStatus = 'PASS' | 'WARN' | 'FAIL';
+export type DocumentReadinessState = 'READY_TO_TAILOR' | 'NEEDS_ATTENTION' | 'INCOMPLETE';
+
+export interface DocumentCheck {
+  id: string;
+  label: string;
+  status: DocumentCheckStatus;
+  explanation: string;
+  fixHref: string | null;
+}
+
+export interface DocumentReadinessReport {
+  state: DocumentReadinessState;
+  score: number;
+  passed: number;
+  warnings: number;
+  failed: number;
+  checks: DocumentCheck[];
+  summary: string;
+  disclaimer: string;
+  generatedAt: string;
+}
+
+export interface MasterResumeDocument {
+  content: string;
+  generatedAt: string;
+  profileFingerprint: string;
+  counts: {
+    roles: number;
+    skills: number;
+    projects: number;
+    achievements: number;
+    employmentDetails: number;
+    education: number;
+    certifications: number;
+    languages: number;
+  };
+  identity: {
+    hasName: boolean;
+    hasEmail: boolean;
+    hasPhone: boolean;
+    hasLinkedIn: boolean;
+    hasHeadline: boolean;
+    hasSummary: boolean;
+  };
+  sourceFacts: number;
+  sourceEvidence: number;
+}
+
+export type HiringSignal =
+  | 'VERIFIED_OPEN_ROLES'
+  | 'NO_OPEN_ROLES_OBSERVED'
+  | 'EVIDENCE_STALE'
+  | 'BOARD_UNAVAILABLE'
+  | 'NOT_YET_OBSERVED';
+
+export interface CompanySignal {
+  id: string;
+  employer: string;
+  officialWebsite: string;
+  careersUrl: string;
+  countries: string[];
+  source: 'greenhouse' | 'lever' | 'ashby';
+  board: string;
+  boardUrl: string;
+  signal: HiringSignal;
+  openRoles: number;
+  lastSuccessfulRetrievalAt: string | null;
+  lastVerifiedAt: string | null;
+  sampleRoles: { title: string; location: string | null; lastSeenAt: string }[];
+  explanation: string;
+  evidence: string[];
+}
+
 export interface StoredDocument {
   id: string;
   kind: 'resume' | 'cover_letter' | 'other';

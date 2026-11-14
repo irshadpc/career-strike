@@ -46,10 +46,12 @@ test.describe('resume studio and profile readiness', () => {
     await expect(page).toHaveURL(`${cs.origin}/resume`);
     await expect(page.getByRole('heading', { level: 1, name: 'Resume Studio' })).toBeVisible();
 
-    // 3. Verify ATS Health & Truthfulness Verification cards
-    await expect(page.getByRole('heading', { level: 2, name: 'ATS Health & Truthfulness Verification' })).toBeVisible();
-    await expect(page.getByText('Cryptographic Evidence Provenance')).toBeVisible();
-    await expect(page.getByText('Standard ATS Section Headings')).toBeVisible();
+    // 3. Verify document readiness cards
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Document Readiness & Evidence Verification' }),
+    ).toBeVisible();
+    await expect(page.getByText('Evidence Provenance')).toBeVisible();
+    await expect(page.getByText('Standard Section Headings')).toBeVisible();
 
     // 4. Verify Master Resume Document content
     const masterDoc = page.locator('[aria-label="Master Resume content"]');

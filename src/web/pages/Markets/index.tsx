@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ApiError, api } from '../../api';
+import { ApiError, api, type CompanySignal } from '../../api';
 import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
 import { Button, buttonVariants } from '../../components/ui/button';
 import { cn } from '../../helpers/cn';
 import { Link } from '../../router';
+import { CompanySignals } from './-components/CompanySignals';
 import { MarketDetailRail } from './-components/MarketDetailRail';
 import { MarketFilters } from './-components/MarketFilters';
 import { MarketTable } from './-components/MarketTable';
@@ -20,6 +21,7 @@ export function Markets() {
   const [loading, setLoading] = useState(true);
   const [savingCode, setSavingCode] = useState<string | null>(null);
   const [error, setError] = useState(false);
+  const [companies, setCompanies] = useState<CompanySignal[]>([]);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -40,6 +42,20 @@ export function Markets() {
   useEffect(() => {
     void loadSettings();
   }, [loadSettings]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api<{ companies: CompanySignal[] }>(`/api/companies?country=${encodeURIComponent(activeMarketCode)}`)
+      .then((res) => {
+        if (!cancelled) setCompanies(res.companies);
+      })
+      .catch(() => {
+        if (!cancelled) setCompanies([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeMarketCode]);
 
   const toggleTarget = async (code: string) => {
     const isCurrentlySelected = selectedCountries.includes(code);
@@ -175,6 +191,8 @@ export function Markets() {
           />
         </div>
       </div>
+
+      <CompanySignals companies={companies} />
     </div>
   );
 }

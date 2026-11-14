@@ -73,6 +73,14 @@ tracked with evidence in `acceptance/registry.json`.
   remote role is not treated as globally eligible unless an authorised source explicitly states
   that fact. Sponsorship, work authorisation and relocation assistance remain unknown unless a
   source supplies evidence.
+- Resume Studio's readiness report is a local, deterministic checklist over your own document
+  (identity, contact details, confirmed experience, evidence coverage, placeholders, plain-text
+  layout and consistency with confirmed skills). It does not simulate Greenhouse, Lever, Workday
+  or Ashby, is not an ATS certification, and cannot guarantee parsing, ranking or an interview.
+- Company hiring signals are derived only from a curated employer target, the adopted board's
+  health and postings actually retrieved into this installation. "No open roles observed" and
+  "not yet observed" are not statements that an employer has stopped hiring. Funding, news,
+  headcount and third-party vacancy estimates are not used.
 
 ## Platforms and installation
 
