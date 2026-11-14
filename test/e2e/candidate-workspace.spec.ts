@@ -64,6 +64,8 @@ test.describe('Candidate Workspace & Global Career Explorer', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: 'Where should you look next?' })).toBeVisible();
     await expect(page.getByRole('heading', { level: 2, name: 'Discover international tech markets' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Company hiring signals' })).toBeVisible();
+    await expect(page.getByText('Not yet observed').first()).toBeVisible();
 
     // 16 curated markets loaded
     const rows = page.locator('.market-table tbody tr');

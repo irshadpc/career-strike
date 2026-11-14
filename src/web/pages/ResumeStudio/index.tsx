@@ -4,24 +4,24 @@ import {
   type ApplicationSummary,
   type ApplicationView,
   api,
+  type DocumentReadinessReport,
+  type MasterResumeDocument,
   type PersonalizationView,
-  type ProfileEvidence,
   type ProfileFact,
   type ProfileReadinessReport,
-  type SettingsResponse,
 } from '../../api';
 import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Link } from '../../router';
-import { type AtsCheck, AtsScorecard } from './-components/AtsScorecard';
+import { DocumentReadinessCard } from './-components/AtsScorecard';
 import { TailoredResumeEditor } from './-components/TailoredResumeEditor';
 
 export function ResumeStudio() {
   const [facts, setFacts] = useState<ProfileFact[] | null>(null);
-  const [evidence, setEvidence] = useState<ProfileEvidence[] | null>(null);
-  const [settings, setSettings] = useState<Record<string, unknown>>({});
+  const [master, setMaster] = useState<MasterResumeDocument | null>(null);
+  const [documentReadiness, setDocumentReadiness] = useState<DocumentReadinessReport | null>(null);
   const [readiness, setReadiness] = useState<ProfileReadinessReport | null>(null);
   const [applications, setApplications] = useState<ApplicationSummary[]>([]);
   const [selectedAppId, setSelectedAppId] = useState<string>('');
@@ -36,15 +36,15 @@ export function ResumeStudio() {
 
   const loadBase = useCallback(async () => {
     try {
-      const [profileRes, settingsRes, readinessRes, appsRes] = await Promise.all([
-        api<{ facts: ProfileFact[]; evidence: ProfileEvidence[] }>('/api/profile'),
-        api<SettingsResponse>('/api/settings').catch(() => null),
+      const [profileRes, masterRes, readinessRes, appsRes] = await Promise.all([
+        api<{ facts: ProfileFact[] }>('/api/profile'),
+        api<{ master: MasterResumeDocument; readiness: DocumentReadinessReport }>('/api/documents/master'),
         api<{ readiness: ProfileReadinessReport }>('/api/profile/readiness').catch(() => null),
         api<{ applications: ApplicationSummary[] }>('/api/applications').catch(() => ({ applications: [] })),
       ]);
       setFacts(profileRes.facts);
-      setEvidence(profileRes.evidence);
-      if (settingsRes?.settings) setSettings(settingsRes.settings);
+      setMaster(masterRes.master);
+      setDocumentReadiness(masterRes.readiness);
       if (readinessRes?.readiness) setReadiness(readinessRes.readiness);
       setApplications(appsRes.applications);
       if (!selectedAppId && appsRes.applications.length > 0) {
@@ -97,132 +97,9 @@ export function ResumeStudio() {
   }, [selectedAppId, selectedVariantKind]);
 
   if (loadError) return <ErrorPanel message="Could not load your Resume Studio." onRetry={() => void loadBase()} />;
-  if (!facts) return <Loading label="Loading Resume Studio" />;
+  if (!facts || !master || !documentReadiness) return <Loading label="Loading Resume Studio" />;
 
-  const confirmedRoles = facts.filter((f) => f.kind === 'role' && f.approved);
-  const confirmedSkills = facts.filter((f) => f.kind === 'skill' && f.approved);
-  const confirmedEducation = facts.filter((f) => f.kind === 'education' && f.approved);
-  const confirmedCertifications = facts.filter((f) => f.kind === 'certification' && f.approved);
-  const confirmedProjects = (evidence ?? []).filter((e) => e.confirmed && e.kind === 'project');
-
-  const candidateName =
-    typeof settings['identity.fullName'] === 'string' && settings['identity.fullName'].trim()
-      ? settings['identity.fullName'].trim()
-      : 'Your Name';
-  const candidateEmail = typeof settings['identity.email'] === 'string' ? settings['identity.email'].trim() : null;
-  const candidatePhone = typeof settings['identity.phone'] === 'string' ? settings['identity.phone'].trim() : null;
-  const candidateCountry =
-    typeof settings['candidate.country'] === 'string' ? settings['candidate.country'].trim() : null;
-  const linkedinUrl =
-    typeof settings['candidate.linkedinUrl'] === 'string' ? settings['candidate.linkedinUrl'].trim() : null;
-
-  const masterLines: string[] = [];
-  masterLines.push(candidateName.toUpperCase());
-  const contactParts = [candidateEmail, candidatePhone, candidateCountry, linkedinUrl].filter(Boolean);
-  if (contactParts.length) masterLines.push(contactParts.join(' · '));
-  masterLines.push('');
-
-  masterLines.push('PROFESSIONAL SUMMARY');
-  if (confirmedRoles.length > 0) {
-    const latest = confirmedRoles[0];
-    const skillNames = confirmedSkills
-      .slice(0, 6)
-      .map((s) => String(s.value.name))
-      .join(', ');
-    masterLines.push(
-      `Experienced ${String(latest?.value.title ?? 'Professional')} with confirmed expertise in ${skillNames || 'technology'}. Verified record of accomplishment and disciplined delivery.`,
-    );
-  } else {
-    masterLines.push('Add past roles and skills in your profile to generate your professional summary.');
-  }
-  masterLines.push('');
-
-  masterLines.push('CORE SKILLS');
-  if (confirmedSkills.length > 0) {
-    masterLines.push(confirmedSkills.map((s) => String(s.value.name)).join(' • '));
-  } else {
-    masterLines.push('[Add skills in your profile]');
-  }
-  masterLines.push('');
-
-  masterLines.push('PROFESSIONAL EXPERIENCE');
-  if (confirmedRoles.length > 0) {
-    for (const role of confirmedRoles) {
-      const v = role.value;
-      masterLines.push(
-        `${String(v.title)} — ${v.employer ? String(v.employer) : 'Independent'} (${String(v.startYear)} – ${v.endYear ? String(v.endYear) : 'Present'})`,
-      );
-      if (v.summary) masterLines.push(`  ${String(v.summary)}`);
-    }
-  } else {
-    masterLines.push('[Add experience in your profile]');
-  }
-  masterLines.push('');
-
-  if (confirmedProjects.length > 0) {
-    masterLines.push('VERIFIED PROJECTS & ACHIEVEMENTS');
-    for (const p of confirmedProjects) {
-      masterLines.push(`• ${String(p.value.name)}: ${String(p.value.summary)}`);
-    }
-    masterLines.push('');
-  }
-
-  if (confirmedEducation.length > 0 || confirmedCertifications.length > 0) {
-    masterLines.push('EDUCATION & CERTIFICATIONS');
-    for (const edu of confirmedEducation) {
-      masterLines.push(
-        `• ${String(edu.value.qualification)}${edu.value.institution ? ` — ${String(edu.value.institution)}` : ''}${edu.value.year ? ` (${String(edu.value.year)})` : ''}`,
-      );
-    }
-    for (const cert of confirmedCertifications) {
-      masterLines.push(
-        `• ${String(cert.value.name)}${cert.value.issuer ? ` — ${String(cert.value.issuer)}` : ''}${cert.value.year ? ` (${String(cert.value.year)})` : ''}`,
-      );
-    }
-    masterLines.push('');
-  }
-
-  const masterResumeContent = masterLines.join('\n');
-
-  const atsChecks: AtsCheck[] = [
-    {
-      id: 'contact_info',
-      label: 'Direct Contact Identifiers',
-      passed: Boolean(candidateEmail && candidateName !== 'Your Name'),
-      explanation: candidateEmail
-        ? 'Email and name properly defined'
-        : 'Add email in Settings to pass ATS contact extraction',
-    },
-    {
-      id: 'core_headings',
-      label: 'Standard ATS Section Headings',
-      passed: confirmedRoles.length > 0 && confirmedSkills.length > 0,
-      explanation: 'Uses standard headings: SUMMARY, CORE SKILLS, EXPERIENCE, EDUCATION',
-    },
-    {
-      id: 'chronological_history',
-      label: 'Chronological Experience Mapping',
-      passed: confirmedRoles.length > 0,
-      explanation:
-        confirmedRoles.length > 0
-          ? `${confirmedRoles.length} confirmed roles mapped with start/end dates`
-          : 'Add at least one role to map timeline',
-    },
-    {
-      id: 'evidence_provenance',
-      label: 'Cryptographic Evidence Provenance',
-      passed: true,
-      explanation: '100% of resume claims are derived strictly from confirmed facts. Zero AI hallucinations.',
-    },
-    {
-      id: 'clean_formatting',
-      label: 'Single-Column Text Parsability',
-      passed: true,
-      explanation: 'No complex tables, multi-column blocks, or unparsable macros that confuse ATS parsers.',
-    },
-  ];
-
-  const allPassed = atsChecks.every((c) => c.passed);
+  const masterResumeContent = master.content;
 
   const activeVariant = personalization?.variants.find((v) => v.kind === selectedVariantKind);
   const isCandidateEdited = activeVariant?.status === 'CANDIDATE_EDITED';
@@ -307,7 +184,7 @@ export function ResumeStudio() {
         >
           <div className="flex justify-between items-center flex-wrap gap-3">
             <div>
-              <Badge variant={allPassed ? 'teal' : 'warning'} className="mr-2">
+              <Badge variant={documentReadiness.state === 'READY_TO_TAILOR' ? 'teal' : 'warning'} className="mr-2">
                 {readiness.title}
               </Badge>
               <strong id="readiness-studio-title" className="text-foreground">
@@ -325,9 +202,9 @@ export function ResumeStudio() {
         </section>
       )}
 
-      {/* ATS Validation Evidence Bar */}
-      <section aria-labelledby="ats-health-title">
-        <AtsScorecard atsChecks={atsChecks} />
+      {/* Deterministic document readiness, not an ATS certification */}
+      <section aria-labelledby="document-readiness-title">
+        <DocumentReadinessCard readiness={documentReadiness} />
       </section>
 
       {viewMode === 'master' ? (
@@ -357,8 +234,8 @@ export function ResumeStudio() {
             </div>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
-            Automatically compiled from your confirmed profile facts ({confirmedRoles.length} roles,{' '}
-            {confirmedSkills.length} skills, {confirmedProjects.length} projects).
+            Automatically compiled from your confirmed profile facts ({master.counts.roles} roles,{' '}
+            {master.counts.skills} skills, {master.counts.projects + master.counts.achievements} evidence items).
           </p>
           <div
             tabIndex={0}

@@ -26,6 +26,7 @@ import { DocumentVault } from '../vault/documents.js';
 import type { SecretStore } from '../vault/secrets.js';
 import { runDoctorChecks } from './diagnostics.js';
 import { registerApplicationRoutes } from './routes/applications.js';
+import { registerDocumentRoutes } from './routes/documents.js';
 import { registerInterviewRoutes } from './routes/interviews.js';
 import { registerMcpRoutes } from './routes/mcp.js';
 import { registerOpportunityRoutes } from './routes/opportunities.js';
@@ -341,6 +342,7 @@ export function buildServer({
   registerOpportunityRoutes(app, { db, discovery, tasks, vault });
 
   registerReadinessRoutes(app, { db });
+  registerDocumentRoutes(app, { db });
 
   registerApplicationRoutes(app, { applications, vault, submissions, personalization });
   registerInterviewRoutes(app, { interviews });

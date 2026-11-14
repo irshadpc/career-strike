@@ -230,10 +230,10 @@ Career Strike runs locally on your computer to keep your career data 100% privat
 
 You need **Node.js 22.12 or later** on macOS or Linux (Windows works with WSL).
 
-Install the latest release with one command:
+Download the latest `career-strike.tgz` from the project's GitHub Releases page, then install that file:
 
 ```bash
-npm install --global https://github.com/irshadpc/career-strike/releases/latest/download/career-strike.tgz
+npm install --global ./career-strike.tgz
 ```
 
 _(To build from source instead, see [docs/install.md](docs/install.md).)_
