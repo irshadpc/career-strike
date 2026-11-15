@@ -3,6 +3,25 @@
 Every release of Career Strike is listed here, newest first. The section for a version is shown in
 the dashboard after you update, and is published as that version's release notes on GitHub.
 
+## [0.5.0] - 2026-11-15
+
+### Added
+
+- **Market-wide company registry and hiring intelligence**: Discover employers from locally observed public postings, curated targets, and manual candidate entries. Provides honest, evidence-based hiring signals (`VERIFIED_OPEN_ROLES`, `NO_CURRENT_ROLES_OBSERVED`, `EVIDENCE_STALE`, `REGISTRY_ONLY`, `CANDIDATE_ENTRY_UNVERIFIED`) without claiming vacancies or interview likelihood.
+- **Evidence revision history & conflict resolution**: Full audit ledger tracking evidence modifications, actor provenance (`last_confirmed_at`, `last_confirmed_by`), and automated conflict flagging for duplicate identity items with mismatched details.
+- **Persisted outreach workflow**: Candidate-governed contact management and communication drafts with explicit approval states (`DRAFT` → `APPROVED` → `SENT` / `DISMISSED`). AI assistants cannot send messages autonomously.
+- **Candidate learning feedback & evaluation harness**: Full proposal decision lifecycle (`ACCEPT`, `REJECT`, `DISMISS`, `EDIT`, `SNOOZE`, `UNDO`) with safe setting rollback. Includes a 6-scenario local invariant evaluation suite (`npm run evaluate`).
+- **Offline PDF and DOCX document exports**: Direct, dependency-free local generation of PDF-1.4 documents and OpenXML DOCX packages, paired with offline text extractability and word-retention parser verification.
+- **OS-level scheduled background discovery**: Register native background jobs (`launchd` on macOS, `systemd` user timer on Linux, Task Scheduler on Windows) with `career-strike schedule-install` to fetch monitored boards while the application is closed.
+- **Complete React Hook Form & component colocation migration**: Migrated all forms across Settings, Data & Privacy, Profile, Applications, Search, Markets, and Outreach to React Hook Form with Zod schemas and route-colocated architecture.
+- **Exhaustive WCAG 2.2 AA accessibility**: Validated with axe-core across every dashboard screen in both light and dark modes, ensuring complete keyboard navigation and responsive viewport support.
+- **Efficacy and benchmark transparency**: Documented independent review of AutoPlaced.ai and automated application efficacy claims in `docs/limitations.md`, reaffirming non-guarantee principles and strict candidate review.
+
+### Changed
+
+- Updated document export and readiness panels to emphasize that local extractability testing is an integrity heuristic, not a commercial ATS certification.
+- Reorganized dashboard routes with colocated components, schemas, and helpers.
+
 ## [0.4.0] - 2026-11-05
 
 ### Changed

@@ -1,6 +1,6 @@
 # Known limitations
 
-What Career Strike does not do, or does only partly, as of version 0.4.0. Feature status is
+What Career Strike does not do, or does only partly, as of version 0.5.0. Feature status is
 tracked with evidence in `acceptance/registry.json`.
 
 ## By design
