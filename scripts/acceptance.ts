@@ -186,6 +186,9 @@ function main(): number {
     return 2;
   }
   fs.writeFileSync(REGISTRY, serializeRegistry(next));
+  try {
+    execFileSync('npx', ['biome', 'format', '--write', REGISTRY], { stdio: 'ignore' });
+  } catch {}
   const selectedIds = new Set(selected.map((c) => c.id));
   for (const c of updated.filter((x) => selectedIds.has(x.id)))
     console.log(`${c.status.padEnd(12)} ${c.id}  ${c.failureCause ?? ''}`);
