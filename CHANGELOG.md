@@ -3,6 +3,19 @@
 Every release of Career Strike is listed here, newest first. The section for a version is shown in
 the dashboard after you update, and is published as that version's release notes on GitHub.
 
+## [Unreleased]
+
+### Added
+
+- **Company Intelligence 360 & Startup Momentum**: Canonical company profile model tracking stage (Seed through Public), industry domain, headquarters and hiring locations, historical headcount changes, funding rounds, detected tech stack, and dated observation provenance. Classifies momentum trends (`SURGING`, `STEADY`, `STAGNANT`, `COOLING`) strictly from observed local activity and provides a chronological company event timeline without guessing vacancies or inventing trajectory scores.
+- **Decision-Ready Opportunity Shortlists (6D Engine)**: Multi-dimensional opportunity evaluation across six orthogonal dimensions: Hard Eligibility, Professional Relevance, Candidate Preferences, Source Confidence, Company Context, and Application Effort. Critical statutory eligibility blockers strictly prevent false recommendations and are never collapsed into an attractive aggregate score. Generates actionable `nextBestAction` recommendations.
+- **Curated Career Collections Hub**: 8 explainable, dynamic market collections (Emerging AI, Fintech & Payment Infrastructure, High-Growth Scaleups, Global International Employers, Remote-First Engineering, Active Product Roles, QA & IT Operations Opportunities, Early-Career & Transition Paths) calculated live from verified local data. Candidates can also create and follow custom rule-based collections.
+- **Compensation & Offer Intelligence**: Source-aware compensation model distinguishing Employer-Disclosed ranges, External Benchmarks, Candidate-Reported figures, and Model Estimates. Displays P25, P50 (median), and P75 compensation curves only when backed by a verified sample size of $N \ge 5$. Total compensation breakdowns include base salary, variable bonus, signing bonus, and equity, paired with strict purchasing-power caveats on foreign currency conversions.
+- **Career Market Pulse**: Localized aggregated telemetry reporting remote vs hybrid vs onsite distributions, top competencies in demand, salary distributions, and 14-day hiring velocity across active markets.
+- **Interview & Career Knowledge Studio**: Stage-specific format playbooks (Screening, System Design, Behavioral STAR, Executive), a structured 4-step company research protocol (Business Model, Tech Architecture, Team Dynamics, Competitive Landscape), and principled salary negotiation tactics with dated practitioner citations.
+- **Model Context Protocol (MCP) Server Expansion (20 tools)**: Expanded stdio MCP tool suite to 20 tools across 5 security tiers, introducing company intelligence retrieval, hiring signals, multi-role comparison, compensation evidence, market pulse telemetry, watchlist management, and company opportunity evaluation with strict candidate-in-the-loop safeguards.
+- **Evaluation Harness Expansion (9 Scenarios / 24 Checks)**: Added 3 new test scenarios to `npm run evaluate` verifying 6D non-collapsing eligibility rules, compensation sample size thresholds, and dynamic curated collection filtering.
+
 ## [0.5.0] - 2026-11-15
 
 ### Added

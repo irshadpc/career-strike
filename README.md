@@ -86,6 +86,13 @@ We believe in complete product truth. The table below outlines the exact impleme
 | **Resume Document Storage**              | `AVAILABLE` | Upload and local storage for PDF and DOCX files in the user's private data folder ([`docs/job-hunt-guide.md`](docs/job-hunt-guide.md)).                                                          |
 | **LinkedIn Archive (Zip/CSV) Import**    | `AVAILABLE` | Client-side parsing of candidate-provided LinkedIn export files (`Positions.csv`, `Skills.csv`, `Education.csv`) with conflict review.                                                           |
 | **Direct Employer Job Discovery**        | `AVAILABLE` | Automated polling of official public Greenhouse, Lever, and Ashby career feeds ([`docs/install.md`](docs/install.md)).                                                                           |
+| **Company Intelligence 360**             | `AVAILABLE` | Canonical company profile model: stage, headcount trend, funding history, tech stack, and dated observation provenance ([`src/markets/company-intelligence.ts`](src/markets/company-intelligence.ts)). |
+| **Startup Momentum Radar**               | `AVAILABLE` | Real-time momentum classification (`SURGING`, `STEADY`, `STAGNANT`, `COOLING`) and timeline tracking without speculative vacancies.                                                               |
+| **Decision-Ready Opportunity Shortlists**| `AVAILABLE` | 6-dimension evaluation (Eligibility, Relevance, Preferences, Confidence, Context, Effort) and next-best actions without collapsing eligibility failures ([`src/matching/shortlist.ts`](src/matching/shortlist.ts)). |
+| **Curated Career Collections**           | `AVAILABLE` | 8 rule-based market collections (Emerging AI, Fintech, High Growth, Remote First, etc.) plus candidate custom collection builder ([`src/career/collections.ts`](src/career/collections.ts)).    |
+| **Compensation & Offer Intelligence**    | `AVAILABLE` | Source-aware benchmarks with P25/P50/P75 ranges ($N \ge 5$ threshold), offer evaluation, and strict purchasing-power caveats ([`src/career/compensation.ts`](src/career/compensation.ts)).       |
+| **Career Market Pulse**                  | `AVAILABLE` | Aggregated local metrics on remote work distribution, skills in demand, and 14-day hiring velocity ([`src/career/market-pulse.ts`](src/career/market-pulse.ts)).                                 |
+| **Interview Knowledge Studio**           | `AVAILABLE` | Stage format playbooks, 4-step company research framework, principled negotiation tactics, and attributed resources ([`src/interview/knowledge-studio.ts`](src/interview/knowledge-studio.ts)). |
 | **Manual Opportunity Recording**         | `AVAILABLE` | Add unlisted roles from any source; explicitly tagged `UNVERIFIED` until verified.                                                                                                               |
 | **Evidence-Backed Match Evaluation**     | `AVAILABLE` | Deterministic fit scoring (`EXCELLENT`, `STRONG`, `MODERATE`, `BASIC`) derived from verified facts and quoted employer text.                                                                     |
 | **Application Pipeline & Kanban**        | `AVAILABLE` | Full stage tracking: Saved, Shortlisted, Prepared, Approved, Submitted, Follow-up, Interviewing, Offer, Closed.                                                                                  |
@@ -96,7 +103,7 @@ We believe in complete product truth. The table below outlines the exact impleme
 | **Interview iCalendar (.ics) Export**    | `AVAILABLE` | Generates RFC-5545 compliant `.ics` calendar files for scheduled interview stages.                                                                                                               |
 | **Outreach Draft Studio**                | `AVAILABLE` | Contextual follow-up email drafts for status checks, post-interview thank-you notes, and offer next steps.                                                                                       |
 | **Global Market Explorer Matrix**        | `AVAILABLE` | 16-country research matrix with statutory visa pathways, language expectations, and official policy citations.                                                                                   |
-| **Model Context Protocol (MCP) Server**  | `AVAILABLE` | Stdio MCP server with 11 scoped tools for optional integration with Claude Code, Codex, and OpenCode.                                                                                            |
+| **Model Context Protocol (MCP) Server**  | `AVAILABLE` | Stdio MCP server with 20 scoped tools (companies, hiring signals, compensation, market pulse, watchlist, jobs, fit, disclosures).                                                                 |
 | **Single-Use Personal Info Disclosures** | `AVAILABLE` | AI assistants request specific fields with a stated purpose; you preview and approve exact values in the dashboard.                                                                              |
 | **Data Export, Backup & Rollback**       | `AVAILABLE` | CLI commands for transactional export, backup, restore, and pre-upgrade rollback.                                                                                                                |
 | **Permanent Data Erasure**               | `AVAILABLE` | Single-command complete wipe of local databases, documents, and OS keychain items.                                                                                                               |
@@ -105,32 +112,79 @@ We believe in complete product truth. The table below outlines the exact impleme
 
 ## Feature Showcase
 
-### 1. Candidate Career Profile
+### 1. Candidate Career Profile & Evidence Graph
 
-The default profile view is designed as a calm, professional career workspace rather than an intimidating registration form.
+The default profile view is designed as a calm, professional career workspace rather than an intimidating registration form:
 
 - **Identity & Summary**: Maintain your professional headline, narrative summary, and primary competencies.
-- **Verified Skills**: Distinguish skills confirmed by your experience from unconfirmed suggestions.
+- **Verified Skills & Evidence**: Distinguish skills confirmed by your experience from unconfirmed suggestions, tracked with full audit revision history and actor provenance (`last_confirmed_at`, `last_confirmed_by`).
 - **Career Preferences**: Set role preferences, working arrangements (Remote, Hybrid, Onsite), and target countries.
-- **Professional Evidence**: Link verified portfolio repositories and document versions without sharing them externally.
+- **Conflict Review**: Transparently review conflicting claims imported from external documents or archives with explicit conflict resolution tools.
 
 ---
 
-### 2. Smart Job Discovery
+### 2. Smart Job Discovery & Curated Collections Hub
 
-Career Strike bypasses noisy job aggregators and stale scraping by connecting directly to official applicant tracking systems (ATS):
+Career Strike bypasses noisy job aggregators and stale scraping by connecting directly to official applicant tracking systems (Greenhouse, Lever, Ashby):
 
 ![Job Discovery & Matching](docs/assets/screenshots/job-discovery-desktop.png)
 _Figure 2: Job discovery displaying direct employer postings, salary disclosure transparency, and evidence-backed fit tiers._
 
-- **Direct Employer Feeds**: Follow company career boards powered by Greenhouse, Lever, or Ashby.
+- **Direct Employer Feeds**: Follow company career boards powered by Greenhouse, Lever, or Ashby with zero scraping and zero credential requirements.
 - **Freshness Guarantees**: Postings verified within 72 hours are marked `OPEN`; inactive postings transition to `STALE` or `CLOSED`.
-- **Honest Match Explanations**: Fit tiers explain _why_ a role matches your profile, quoting exact employer requirements alongside your saved experience.
-- **Manual Role Intake**: Found a job on an external board or through a referral? Add it manually—Career Strike tracks it transparently as `UNVERIFIED`.
+- **Curated Collections Hub**: Discover opportunities through 8 dynamic, rule-based collections (Emerging AI, Fintech, High Growth, Remote First, Active Product Roles, QA/IT Ops, International Employers, Early Career/Transition) computed live against local data.
+- **Custom Candidate Collections**: Define and save personal collection rules based on seniority, domain, work arrangement, and tech stack tags.
 
 ---
 
-### 3. Resume & Cover Letter Studio
+### 3. Decision-Ready Opportunity Shortlists (6D Engine)
+
+Rather than collapsing complex career evaluations into a misleading single percentage, Career Strike evaluates opportunities across six orthogonal, non-negotiable dimensions:
+
+- **Hard Eligibility**: Validates statutory right to work, residency, and employer sponsorship policy. Critical blockers prevent false recommendations.
+- **Professional Relevance**: Evaluates overlap between quoted employer requirements and candidate-verified skills and accomplishments.
+- **Candidate Preferences**: Checks alignment with target roles, compensation requirements, preferred work arrangements, and company stages.
+- **Source Confidence**: Differentiates direct ATS feeds with fresh observation timestamps from manual or third-party entries.
+- **Company Context**: Factors in organization stage, headcount trajectory, financial runway, and tech stack suitability.
+- **Application Effort**: Assesses required preparation effort (screening questions, portfolios, technical assessments, work authorization attestations).
+- **Actionable Next Steps**: Automatically synthesizes a concrete `nextBestAction` (`PREPARE_APPLICATION`, `VERIFY_ELIGIBILITY`, `RESEARCH_COMPANY`, `PASS`).
+
+---
+
+### 4. Company Intelligence 360 & Startup Momentum Radar
+
+Inspect companies with full context and dated observation provenance before investing application effort:
+
+- **Canonical Company Model**: 360-degree overview covering company stage (Seed through Public), industry domain, headquarters/hiring locations, headcount history, funding rounds, and verified tech stack.
+- **Startup Momentum Radar**: Classifies momentum trends (`SURGING`, `STEADY`, `STAGNANT`, `COOLING`) based strictly on observed local hiring activity and dated corporate events—without fabricated trajectory scores or speculative vacancy estimates.
+- **Company Event Timeline**: Track corporate milestones, funding announcements, and newly confirmed open roles chronologically.
+- **Candidate Watchlist**: Add target employers to a monitored watchlist with priority tiers and custom notification thresholds.
+
+---
+
+### 5. Compensation & Offer Intelligence
+
+Make informed compensation decisions backed by evidence and statistical rigour:
+
+- **Multi-Source Benchmark Awareness**: Explicitly distinguishes Employer-Disclosed ranges, External Compensation Benchmarks, Candidate-Reported data, and Model Estimates—never silently blended.
+- **Statistically Grounded Percentiles**: Displays P25, P50 (median), and P75 compensation curves only when backed by a verified sample size ($N \ge 5$). When data is insufficient, percentiles are omitted rather than guessed.
+- **Total Compensation Breakdown**: Separates base salary, variable bonus, signing bonus, and documented equity grants.
+- **Purchasing-Power Caveats**: Explicitly notes that nominal FX currency conversion does not equate to purchasing power or cost-of-living parity.
+
+---
+
+### 6. Career Market Pulse & Interview Knowledge Studio
+
+- **Career Market Pulse**: Live local telemetry displaying remote vs hybrid vs onsite distribution, top in-demand competencies, salary ranges, and 14-day hiring velocity across active markets.
+- **Interview Knowledge Studio**:
+  - *Stage Format Playbooks*: Concrete preparation blueprints for Recruiter Screening, System Design & Architecture, Behavioral STAR rounds, and Executive Deep-Dives.
+  - *4-Step Company Research*: Structured framework covering business model analysis, technical architecture discovery, team dynamics, and competitive landscape.
+  - *Principled Negotiation*: Tactical guidance for total compensation negotiation, counter-offer evaluation, and equity vesting review.
+  - *Attributed Guidance*: Curated, dated citations from verified industry practitioners.
+
+---
+
+### 7. Resume & Cover Letter Studio
 
 Create tailored application documents without hallucinated qualifications or generic AI filler:
 
@@ -139,17 +193,31 @@ _Figure 3: Tailored document drafting with side-by-side fact verification and ca
 
 - **Evidence-Backed Drafts**: Tailored resumes and cover letters draw strictly from confirmed profile facts.
 - **Side-by-Side Review**: Compare draft statements against employer requirements and your master profile before accepting changes.
-- **Candidate Approval Lock**: Approving an application cryptographically signs the package. Editing any field clears the approval so you never accidentally submit outdated content.
-- **Document Export**: Export your approved drafts in clean, readable formats ready for submission.
+- **Candidate Approval Lock**: Approving an application cryptographically signs the package with HMAC-SHA256. Editing any field clears the approval so you never accidentally submit outdated content.
+- **Offline PDF & DOCX Export**: Generates clean, standalone PDF-1.4 and OpenXML DOCX packages with local extractability testing.
 
 ---
 
-### 4. Global Career Explorer
+### 8. Application Pipeline & STAR Coaching
+
+Keep all your active opportunities organized in one unified workflow:
+
+![Application Pipeline & Kanban Tracker](docs/assets/screenshots/applications-desktop.png)
+_Figure 4: Candidate pipeline tracking applications from draft through submission, interview scheduling, and offer stages._
+
+- **Structured Stages**: Track roles across Draft, Shortlisted, Prepared, Approved, Submitted, Follow-up, Interviewing, Offer, and Closed.
+- **STAR Interview Coaching**: Generate behavioral interview preparation prompts based on the employer's quoted requirements and your confirmed projects.
+- **iCalendar (.ics) Sync**: Export scheduled interview dates directly into Apple Calendar, Google Calendar, or Outlook.
+- **Outreach Studio**: Persisted contact directory and contextual follow-up email drafts for status checks, post-interview thank-you notes, and offer discussions.
+
+---
+
+### 9. Global Career Explorer
 
 Research international technology markets with grounded, evidence-backed clarity:
 
 ![Global Market Explorer Matrix](docs/assets/screenshots/market-explorer-desktop.png)
-_Figure 4: International market matrix displaying statutory immigration pathways, language expectations, and tech ecosystems._
+_Figure 5: International market matrix displaying statutory immigration pathways, language expectations, and tech ecosystems._
 
 - **No Artificial Rankings**: Countries are categorized by ecosystem depth, language fit, and immigration feasibility—not arbitrary vacancy counts.
 - **Statutory Pathway Realities**: Clear references to real visa frameworks (e.g. EU Blue Card in Germany, Critical Skills Employment Permit in Ireland, COMPASS points in Singapore).
@@ -158,21 +226,7 @@ _Figure 4: International market matrix displaying statutory immigration pathways
 
 ---
 
-### 5. Application Pipeline & Interview Coaching
-
-Keep all your active opportunities organized in one unified workflow:
-
-![Application Pipeline & Kanban Tracker](docs/assets/screenshots/applications-desktop.png)
-_Figure 5: Candidate pipeline tracking applications from draft through submission, interview scheduling, and offer stages._
-
-- **Structured Stages**: Track roles across Draft, Shortlisted, Prepared, Approved, Submitted, Follow-up, Interviewing, and Offer.
-- **STAR Interview Coaching**: Generate behavioral interview preparation prompts based on the employer's quoted requirements and your confirmed projects.
-- **iCalendar (.ics) Sync**: Export scheduled interview dates directly into Apple Calendar, Google Calendar, or Outlook.
-- **Outreach Studio**: Generate courteous, professional follow-up drafts for status checks, post-interview thank-you notes, and offer discussions.
-
----
-
-### 6. Responsive Mobile Experience
+### 10. Responsive Mobile Experience
 
 Career Strike is designed to adapt gracefully to mobile screens for reviewing opportunities and updating application status on the go:
 
@@ -294,12 +348,18 @@ career-strike authorize-mcp my-client
 
 ### Strict Privacy Invariants for AI Assistants
 
-Career Strike treats AI assistants as untrusted external agents:
+Career Strike treats AI assistants as untrusted external agents and exposes a comprehensive **20-tool MCP suite** structured into strict permission tiers:
 
-- **Public Data Only by Default**: Connected assistants can only search public job postings, read posting text, and suggest adding public job boards.
-- **No Document or Contact Access**: Assistants **never** receive your resume documents, contact details, or email addresses—even if requested.
-- **Single-Use Scoped Disclosures**: If an assistant needs parts of your profile (e.g. past job titles to suggest a search query), it must submit a request with a stated purpose. You review the exact values in the dashboard and approve or deny the request. Each approved disclosure can be collected once within one hour.
-- **No Automated Actions**: Assistants can **never** approve an application, edit an approved package, or submit an application on your behalf.
+| Security Tier | Tool Count | Capabilities & Registered Tools | Candidate Safeguards |
+| :--- | :---: | :--- | :--- |
+| **Tier 1: Public Read** | 11 | `cs_status`, `cs_search_jobs`, `cs_get_job`, `cs_add_job`, `cs_monitor_job_board`, `cs_discover_relevant_companies`, `cs_get_company_intelligence`, `cs_get_company_hiring_signals`, `cs_compare_career_opportunities`, `cs_get_compensation_evidence`, `cs_get_market_pulse` | Limited to public job postings, company public profiles, hiring activity, market pulse statistics, and benchmark compensation evidence. No private candidate data is revealed. |
+| **Tier 2: Candidate Dispositions Write** | 2 | `cs_set_job_decision`, `cs_create_company_watch` | Allows assistants to record a candidate's triage decision (`INTERESTED`, `SHORTLISTED`, `ARCHIVED`, `NOT_FOR_ME`) or add a company to the candidate's private watchlist. Cannot modify profile facts or submit applications. |
+| **Tier 3: Candidate Read** | 3 | `cs_list_shortlist`, `cs_list_applications`, `cs_refresh_company_watchlist` | Enables assistants to view the candidate's current shortlist (with 6D readiness metrics), active application pipeline stages, and watchlist status. Resume documents and contact details are excluded. |
+| **Tier 4: Sensitive Read** | 2 | `cs_get_fit`, `cs_evaluate_company_opportunity` | Allows assistants to inspect detailed fit evaluations (skills match vs gaps) and evaluate company context against candidate goals. Requires authorized local token. |
+| **Tier 5: Single-Use Disclosures** | 2 | `cs_request_personal_info`, `cs_get_personal_info` | If an assistant needs specific profile fields (e.g. past job titles to suggest search terms), it must submit a request with a stated purpose. The candidate reviews and approves exact values in the dashboard. Approved tokens expire after 1 hour and allow exactly one read. |
+
+- **Zero Document or Contact Exfiltration**: Assistants **never** receive your raw resume documents, personal contact details, or email addresses.
+- **No Autonomous Submissions**: Assistants can **never** sign cryptographic application approvals, edit approved packages, or submit applications on your behalf.
 
 To disconnect an assistant at any time:
 
@@ -392,6 +452,9 @@ For engineers, administrators, and power users, the `career-strike` CLI provides
 | `career-strike authorize-mcp <client>`         | Issues a scoped local token for a generic MCP client.                                               |
 | `career-strike revoke-mcp <client>`            | Revokes an MCP client token.                                                                        |
 | `career-strike practice`                       | Boots an owned local test ATS server to safely rehearse application preparation and submission.     |
+| `career-strike schedule-install`               | Installs native OS scheduler (`launchd` on macOS, `systemd` user timer on Linux) for background polling. |
+| `career-strike schedule-uninstall`             | Uninstalls the native OS scheduled background job.                                                  |
+| `career-strike schedule-status`                | Inspects the state and next execution time of the background discovery schedule.                    |
 | `career-strike verify-market <CC>`             | Verifies permitted job-board retrieval for a country before marking it discovery-available.         |
 | `career-strike export <dir>`                   | Exports all career records and documents as readable JSON and files.                                |
 | `career-strike backup <dir>` / `restore <dir>` | Creates or restores a full transactional backup of the workspace.                                   |
