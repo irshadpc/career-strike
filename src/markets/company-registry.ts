@@ -51,6 +51,7 @@ export interface CompanyRegistryEntry {
   sampleRoles: RegistryRole[];
   explanation: string;
   evidence: string[];
+  isWatched?: boolean;
 }
 
 export const CandidateCompany = z
@@ -371,6 +372,7 @@ export function listCompanyRegistry(db: Db, filters: RegistryFilters = {}, now =
           })),
         explanation,
         evidence,
+        isWatched: Boolean(db.prepare('SELECT 1 FROM company_watches WHERE company_id = ?').get(row.id)),
       } satisfies CompanyRegistryEntry;
     })
     .filter((entry) => {
@@ -388,6 +390,7 @@ export function registrySummary(entries: readonly CompanyRegistryEntry[]): {
   registryOnly: number;
   stale: number;
   monitored: number;
+  watched: number;
 } {
   return {
     total: entries.length,
@@ -397,5 +400,45 @@ export function registrySummary(entries: readonly CompanyRegistryEntry[]): {
     ).length,
     stale: entries.filter((entry) => entry.signal === 'EVIDENCE_STALE').length,
     monitored: entries.filter((entry) => entry.monitored).length,
+    watched: entries.filter((entry) => entry.isWatched).length,
   };
+}
+
+export function setCompanyWatch(
+  db: Db,
+  companyId: string,
+  watch: boolean,
+  options: { notifyOnNewRoles?: boolean; notifyOnHiringSurge?: boolean; notes?: string } = {},
+  now = new Date(),
+): boolean {
+  const at = now.toISOString();
+  if (!watch) {
+    const changes = db.prepare('DELETE FROM company_watches WHERE company_id = ?').run(companyId).changes;
+    return changes > 0;
+  }
+  db.prepare(
+    `INSERT INTO company_watches (company_id, notify_on_new_roles, notify_on_hiring_surge, notes, followed_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?)
+     ON CONFLICT (company_id) DO UPDATE SET
+       notify_on_new_roles = excluded.notify_on_new_roles,
+       notify_on_hiring_surge = excluded.notify_on_hiring_surge,
+       notes = excluded.notes,
+       updated_at = excluded.updated_at`,
+  ).run(
+    companyId,
+    (options.notifyOnNewRoles ?? true) ? 1 : 0,
+    (options.notifyOnHiringSurge ?? false) ? 1 : 0,
+    options.notes ?? null,
+    at,
+    at,
+  );
+  return true;
+}
+
+export function listWatchedCompanyIds(db: Db): string[] {
+  return db.prepare('SELECT company_id FROM company_watches ORDER BY followed_at DESC').pluck().all() as string[];
+}
+
+export function isCompanyWatched(db: Db, companyId: string): boolean {
+  return Boolean(db.prepare('SELECT 1 FROM company_watches WHERE company_id = ?').get(companyId));
 }

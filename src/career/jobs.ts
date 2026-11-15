@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
+import { recordCompanyEvent } from '../markets/company-intelligence.js';
 import { indexEmployer } from '../markets/company-registry.js';
 import { isCountryCode } from '../markets/countries.js';
 import { evaluateFit, type Fit, type FitSettings, type Tier } from '../matching/fit.js';
@@ -39,6 +40,7 @@ export interface JobSummary {
   sourceCapabilities: SourceCapability[];
   /** Present when a candidate context was supplied. SENSITIVE: derived from the profile. */
   fit?: FitSummary;
+  fitDetail?: Fit;
 }
 
 export interface FitSummary {
@@ -190,7 +192,22 @@ export function syncBoard(
         result.added += 1;
       }
       // The registry indexes every employer seen, not only curated targets.
-      indexEmployer(db, p.employer, at, { source, board });
+      const companyId = indexEmployer(db, p.employer, at, { source, board });
+      if (!existing && companyId) {
+        recordCompanyEvent(
+          db,
+          {
+            companyId,
+            kind: 'ROLE_OPENED',
+            title: `New role observed: ${p.title}`,
+            detail: `Observed on ${source}/${board} board at ${p.locationText ?? 'unspecified location'}.`,
+            source: `${source}/${board}`,
+            sourceUrl: p.postingUrl,
+            eventAt: at,
+          },
+          new Date(at),
+        );
+      }
     }
 
     const open = db
@@ -200,10 +217,29 @@ export function syncBoard(
       )
       .all(source, board) as { id: string; source_job_id: string }[];
     const close = db.prepare("UPDATE jobs SET status = 'CLOSED', closed_at = ?, last_verified_at = ? WHERE id = ?");
+    const getJobEmployer = db.prepare('SELECT employer, title FROM jobs WHERE id = ?');
     for (const row of open) {
       if (!seen.has(row.source_job_id)) {
         close.run(at, at, row.id);
         result.closed += 1;
+        const jobRow = getJobEmployer.get(row.id) as { employer: string; title: string } | undefined;
+        if (jobRow) {
+          const compId = indexEmployer(db, jobRow.employer, at, { source, board });
+          if (compId) {
+            recordCompanyEvent(
+              db,
+              {
+                companyId: compId,
+                kind: 'ROLE_CLOSED',
+                title: `Role no longer listed: ${jobRow.title}`,
+                detail: `The role was removed from the active ${source}/${board} board feed during this sync.`,
+                source: `${source}/${board}`,
+                eventAt: at,
+              },
+              new Date(at),
+            );
+          }
+        }
       }
     }
     linkDuplicates(db);
@@ -497,13 +533,14 @@ export function listJobs(
   if (!query.includeDuplicates) where.push('j.duplicate_of IS NULL');
 
   const excluded = new Set(excludedEmployers.map(norm));
-  const order = {
-    newest: 'COALESCE(j.published_at, j.first_seen_at) DESC, j.id',
-    recently_verified: 'j.last_verified_at DESC, j.id',
-    employer: 'j.employer COLLATE NOCASE, j.title COLLATE NOCASE',
-    title: 'j.title COLLATE NOCASE, j.employer COLLATE NOCASE',
-    best_fit: 'COALESCE(j.published_at, j.first_seen_at) DESC, j.id',
-  }[query.sort];
+  const order =
+    {
+      newest: 'COALESCE(j.published_at, j.first_seen_at) DESC, j.id',
+      recently_verified: 'j.last_verified_at DESC, j.id',
+      employer: 'j.employer COLLATE NOCASE, j.title COLLATE NOCASE',
+      title: 'j.title COLLATE NOCASE, j.employer COLLATE NOCASE',
+      best_fit: 'COALESCE(j.published_at, j.first_seen_at) DESC, j.id',
+    }[query.sort] ?? 'COALESCE(j.published_at, j.first_seen_at) DESC, j.id';
 
   const rows = db
     .prepare(`${SUMMARY_SELECT} ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY ${order}`)

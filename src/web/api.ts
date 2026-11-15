@@ -728,3 +728,348 @@ export interface Prep {
   }[];
   interviews: Interview[];
 }
+
+// ---- V14 Company Intelligence 360 & Decision Engine ----
+
+export type CompanyStage =
+  | 'BOOTSTRAPPED'
+  | 'SEED'
+  | 'SERIES_A'
+  | 'SERIES_B'
+  | 'SERIES_C_PLUS'
+  | 'GROWTH'
+  | 'PUBLIC'
+  | 'SUBSIDIARY'
+  | 'UNKNOWN';
+
+export type HeadcountRange = '1-10' | '11-50' | '51-200' | '201-500' | '501-1000' | '1001-5000' | '5000+' | 'UNKNOWN';
+
+export type HeadcountTrend = 'GROWING' | 'STABLE' | 'CONTRACTING' | 'UNKNOWN';
+
+export type CompanyHiringSignal =
+  | 'VERIFIED_OPEN_ROLES'
+  | 'NO_CURRENT_ROLES_OBSERVED'
+  | 'EVIDENCE_STALE'
+  | 'REGISTRY_ONLY'
+  | 'CANDIDATE_ENTRY_UNVERIFIED';
+
+export interface ProvenanceClaim<T> {
+  value: T;
+  source: string;
+  sourceUrl?: string | null;
+  observedAt: string;
+  confidence: 'CONFIRMED' | 'HIGH' | 'MEDIUM' | 'UNVERIFIED';
+}
+
+export interface FundingRound {
+  roundName: string;
+  amountUsd: number | null;
+  announcedDate: string;
+  source: string;
+  sourceUrl?: string | null;
+}
+
+export interface CompanyMomentum {
+  trend: 'SURGING' | 'STEADY' | 'STAGNANT' | 'COOLING' | 'UNKNOWN';
+  rationale: string;
+  openedLast30Days: number;
+  closedLast30Days: number;
+  totalObserved: number;
+  lastEventDate?: string | null;
+}
+
+export interface Company360Profile {
+  id: string;
+  name: string;
+  employerKey: string;
+  origin: string;
+  officialWebsite: string | null;
+  careersUrl: string | null;
+  stage: ProvenanceClaim<CompanyStage>;
+  industry: ProvenanceClaim<string> | null;
+  productDomain: ProvenanceClaim<string> | null;
+  primaryLocations: ProvenanceClaim<string[]>;
+  teamSizeRange: ProvenanceClaim<HeadcountRange>;
+  headcountTrend: ProvenanceClaim<HeadcountTrend>;
+  fundingSummary: {
+    totalRaised: number | null;
+    rounds: FundingRound[];
+  };
+  techStack: ProvenanceClaim<string[]>;
+  employeeExperience: {
+    signals: { topic: string; summary: string; source: string; observedAt: string }[];
+  };
+  openRolesCount: number;
+  hiringSignal: CompanyHiringSignal;
+  isWatched: boolean;
+  watchNotes?: string | null;
+  momentum: CompanyMomentum;
+  updatedAt: string;
+}
+
+export interface CompanyEvent {
+  id: string;
+  companyId: string;
+  kind: string;
+  title: string;
+  detail: string;
+  source: string;
+  sourceUrl?: string | null;
+  eventAt: string;
+  createdAt: string;
+}
+
+export interface CuratedCollectionSummary {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  ruleKind: string;
+  ruleFilterJson: string;
+  badge: string;
+  isCustom: boolean;
+  activeOpenRolesCount: number;
+  matchingCompaniesCount: number;
+  updatedAt: string;
+}
+
+export interface CuratedCollectionDetail extends CuratedCollectionSummary {
+  matchingCompanies: {
+    id: string;
+    name: string;
+    stage: string;
+    openRoles: number;
+    signal: string;
+  }[];
+  activeRoles: JobSummary[];
+}
+
+export interface CompensationBenchmarkRecord {
+  id: string;
+  roleFamily: string;
+  seniority: string;
+  countryCode: string;
+  city: string | null;
+  currency: string;
+  period: 'year' | 'month' | 'hour';
+  baseMin: number;
+  baseMax: number;
+  p25: number | null;
+  p50: number | null;
+  p75: number | null;
+  sampleSize: number | null;
+  sourceKind: string;
+  sourceName: string;
+  observedAt: string;
+  limitations: string;
+}
+
+export interface CompensationComparison {
+  status: 'ABOVE_MEDIAN' | 'WITHIN_MARKET_RANGE' | 'BELOW_MEDIAN' | 'INSUFFICIENT_DATA';
+  offeredAnnualized: number | null;
+  benchmarkAnnualizedP50: number | null;
+  percentileRank: number | null;
+  relativeDifferencePct: number | null;
+  verdict: string;
+  caveats: string[];
+}
+
+export interface MarketPulseDistributionItem {
+  key: string;
+  label: string;
+  count: number;
+  percentage: number;
+}
+
+export interface MarketPulseSkillCount {
+  skill: string;
+  count: number;
+  percentage: number;
+}
+
+export interface CareerMarketPulseReport {
+  generatedAt: string;
+  sampleSummary: {
+    totalObservedPostings: number;
+    activeOpenPostings: number;
+    monitoredEmployers: number;
+  };
+  remotePolicyDistribution: MarketPulseDistributionItem[];
+  topSkillsDemand: MarketPulseSkillCount[];
+  topJobTitles: { title: string; count: number }[];
+  countryDistribution: MarketPulseDistributionItem[];
+  salaryTransparency: {
+    disclosedCount: number;
+    undisclosedCount: number;
+    disclosurePercentage: number;
+  };
+  hiringVelocity: {
+    openedLast14Days: number;
+    closedLast14Days: number;
+    netChange: number;
+  };
+  methodologyAndLimitations: {
+    sourcePopulation: string;
+    collectionMethod: string;
+    timeWindow: string;
+    samplingLimitations: string;
+  };
+}
+
+export interface ShortlistDimensions {
+  hardEligibility: {
+    passed: boolean;
+    reasons: string[];
+    criticalFailures: string[];
+  };
+  professionalRelevance: {
+    tier: Tier;
+    matchedSkills: string[];
+    missingSkills: string[];
+    transferableSkills: string[];
+    seniorityAlignment: 'aligned' | 'stretch' | 'below' | 'unknown';
+  };
+  candidatePreferences: {
+    roleFit: 'preferred' | 'neutral' | 'unfavorable';
+    locationFit: 'preferred' | 'neutral' | 'unfavorable';
+    remoteFit: 'preferred' | 'neutral' | 'unfavorable';
+    salaryFit: 'meets' | 'below' | 'unspecified';
+  };
+  sourceConfidence: {
+    level: 'HIGH' | 'MEDIUM' | 'UNVERIFIED';
+    verifiedWithin72h: boolean;
+    sourceType: 'official_ats' | 'candidate_entry';
+  };
+  companyContext: {
+    stage: CompanyStage;
+    teamSize: HeadcountRange;
+    hiringSignal: CompanyHiringSignal;
+    isWatched: boolean;
+    momentumTrend: CompanyMomentum['trend'];
+  };
+  applicationEffort: {
+    level: 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTENSIVE';
+    estimatedMinutes: number | null;
+    basis: string;
+  };
+}
+
+export type NextBestAction = 'APPLY' | 'INVESTIGATE_COMPANY' | 'PRACTICE_GAPS' | 'SKIP';
+
+export interface DecisionReadyShortlistEntry {
+  job: JobSummary;
+  dimensions: ShortlistDimensions;
+  recommendationExplanation: string;
+  nextBestAction: NextBestAction;
+}
+
+export interface InterviewKnowledgeStudio {
+  formatGuides: {
+    stage: string;
+    title: string;
+    description: string;
+    typicalDurationMinutes: number;
+    evaluationCriteria: string[];
+    keyPreparationTactics: string[];
+    pitfallsToAvoid: string[];
+  }[];
+  researchFramework: {
+    step: number;
+    title: string;
+    purpose: string;
+    checkItems: string[];
+    evidenceSources: string[];
+  }[];
+  negotiationPlaybook: {
+    id: string;
+    title: string;
+    tactic: string;
+    whenToUse: string;
+    exampleScript: string;
+    ethicalGuardrail: string;
+  }[];
+  externalCuratedResources: {
+    title: string;
+    authorOrPublisher: string;
+    url: string;
+    topic: string;
+    attributionNote: string;
+  }[];
+}
+
+export const fetchCompany360 = (id: string) =>
+  api<{ company: Company360Profile }>(`/api/company-360/${encodeURIComponent(id)}`);
+
+export const updateCompany360 = (id: string, updates: Record<string, unknown>) =>
+  api<{ ok: boolean; profile: Company360Profile }>(`/api/company-360/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: updates,
+  });
+
+export const fetchCompanyEvents = (id: string, limit = 50) =>
+  api<{ events: CompanyEvent[] }>(`/api/company-360/${encodeURIComponent(id)}/events?limit=${limit}`);
+
+export const recordCompanyEvent = (
+  id: string,
+  event: { kind: string; title: string; detail?: string; source?: string; sourceUrl?: string | null; eventAt?: string },
+) =>
+  api<{ event: CompanyEvent }>(`/api/company-360/${encodeURIComponent(id)}/events`, {
+    method: 'POST',
+    body: event,
+  });
+
+export const toggleCompanyWatch = (
+  id: string,
+  watch: boolean,
+  options?: { notifyOnNewRoles?: boolean; notifyOnHiringSurge?: boolean; notes?: string },
+) =>
+  watch
+    ? api<{ ok: boolean; profile: Company360Profile }>(`/api/company-360/${encodeURIComponent(id)}/watch`, {
+        method: 'POST',
+        body: options ?? {},
+      })
+    : api<{ ok: boolean; profile: Company360Profile }>(`/api/company-360/${encodeURIComponent(id)}/watch`, {
+        method: 'DELETE',
+      });
+
+export const fetchCollections = () => api<{ collections: CuratedCollectionSummary[] }>('/api/collections');
+
+export const fetchCollectionDetail = (slugOrId: string) =>
+  api<{ collection: CuratedCollectionDetail }>(`/api/collections/${encodeURIComponent(slugOrId)}`);
+
+export const createCustomCollection = (data: {
+  title: string;
+  description: string;
+  badge?: string;
+  filter: Record<string, unknown>;
+}) =>
+  api<{ collection: CuratedCollectionSummary }>('/api/collections', {
+    method: 'POST',
+    body: data,
+  });
+
+export const fetchCompensationBenchmarks = (filters?: { roleFamily?: string; countryCode?: string }) => {
+  const p = new URLSearchParams();
+  if (filters?.roleFamily) p.set('roleFamily', filters.roleFamily);
+  if (filters?.countryCode) p.set('countryCode', filters.countryCode);
+  return api<{ benchmarks: CompensationBenchmarkRecord[] }>(`/api/compensation/benchmarks?${p.toString()}`);
+};
+
+export const evaluateCompensationOffer = (data: {
+  roleFamily: string;
+  seniority: string;
+  countryCode: string;
+  salary: PublishedSalary | null;
+}) =>
+  api<{ comparison: CompensationComparison }>('/api/compensation/evaluate', {
+    method: 'POST',
+    body: data,
+  });
+
+export const fetchMarketPulse = () => api<{ pulse: CareerMarketPulseReport }>('/api/market-pulse');
+
+export const fetchDecisionReadyShortlists = () =>
+  api<{ shortlists: DecisionReadyShortlistEntry[] }>('/api/opportunities/shortlist');
+
+export const fetchInterviewKnowledgeStudio = () =>
+  api<{ studio: InterviewKnowledgeStudio }>('/api/interview/knowledge');

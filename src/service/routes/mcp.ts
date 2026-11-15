@@ -1,6 +1,12 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { ApplicationService } from '../../applications/service.js';
+import {
+  evaluateCompensation,
+  findMatchingBenchmark,
+  listCompensationBenchmarks,
+  type SeniorityLevel,
+} from '../../career/compensation.js';
 import { candidateContext } from '../../career/context.js';
 import { type Discovery, DuplicateBoardError } from '../../career/discovery.js';
 import {
@@ -13,6 +19,10 @@ import {
   ManualJobInput,
   setDisposition,
 } from '../../career/jobs.js';
+import { computeCareerMarketPulse } from '../../career/market-pulse.js';
+import { computeCompanyMomentum, getCompany360 } from '../../markets/company-intelligence.js';
+import { listCompanyRegistry, listWatchedCompanyIds, setCompanyWatch } from '../../markets/company-registry.js';
+import { evaluateDecisionReadyOpportunity } from '../../matching/shortlist.js';
 import { isMcpClientName, type McpClientStore, SCOPES, type Scope } from '../../mcp/clients.js';
 import { boardFromUrl } from '../../sources/board-url.js';
 import { SourceError } from '../../sources/types.js';
@@ -129,6 +139,89 @@ export function registerMcpRoutes(
     };
   });
 
+  app.get('/api/mcp/companies', async (req, reply) => {
+    if (!require(req, reply, 'public:read')) return reply;
+    const query = typeof req.query === 'object' && req.query !== null ? (req.query as Record<string, string>) : {};
+    const limit = Math.min(Number(query.limit ?? 25), 50);
+    const registry = listCompanyRegistry(db, { query: query.q, limit });
+    return {
+      companies: registry.map((c) => ({
+        id: c.id,
+        name: c.name,
+        officialWebsite: c.officialWebsite,
+        openRoles: c.openRoles,
+        signal: c.signal,
+        explanation: c.explanation,
+      })),
+    };
+  });
+
+  app.get<{ Params: { id: string } }>('/api/mcp/companies/:id', async (req, reply) => {
+    if (!require(req, reply, 'public:read')) return reply;
+    const p = getCompany360(db, req.params.id);
+    if (!p) return reply.code(404).send({ error: 'NOT_FOUND', message: `No company with id ${req.params.id}.` });
+    return {
+      company: {
+        id: p.id,
+        name: p.name,
+        officialWebsite: p.officialWebsite,
+        careersUrl: p.careersUrl,
+        stage: p.stage.value,
+        industry: p.industry?.value ?? null,
+        productDomain: p.productDomain?.value ?? null,
+        teamSize: p.teamSizeRange.value,
+        headcountTrend: p.headcountTrend.value,
+        techStack: p.techStack.value,
+        fundingTotal: p.fundingSummary.totalRaised,
+        openRolesCount: p.openRolesCount,
+        momentumTrend: p.momentum.trend,
+        momentumRationale: p.momentum.rationale,
+      },
+    };
+  });
+
+  app.get<{ Params: { id: string } }>('/api/mcp/companies/:id/signals', async (req, reply) => {
+    if (!require(req, reply, 'public:read')) return reply;
+    const p = getCompany360(db, req.params.id);
+    if (!p) return reply.code(404).send({ error: 'NOT_FOUND', message: `No company with id ${req.params.id}.` });
+    const momentum = computeCompanyMomentum(db, req.params.id);
+    return {
+      companyId: p.id,
+      name: p.name,
+      hiringSignal: p.hiringSignal,
+      openRoles: p.openRolesCount,
+      momentum,
+    };
+  });
+
+  app.post('/api/mcp/jobs/compare', async (req, reply) => {
+    if (!require(req, reply, 'public:read')) return reply;
+    const Body = z.object({ jobIds: z.array(z.string().min(1)).min(2).max(4) }).strict();
+    const parsed = Body.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', issues: parsed.error.issues });
+    const jobs = parsed.data.jobIds
+      .map((id) => getJob(db, id, { excludedEmployers: [] }))
+      .filter((j): j is NonNullable<typeof j> => Boolean(j))
+      .map(publicJob);
+    return { count: jobs.length, jobs };
+  });
+
+  app.get('/api/mcp/compensation', async (req, reply) => {
+    if (!require(req, reply, 'public:read')) return reply;
+    const query = typeof req.query === 'object' && req.query !== null ? (req.query as Record<string, string>) : {};
+    const benchmarks = listCompensationBenchmarks(db, {
+      roleFamily: query.roleFamily,
+      countryCode: query.countryCode,
+    });
+    return { benchmarks };
+  });
+
+  app.get('/api/mcp/market-pulse', async (req, reply) => {
+    if (!require(req, reply, 'public:read')) return reply;
+    const pulse = computeCareerMarketPulse(db);
+    return { pulse };
+  });
+
   app.post('/api/mcp/jobs', async (req, reply) => {
     if (!require(req, reply, 'public:write')) return reply;
     const parsed = ManualJobInput.safeParse(req.body);
@@ -183,6 +276,15 @@ export function registerMcpRoutes(
     return { ok: true };
   });
 
+  app.post<{ Params: { id: string } }>('/api/mcp/companies/:id/watch', async (req, reply) => {
+    if (!require(req, reply, 'dispositions:write')) return reply;
+    const Body = z.object({ notes: z.string().trim().max(1000).optional() }).strict();
+    const parsed = Body.safeParse(req.body ?? {});
+    if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', issues: parsed.error.issues });
+    setCompanyWatch(db, req.params.id, true, { notes: parsed.data.notes });
+    return { ok: true, companyId: req.params.id, isWatched: true };
+  });
+
   // ---- personal (needs a grant) ----
 
   app.get('/api/mcp/shortlist', async (req, reply) => {
@@ -211,6 +313,27 @@ export function registerMcpRoutes(
     };
   });
 
+  app.get('/api/mcp/watchlist', async (req, reply) => {
+    if (!require(req, reply, 'personal:read')) return reply;
+    const watchedIds = listWatchedCompanyIds(db);
+    const companies = watchedIds
+      .map((id) => getCompany360(db, id))
+      .filter((c): c is NonNullable<typeof c> => Boolean(c))
+      .map((p) => ({
+        id: p.id,
+        name: p.name,
+        officialWebsite: p.officialWebsite,
+        careersUrl: p.careersUrl,
+        stage: p.stage.value,
+        teamSize: p.teamSizeRange.value,
+        hiringSignal: p.hiringSignal,
+        openRolesCount: p.openRolesCount,
+        momentumTrend: p.momentum.trend,
+        momentumRationale: p.momentum.rationale,
+      }));
+    return { count: companies.length, companies };
+  });
+
   // ---- sensitive (needs a grant) ----
 
   app.get<{ Params: { id: string } }>('/api/mcp/jobs/:id/fit', async (req, reply) => {
@@ -226,6 +349,22 @@ export function registerMcpRoutes(
         factors: f.factors.map((x) => ({ factor: x.label, verdict: x.verdict, detail: x.detail })),
         matchedSkills: f.matchedSkills,
         missingRequiredSkills: f.missingRequiredSkills,
+      },
+    };
+  });
+
+  app.get<{ Params: { id: string } }>('/api/mcp/jobs/:id/evaluation', async (req, reply) => {
+    if (!require(req, reply, 'sensitive:read')) return reply;
+    const ctx = candidateContext(db);
+    const job = getJob(db, req.params.id, ctx);
+    if (!job) return reply.code(404).send({ error: 'NOT_FOUND', message: `No job with id ${req.params.id}.` });
+    const ev = evaluateDecisionReadyOpportunity(db, job, ctx);
+    return {
+      evaluation: {
+        job: publicJob(ev.job),
+        dimensions: ev.dimensions,
+        recommendationExplanation: ev.recommendationExplanation,
+        nextBestAction: ev.nextBestAction,
       },
     };
   });

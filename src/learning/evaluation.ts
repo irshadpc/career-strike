@@ -1,4 +1,12 @@
-import { syncBoard } from '../career/jobs.js';
+import {
+  type CompensationBenchmarkRecord,
+  calculatePercentiles,
+  evaluateCompensation,
+} from '../career/compensation.js';
+import { candidateContext } from '../career/context.js';
+import { JobQuery, listJobs, syncBoard } from '../career/jobs.js';
+import { getCompany360 } from '../markets/company-intelligence.js';
+import { evaluateDecisionReadyOpportunity } from '../matching/shortlist.js';
 import type { NormalizedPosting } from '../sources/types.js';
 import { type Db, openDb } from '../store/db.js';
 import { getSettings } from '../store/settings.js';
@@ -278,6 +286,123 @@ export function evaluateLearning(now = new Date()): EvaluationReport {
         db.close();
       }
     }),
+
+    scenario(
+      'company-360-provenance',
+      'Company 360 preserves unknowns and source provenance without fabrication',
+      () => {
+        const db = setup([], 1);
+        try {
+          const p = getCompany360(db, 'non-existent-company');
+          return [
+            check('null-safe', p === null, 'Non-existent company returns null rather than synthesized defaults.'),
+          ];
+        } finally {
+          db.close();
+        }
+      },
+    ),
+
+    scenario(
+      'compensation-percentile-honesty',
+      'Compensation percentiles require N >= 5 and disclaim purchasing power parity',
+      () => {
+        const belowMin = calculatePercentiles([100000, 120000, 130000, 140000]); // N = 4 < 5
+        const meetsMin = calculatePercentiles([100000, 110000, 120000, 130000, 140000]); // N = 5
+
+        const mockBenchmark: CompensationBenchmarkRecord = {
+          id: 'bench_eval',
+          roleFamily: 'software_engineering',
+          seniority: 'mid',
+          countryCode: 'US',
+          city: null,
+          currency: 'USD',
+          period: 'year',
+          baseMin: 100000,
+          baseMax: 150000,
+          p25: 110000,
+          p50: 125000,
+          p75: 140000,
+          sampleSize: 20,
+          sourceKind: 'EXTERNAL_BENCHMARK',
+          sourceName: 'Evaluation Survey',
+          observedAt: now.toISOString(),
+          limitations: 'Test benchmark',
+        };
+
+        const comparison = evaluateCompensation(
+          { currency: 'EUR', min: 100000, max: 120000, interval: 'year', source: 'structured' },
+          mockBenchmark,
+        );
+
+        return [
+          check('n-below-threshold', belowMin === null, 'Percentiles are null when sample size N < 5.'),
+          check('n-meets-threshold', meetsMin !== null, 'Percentiles are computed when N >= 5.'),
+          check(
+            'currency-caveat',
+            comparison.limitations.some((c) => c.includes('purchasing power') || c.includes('Currency mismatch')),
+            'Currency conversion strictly includes purchasing-power caveat.',
+          ),
+        ];
+      },
+    ),
+
+    scenario(
+      'shortlist-eligibility-preservation',
+      'Critical eligibility failures are never collapsed into an attractive recommendation',
+      () => {
+        const db = setup([], 1);
+        try {
+          const post: NormalizedPosting = {
+            source: 'lever',
+            board: 'evaluation',
+            sourceJobId: 'eval-ineligible-1',
+            employer: 'Banned Synthetic Corp',
+            title: 'Principal Rust Architect',
+            locationText: 'Remote',
+            remotePolicy: 'remote',
+            employmentType: 'full_time',
+            department: null,
+            salary: null,
+            description: [
+              { type: 'heading', text: 'Requirements' },
+              { type: 'item', text: 'Rust in production' },
+            ],
+            applyUrl: null,
+            postingUrl: null,
+            publishedAt: null,
+            unresolved: [],
+          };
+          syncBoard(db, 'lever', 'evaluation', [post], now);
+          const { jobs } = listJobs(db, JobQuery.parse({ limit: 1 }), {
+            excludedEmployers: [],
+          });
+          const job = jobs[0];
+          if (!job) return [check('job-present', false, 'Evaluated job was not stored.')];
+
+          const ctx = candidateContext(db);
+          const entry = evaluateDecisionReadyOpportunity(db, job, {
+            ...ctx,
+            settings: { ...ctx.settings!, excludedEmployers: ['Banned Synthetic Corp'] },
+          });
+
+          return [
+            check(
+              'eligibility-failed',
+              !entry.dimensions.hardEligibility.passed,
+              'Hard eligibility check reports failure for excluded employer.',
+            ),
+            check(
+              'action-skip',
+              entry.nextBestAction === 'SKIP',
+              'Next best action is SKIP, never recommending an ineligible role.',
+            ),
+          ];
+        } finally {
+          db.close();
+        }
+      },
+    ),
   ];
   const checks = scenarios.flatMap((s) => s.checks);
   return {

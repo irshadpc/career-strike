@@ -667,4 +667,88 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX document_exports_application ON document_exports (application_id, created_at);
     `,
   },
+  {
+    version: 21,
+    name: 'company_intelligence_and_collections',
+    sql: `
+      -- PUBLIC: Structured 360 attributes for companies with dated provenance.
+      CREATE TABLE company_profiles (
+        company_id             TEXT PRIMARY KEY REFERENCES company_registry (id) ON DELETE CASCADE,
+        industry               TEXT,
+        product_domain         TEXT,
+        stage                  TEXT NOT NULL DEFAULT 'UNKNOWN',
+        headquarters_city      TEXT,
+        headquarters_country   TEXT,
+        team_size_range        TEXT NOT NULL DEFAULT 'UNKNOWN',
+        headcount_trend        TEXT NOT NULL DEFAULT 'UNKNOWN',
+        funding_summary_json   TEXT NOT NULL DEFAULT '{"totalRaised":null,"currency":null,"rounds":[]}',
+        tech_stack_json        TEXT NOT NULL DEFAULT '[]',
+        employee_signals_json  TEXT NOT NULL DEFAULT '{"summary":null,"source":null,"observedAt":null}',
+        provenance_json        TEXT NOT NULL DEFAULT '{}',
+        updated_at             TEXT NOT NULL
+      );
+      CREATE INDEX company_profiles_stage ON company_profiles (stage);
+
+      -- PERSONAL: Companies the candidate watches/follows with alert preferences.
+      CREATE TABLE company_watches (
+        company_id             TEXT PRIMARY KEY REFERENCES company_registry (id) ON DELETE CASCADE,
+        notify_on_new_roles    INTEGER NOT NULL DEFAULT 1,
+        notify_on_hiring_surge INTEGER NOT NULL DEFAULT 0,
+        notes                  TEXT,
+        followed_at            TEXT NOT NULL,
+        updated_at             TEXT NOT NULL
+      );
+
+      -- PUBLIC: Dated timeline of observed company-level events.
+      CREATE TABLE company_events (
+        id                     TEXT PRIMARY KEY,
+        company_id             TEXT NOT NULL REFERENCES company_registry (id) ON DELETE CASCADE,
+        kind                   TEXT NOT NULL,
+        title                  TEXT NOT NULL,
+        detail                 TEXT NOT NULL,
+        source                 TEXT NOT NULL,
+        source_url             TEXT,
+        event_at               TEXT NOT NULL,
+        created_at             TEXT NOT NULL
+      );
+      CREATE INDEX company_events_company_date ON company_events (company_id, event_at DESC);
+
+      -- PUBLIC / PERSONAL: Curated and candidate-defined company and career collections.
+      CREATE TABLE curated_collections (
+        id                     TEXT PRIMARY KEY,
+        slug                   TEXT NOT NULL UNIQUE,
+        title                  TEXT NOT NULL,
+        description            TEXT NOT NULL,
+        rule_kind              TEXT NOT NULL,
+        rule_filter_json       TEXT NOT NULL DEFAULT '{}',
+        badge                  TEXT NOT NULL,
+        is_custom              INTEGER NOT NULL DEFAULT 0,
+        created_at             TEXT NOT NULL,
+        updated_at             TEXT NOT NULL
+      );
+      CREATE INDEX curated_collections_slug ON curated_collections (slug);
+
+      -- PUBLIC: Source-aware compensation benchmark records with sample size thresholds.
+      CREATE TABLE compensation_benchmarks (
+        id                     TEXT PRIMARY KEY,
+        role_family            TEXT NOT NULL,
+        seniority              TEXT NOT NULL,
+        country_code           TEXT NOT NULL,
+        city                   TEXT,
+        currency               TEXT NOT NULL,
+        period                 TEXT NOT NULL CHECK (period IN ('year', 'month', 'hour')),
+        base_min               REAL NOT NULL,
+        base_max               REAL NOT NULL,
+        p25                    REAL,
+        p50                    REAL,
+        p75                    REAL,
+        sample_size            INTEGER,
+        source_kind            TEXT NOT NULL CHECK (source_kind IN ('EMPLOYER_DISCLOSED', 'EXTERNAL_BENCHMARK', 'CANDIDATE_REPORTED', 'MODEL_ESTIMATE')),
+        source_name            TEXT NOT NULL,
+        observed_at            TEXT NOT NULL,
+        limitations            TEXT NOT NULL
+      );
+      CREATE INDEX compensation_benchmarks_query ON compensation_benchmarks (role_family, seniority, country_code);
+    `,
+  },
 ];

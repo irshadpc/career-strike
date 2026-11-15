@@ -8,6 +8,7 @@ import { EMPLOYMENT_LABEL, formatDate, formatDateTime, formatSalary, REMOTE_LABE
 import { cn } from '../../helpers/cn';
 import { useResource } from '../../hooks/useResource';
 import { ExternalLink, Link, useNavigateTo } from '../../router';
+import { CompensationPanel } from './-components/CompensationPanel';
 import { Description } from './-components/Description';
 
 export function JobPage({ id }: { id: string }) {
@@ -140,6 +141,8 @@ export function JobPage({ id }: { id: string }) {
       )}
 
       {job.fitDetail && <FitPanel fit={job.fitDetail} />}
+
+      <CompensationPanel job={job} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <section

@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/button';
 import { ago, formatDateTime } from '../../format';
 import { Link } from '../../router';
 import { CheatSheetModal } from './-components/CheatSheetModal';
+import { KnowledgeStudioSection } from './-components/KnowledgeStudioSection';
 import { CONFIDENCE, Topic } from './-components/Topic';
 
 export function Prep({ applicationId }: { applicationId: string }) {
@@ -81,6 +82,8 @@ export function Prep({ applicationId }: { applicationId: string }) {
           </div>
         }
       />
+
+      <KnowledgeStudioSection />
 
       <section className="rounded-xl border border-border bg-card p-6 shadow-xs mb-6" aria-labelledby="posting-topics">
         <h2 id="posting-topics" className="text-lg font-semibold tracking-tight text-foreground mb-4">

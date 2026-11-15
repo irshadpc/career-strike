@@ -135,12 +135,21 @@ describe('MCP server', () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
       'cs_add_job',
+      'cs_compare_career_opportunities',
+      'cs_create_company_watch',
+      'cs_discover_relevant_companies',
+      'cs_evaluate_company_opportunity',
+      'cs_get_company_hiring_signals',
+      'cs_get_company_intelligence',
+      'cs_get_compensation_evidence',
       'cs_get_fit',
       'cs_get_job',
+      'cs_get_market_pulse',
       'cs_get_personal_info',
       'cs_list_applications',
       'cs_list_shortlist',
       'cs_monitor_job_board',
+      'cs_refresh_company_watchlist',
       'cs_request_personal_info',
       'cs_search_jobs',
       'cs_set_job_decision',
@@ -192,6 +201,11 @@ describe('MCP server', () => {
       ['cs_list_shortlist', {}],
       ['cs_list_applications', {}],
       ['cs_get_fit', { jobId: jobIds[0] }],
+      ['cs_discover_relevant_companies', { query: 'Synthetic' }],
+      ['cs_get_market_pulse', {}],
+      ['cs_get_compensation_evidence', {}],
+      ['cs_refresh_company_watchlist', {}],
+      ['cs_evaluate_company_opportunity', { jobId: jobIds[0] }],
     ];
     for (const [name, args] of calls) outputs.push(JSON.stringify(await client.callTool({ name, arguments: args })));
     const all = outputs.join('\n');
@@ -281,6 +295,40 @@ describe('MCP server', () => {
         .get(),
     ).toBe('ai:test');
     db.close();
+  });
+
+  it('discovers companies, checks hiring signals, market pulse, compensation and watchlist through MCP', async () => {
+    const { paths } = await setup();
+    const client = await connect(paths);
+
+    // Public company discovery
+    const companiesRes = await client.callTool({
+      name: 'cs_discover_relevant_companies',
+      arguments: { query: 'Synthetic' },
+    });
+    expect(companiesRes.isError).toBeFalsy();
+    const companies = (companiesRes.structuredContent as { companies: { id: string; name: string }[] }).companies;
+    const target = companies.find((c) => c.name === 'Synthetic Labs');
+    expect(target).toBeDefined();
+
+    // Public market pulse
+    const pulseRes = await client.callTool({ name: 'cs_get_market_pulse', arguments: {} });
+    expect(pulseRes.isError).toBeFalsy();
+    const pulse = (pulseRes.structuredContent as { pulse: { sampleSummary: { totalObservedPostings: number } } }).pulse;
+    expect(pulse.sampleSummary.totalObservedPostings).toBeGreaterThan(0);
+
+    // Public compensation evidence
+    const compRes = await client.callTool({ name: 'cs_get_compensation_evidence', arguments: { countryCode: 'US' } });
+    expect(compRes.isError).toBeFalsy();
+    const comp = (compRes.structuredContent as { benchmarks: unknown[] }).benchmarks;
+    expect(Array.isArray(comp)).toBe(true);
+
+    // Watchlist creation with default dispositions:write scope
+    const watchRes = await client.callTool({
+      name: 'cs_create_company_watch',
+      arguments: { companyId: target!.id, notes: 'Strategic target' },
+    });
+    expect(watchRes.isError).toBeFalsy();
   });
 
   it('explains how to connect when the assistant has no token', async () => {

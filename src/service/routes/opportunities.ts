@@ -24,6 +24,7 @@ import {
   suggestSkills,
   updateFact,
 } from '../../career/profile.js';
+import { evaluateDecisionReadyOpportunity } from '../../matching/shortlist.js';
 import { boardFromUrl } from '../../sources/board-url.js';
 import { SourceError } from '../../sources/types.js';
 import type { Db } from '../../store/db.js';
@@ -118,6 +119,12 @@ export function registerOpportunityRoutes(
     const parsed = JobQuery.safeParse(req.query);
     if (!parsed.success) return invalid(reply, parsed.error.issues);
     return listJobs(db, parsed.data, ctx());
+  });
+
+  app.get('/api/opportunities/shortlist', async () => {
+    const list = listJobs(db, JobQuery.parse({ status: 'OPEN', limit: 50 }), ctx());
+    const shortlists = list.jobs.map((j) => evaluateDecisionReadyOpportunity(db, j, ctx()));
+    return { shortlists };
   });
 
   app.post('/api/jobs', async (req, reply) => {

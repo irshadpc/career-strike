@@ -229,6 +229,138 @@ export function createMcpServer(paths: AppPaths, client: string, cliEntry: strin
     ({ requestId }) => call('GET', `/api/mcp/disclosures/${encodeURIComponent(requestId)}`),
   );
 
+  server.registerTool(
+    'cs_discover_relevant_companies',
+    {
+      title: 'Discover companies',
+      description: 'Search and discover companies in the local registry with open role counts and hiring signals.',
+      inputSchema: {
+        query: z.string().max(200).optional().describe('Filter by company name or domain keyword'),
+        limit: z.number().int().min(1).max(50).optional().describe('Maximum companies to return (1-50)'),
+      },
+      annotations: readOnly,
+    },
+    ({ query, limit }) => {
+      const p = new URLSearchParams();
+      if (query) p.set('q', query);
+      if (limit) p.set('limit', String(limit));
+      return call('GET', `/api/mcp/companies?${p.toString()}`);
+    },
+  );
+
+  server.registerTool(
+    'cs_get_company_intelligence',
+    {
+      title: 'Company intelligence 360',
+      description:
+        'Get 360-degree company intelligence including stage, team size, tech stack, funding history, and momentum trend.',
+      inputSchema: {
+        companyId: z.string().min(1).max(200).describe('Normalized company ID or identifier'),
+      },
+      annotations: readOnly,
+    },
+    ({ companyId }) => call('GET', `/api/mcp/companies/${encodeURIComponent(companyId)}`),
+  );
+
+  server.registerTool(
+    'cs_get_company_hiring_signals',
+    {
+      title: 'Company hiring signals and momentum',
+      description: 'Get verified hiring signals and momentum timeline events for a company.',
+      inputSchema: {
+        companyId: z.string().min(1).max(200).describe('Normalized company ID or identifier'),
+      },
+      annotations: readOnly,
+    },
+    ({ companyId }) => call('GET', `/api/mcp/companies/${encodeURIComponent(companyId)}/signals`),
+  );
+
+  server.registerTool(
+    'cs_evaluate_company_opportunity',
+    {
+      title: 'Evaluate company opportunity',
+      description:
+        'Evaluate a specific job opportunity across 6 orthogonal dimensions (Hard Eligibility, Relevance, Preferences, Source Confidence, Company Context, Application Effort). Requires the candidate’s permission.',
+      inputSchema: {
+        jobId: z.string().min(1).max(100).describe('ID of the job posting to evaluate'),
+      },
+      annotations: readOnly,
+    },
+    ({ jobId }) => call('GET', `/api/mcp/jobs/${encodeURIComponent(jobId)}/evaluation`),
+  );
+
+  server.registerTool(
+    'cs_compare_career_opportunities',
+    {
+      title: 'Compare career opportunities',
+      description: 'Compare 2 to 4 job postings side-by-side on public criteria.',
+      inputSchema: {
+        jobIds: z.array(z.string().min(1).max(100)).min(2).max(4).describe('2 to 4 job IDs to compare'),
+      },
+      annotations: readOnly,
+    },
+    ({ jobIds }) => call('POST', '/api/mcp/jobs/compare', { jobIds }),
+  );
+
+  server.registerTool(
+    'cs_get_compensation_evidence',
+    {
+      title: 'Compensation evidence and benchmarks',
+      description: 'Retrieve verified compensation benchmarks (P25, P50, P75) by role family and country code.',
+      inputSchema: {
+        roleFamily: z
+          .string()
+          .max(100)
+          .optional()
+          .describe('Role family e.g. software_engineering, product_management'),
+        countryCode: z.string().max(10).optional().describe('ISO country code e.g. US, DE, IN'),
+      },
+      annotations: readOnly,
+    },
+    ({ roleFamily, countryCode }) => {
+      const p = new URLSearchParams();
+      if (roleFamily) p.set('roleFamily', roleFamily);
+      if (countryCode) p.set('countryCode', countryCode);
+      return call('GET', `/api/mcp/compensation?${p.toString()}`);
+    },
+  );
+
+  server.registerTool(
+    'cs_get_market_pulse',
+    {
+      title: 'Career market pulse',
+      description:
+        'Get aggregate career market pulse: remote distribution, skills in demand, title distribution, and hiring velocity.',
+      annotations: readOnly,
+    },
+    () => call('GET', '/api/mcp/market-pulse'),
+  );
+
+  server.registerTool(
+    'cs_create_company_watch',
+    {
+      title: 'Watch a company',
+      description: 'Add a company to the candidate’s company watchlist with optional notes.',
+      inputSchema: {
+        companyId: z.string().min(1).max(200).describe('Normalized company ID or identifier'),
+        notes: z.string().max(1000).optional().describe('Optional candidate notes'),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    ({ companyId, notes }) => call('POST', `/api/mcp/companies/${encodeURIComponent(companyId)}/watch`, { notes }),
+  );
+
+  server.registerTool(
+    'cs_refresh_company_watchlist',
+    {
+      title: 'Watched companies',
+      description:
+        'Retrieve the candidate’s watched companies with their latest hiring signals and open role counts. Requires the candidate’s permission.',
+      annotations: readOnly,
+    },
+    () => call('GET', '/api/mcp/watchlist'),
+  );
+
   return server;
 }
 

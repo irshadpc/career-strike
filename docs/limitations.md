@@ -84,8 +84,20 @@ tracked with evidence in `acceptance/registry.json`.
   document.
 - Company hiring signals are derived only from a curated employer target, the adopted board's
   health and postings actually retrieved into this installation. "No open roles observed" and
-  "not yet observed" are not statements that an employer has stopped hiring. Funding, news,
-  headcount and third-party vacancy estimates are not used.
+  "not yet observed" are not statements that an employer has stopped hiring.
+- Company Intelligence 360 and Startup Momentum: Claims record observation dates and provenance sources.
+  Unknown fields remain explicitly UNKNOWN. Funding rounds and headcount growth are tracked as historical
+  events and do not prove financial health, workplace quality, or future hiring.
+- Compensation and Offer Intelligence: Percentile ranges (P25, P50, P75) are displayed only when backed by
+  sufficient verified benchmark data (minimum sample size N >= 5); percentiles are never fabricated.
+  Nominal currency conversions are never treated as purchasing-power or cost-of-living equivalence.
+- Decision-Ready Opportunity Shortlists: Opportunities are evaluated across 6 orthogonal dimensions (Hard
+  Eligibility, Professional Relevance, Candidate Preferences, Source Confidence, Company Context, Application
+  Effort). Critical eligibility failures strictly prevent recommendations and are never collapsed into an
+  attractive aggregate fit score.
+- Curated Career Collections: Collections are dynamic, explainable groupings computed using explicit selection
+  rules over verified local data and candidate-defined criteria—not arbitrary sponsored rankings or commercial
+  vendor lists.
 - Independent validation of AutoPlaced.ai and automated placement efficacy: Career Strike conducted
   an independent review of AutoPlaced.ai and comparable automated job-hunting tools. No independent,
   audited, peer-reviewed, or reproducible empirical evidence was found supporting claims that

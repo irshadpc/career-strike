@@ -1,3 +1,5 @@
+export type { CandidateContext } from './jobs.js';
+
 import type { FitSettings } from '../matching/fit.js';
 import type { Db } from '../store/db.js';
 import { getSettings } from '../store/settings.js';

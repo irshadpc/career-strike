@@ -17,7 +17,9 @@ import { Input } from '../../components/ui/input';
 import { cn } from '../../helpers/cn';
 import { useResource } from '../../hooks/useResource';
 import { Link, useNavigateTo, useSearch } from '../../router';
+import { CollectionsHub } from './-components/CollectionsHub';
 import { CountryFocusViews, OfficialSearches } from './-components/CountryFocusViews';
+import { DecisionShortlistHub } from './-components/DecisionShortlistHub';
 import { JobRow } from './-components/JobRow';
 import { TopMatchSpotlight } from './-components/TopMatchSpotlight';
 
@@ -90,6 +92,7 @@ export function Opportunities() {
   const activeQuery = searchForm.watch('q');
   const [compare, setCompare] = useState<string[]>([]);
   const [reload, setReload] = useState(0);
+  const [viewTab, setViewTab] = useState<'all' | 'collections' | 'shortlist'>('all');
   const [filtersOpen, setFiltersOpen] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 761px)').matches : true,
   );
@@ -179,257 +182,309 @@ export function Opportunities() {
 
       <CountryFocusViews countries={countries} />
 
-      <form
-        className="my-4 flex gap-2 max-w-xl"
-        role="search"
-        onSubmit={submitQuery}
-        aria-label="Search and filter opportunities"
+      <div
+        className="flex items-center gap-2 border-b border-border my-4 pb-2"
+        role="tablist"
+        aria-label="Opportunity discovery modes"
       >
-        <label htmlFor="q" className="sr-only">
-          Search title, employer or description
-        </label>
-        <Input
-          id="q"
-          type="search"
-          placeholder="Search title, employer or description"
-          aria-label="Search title, employer or description"
-          className="flex-1"
-          {...searchForm.register('q')}
-        />
-        <Button type="submit" size="sm">
-          Search
-        </Button>
-      </form>
-
-      <div className="my-4 p-4 rounded-lg border border-border bg-card shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-expanded={filtersOpen}
-            aria-controls="filters-content"
-            onClick={() => setFiltersOpen((o) => !o)}
-            className="text-xs"
-          >
-            {filtersOpen ? 'Hide filters' : `Filters${activeFilters > 0 ? ` (${activeFilters})` : ''}`}
-          </Button>
-          {filtered && (
-            <Link href="/opportunities" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-xs')}>
-              Reset all
-            </Link>
-          )}
-        </div>
-
-        {filtersOpen && (
-          <div
-            id="filters-content"
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-border"
-          >
-            {(Object.keys(FILTERS) as FilterKey[]).map((k) => (
-              <div key={k} className="space-y-1">
-                <label htmlFor={`filter-${k}`} className="text-xs font-medium text-muted-foreground block">
-                  {filterLabel(k)}
-                </label>
-                <select
-                  id={`filter-${k}`}
-                  value={params.get(k) ?? ''}
-                  onChange={(e) => update(k, e.target.value)}
-                  className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs shadow-xs"
-                >
-                  {FILTERS[k].map(([v, label]) => (
-                    <option key={v} value={v}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ))}
-            {params.get('country') &&
-              params.get('country')! in COUNTRY_REGISTRY &&
-              COUNTRY_REGISTRY[params.get('country') as keyof typeof COUNTRY_REGISTRY].defaultCities.length > 0 && (
-                <div className="space-y-1">
-                  <label htmlFor="filter-city" className="text-xs font-medium text-muted-foreground block">
-                    City
-                  </label>
-                  <select
-                    id="filter-city"
-                    value={params.get('city') ?? ''}
-                    onChange={(e) => update('city', e.target.value)}
-                    className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs shadow-xs"
-                  >
-                    <option value="">All cities</option>
-                    {COUNTRY_REGISTRY[params.get('country') as keyof typeof COUNTRY_REGISTRY].defaultCities.map(
-                      (city) => (
-                        <option key={city} value={city}>
-                          {city}
-                        </option>
-                      ),
-                    )}
-                  </select>
-                </div>
-              )}
-            <div className="flex items-center gap-2 pt-4">
-              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={params.get('immediateStart') === 'true'}
-                  onChange={(e) => update('immediateStart', e.target.checked ? 'true' : '')}
-                  className="accent-primary"
-                />
-                <span>Asks for an early start</span>
-              </label>
-            </div>
-            <div className="flex items-center gap-2 pt-4">
-              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={params.get('includeExcludedEmployers') === 'true'}
-                  onChange={(e) => update('includeExcludedEmployers', e.target.checked ? 'true' : '')}
-                  className="accent-primary"
-                />
-                <span>Show excluded employers</span>
-              </label>
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewTab === 'all'}
+          onClick={() => setViewTab('all')}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            viewTab === 'all'
+              ? 'bg-primary text-primary-foreground font-semibold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          }`}
+        >
+          All Opportunities {list.state === 'ready' ? `(${list.data.total})` : ''}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewTab === 'collections'}
+          onClick={() => setViewTab('collections')}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            viewTab === 'collections'
+              ? 'bg-primary text-primary-foreground font-semibold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          }`}
+        >
+          Curated Collections
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={viewTab === 'shortlist'}
+          onClick={() => setViewTab('shortlist')}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+            viewTab === 'shortlist'
+              ? 'bg-primary text-primary-foreground font-semibold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+          }`}
+        >
+          Decision Shortlists (6D)
+        </button>
       </div>
 
-      {list.state === 'loading' && <Loading label="Loading opportunities" />}
-      {list.state === 'error' && (
-        <ErrorPanel message="Opportunities could not be loaded." onRetry={() => setReload((r) => r + 1)} />
-      )}
-      {list.state === 'ready' && (
+      {viewTab === 'collections' && <CollectionsHub />}
+      {viewTab === 'shortlist' && <DecisionShortlistHub />}
+      {viewTab === 'all' && (
         <>
-          <TopMatchSpotlight jobs={list.data.jobs} />
-          {list.data.jobs.length === 0 ? (
-            <EmptyHint filtered={filtered} />
-          ) : (
-            <>
-              <p className="result-count text-xs text-muted-foreground my-2" role="status" aria-live="polite">
-                {list.data.total === 0
-                  ? 'No opportunities match.'
-                  : `${list.data.total} ${list.data.total === 1 ? 'opportunity' : 'opportunities'}`}
-              </p>
-              <ul className="job-list space-y-3 p-0 m-0 list-none" data-testid="job-list">
-                {list.data.jobs.map((job) => (
-                  <JobRow
-                    key={job.id}
-                    job={job}
-                    selected={compare.includes(job.id)}
-                    compareFull={compare.length >= MAX_COMPARE}
-                    onCompare={() => toggleCompare(job.id)}
-                    onDisposition={(d) => void handleDisposition(job.id, d)}
-                  />
+          <form
+            className="my-4 flex gap-2 max-w-xl"
+            role="search"
+            onSubmit={submitQuery}
+            aria-label="Search and filter opportunities"
+          >
+            <label htmlFor="q" className="sr-only">
+              Search title, employer or description
+            </label>
+            <Input
+              id="q"
+              type="search"
+              placeholder="Search title, employer or description"
+              aria-label="Search title, employer or description"
+              className="flex-1"
+              {...searchForm.register('q')}
+            />
+            <Button type="submit" size="sm">
+              Search
+            </Button>
+          </form>
+
+          <div className="my-4 p-4 rounded-lg border border-border bg-card shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-expanded={filtersOpen}
+                aria-controls="filters-content"
+                onClick={() => setFiltersOpen((o) => !o)}
+                className="text-xs"
+              >
+                {filtersOpen ? 'Hide filters' : `Filters${activeFilters > 0 ? ` (${activeFilters})` : ''}`}
+              </Button>
+              {filtered && (
+                <Link href="/opportunities" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-xs')}>
+                  Reset all
+                </Link>
+              )}
+            </div>
+
+            {filtersOpen && (
+              <div
+                id="filters-content"
+                className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2 border-t border-border"
+              >
+                {(Object.keys(FILTERS) as FilterKey[]).map((k) => (
+                  <div key={k} className="space-y-1">
+                    <label htmlFor={`filter-${k}`} className="text-xs font-medium text-muted-foreground block">
+                      {filterLabel(k)}
+                    </label>
+                    <select
+                      id={`filter-${k}`}
+                      value={params.get(k) ?? ''}
+                      onChange={(e) => update(k, e.target.value)}
+                      className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs shadow-xs"
+                    >
+                      {FILTERS[k].map(([v, label]) => (
+                        <option key={v} value={v}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 ))}
-              </ul>
-              {list.data.jobs.length < list.data.total && (
-                <div className="my-6 text-center">
-                  <Button type="button" variant="outline" size="sm" onClick={() => setLimit((l) => l + PAGE)}>
-                    Load more opportunities
-                  </Button>
+                {params.get('country') &&
+                  params.get('country')! in COUNTRY_REGISTRY &&
+                  COUNTRY_REGISTRY[params.get('country') as keyof typeof COUNTRY_REGISTRY].defaultCities.length > 0 && (
+                    <div className="space-y-1">
+                      <label htmlFor="filter-city" className="text-xs font-medium text-muted-foreground block">
+                        City
+                      </label>
+                      <select
+                        id="filter-city"
+                        value={params.get('city') ?? ''}
+                        onChange={(e) => update('city', e.target.value)}
+                        className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs shadow-xs"
+                      >
+                        <option value="">All cities</option>
+                        {COUNTRY_REGISTRY[params.get('country') as keyof typeof COUNTRY_REGISTRY].defaultCities.map(
+                          (city) => (
+                            <option key={city} value={city}>
+                              {city}
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </div>
+                  )}
+                <div className="flex items-center gap-2 pt-4">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={params.get('immediateStart') === 'true'}
+                      onChange={(e) => update('immediateStart', e.target.checked ? 'true' : '')}
+                      className="accent-primary"
+                    />
+                    <span>Asks for an early start</span>
+                  </label>
+                </div>
+                <div className="flex items-center gap-2 pt-4">
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={params.get('includeExcludedEmployers') === 'true'}
+                      onChange={(e) => update('includeExcludedEmployers', e.target.checked ? 'true' : '')}
+                      className="accent-primary"
+                    />
+                    <span>Show excluded employers</span>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {list.state === 'loading' && <Loading label="Loading opportunities" />}
+          {list.state === 'error' && (
+            <ErrorPanel message="Opportunities could not be loaded." onRetry={() => setReload((r) => r + 1)} />
+          )}
+          {list.state === 'ready' && (
+            <>
+              <TopMatchSpotlight jobs={list.data.jobs} />
+              {list.data.jobs.length === 0 ? (
+                <EmptyHint filtered={filtered} />
+              ) : (
+                <>
+                  <p className="result-count text-xs text-muted-foreground my-2" role="status" aria-live="polite">
+                    {list.data.total === 0
+                      ? 'No opportunities match.'
+                      : `${list.data.total} ${list.data.total === 1 ? 'opportunity' : 'opportunities'}`}
+                  </p>
+                  <ul className="job-list space-y-3 p-0 m-0 list-none" data-testid="job-list">
+                    {list.data.jobs.map((job) => (
+                      <JobRow
+                        key={job.id}
+                        job={job}
+                        selected={compare.includes(job.id)}
+                        compareFull={compare.length >= MAX_COMPARE}
+                        onCompare={() => toggleCompare(job.id)}
+                        onDisposition={(d) => void handleDisposition(job.id, d)}
+                      />
+                    ))}
+                  </ul>
+                  {list.data.jobs.length < list.data.total && (
+                    <div className="my-6 text-center">
+                      <Button type="button" variant="outline" size="sm" onClick={() => setLimit((l) => l + PAGE)}>
+                        Load more opportunities
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+              {compare.length > 0 && (
+                <div
+                  className="compare-bar fixed bottom-4 right-4 z-40 p-4 bg-card border border-border rounded-xl shadow-lg flex items-center gap-4"
+                  role="region"
+                  aria-label="Comparison"
+                >
+                  <span className="text-xs font-semibold text-foreground">
+                    {compare.length} of {MAX_COMPARE} selected for comparison
+                  </span>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/opportunities/compare?ids=${compare.join(',')}`}
+                      className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'text-xs')}
+                      aria-disabled={compare.length < 2}
+                    >
+                      Compare {compare.length < 2 ? '(pick at least 2)' : 'now'}
+                    </Link>
+                    <button
+                      type="button"
+                      className="quiet text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+                      onClick={() => setCompare([])}
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
               )}
+              {selectedCountry === 'JP' && (
+                <OfficialSearches
+                  id="jp-official"
+                  market="Japan"
+                  sources={JAPAN_SOURCE_ASSESSMENTS}
+                  urlFor={officialJapanSearchUrl}
+                  query={activeQuery}
+                />
+              )}
+              {selectedCountry === 'SG' && (
+                <OfficialSearches
+                  id="sg-official"
+                  market="Singapore"
+                  sources={SINGAPORE_SOURCE_ASSESSMENTS}
+                  urlFor={officialSingaporeSearchUrl}
+                  query={activeQuery}
+                />
+              )}
+              {selectedCountry === 'AE' && (
+                <OfficialSearches
+                  id="ae-official"
+                  market="UAE"
+                  sources={UAE_SOURCE_ASSESSMENTS}
+                  urlFor={officialUaeSearchUrl}
+                  query={activeQuery}
+                />
+              )}
+              {selectedCountry === 'IN' && (
+                <OfficialSearches
+                  id="in-official"
+                  market="India"
+                  sources={INDIA_SOURCE_ASSESSMENTS}
+                  urlFor={officialIndiaSearchUrl}
+                  query={activeQuery}
+                />
+              )}
+              {selectedCountry === 'DE' && (
+                <OfficialSearches
+                  id="de-official"
+                  market="Germany"
+                  sources={GERMANY_SOURCE_ASSESSMENTS}
+                  urlFor={officialGermanySearchUrl}
+                  query={activeQuery}
+                />
+              )}
+              {selectedCountry === 'GB' && (
+                <OfficialSearches
+                  id="gb-official"
+                  market="United Kingdom"
+                  sources={UK_SOURCE_ASSESSMENTS}
+                  urlFor={officialUkSearchUrl}
+                  query={activeQuery}
+                />
+              )}
+              {selectedCountry === 'AU' && (
+                <OfficialSearches
+                  id="au-official"
+                  market="Australia"
+                  sources={AUSTRALIA_SOURCE_ASSESSMENTS}
+                  urlFor={officialAustraliaSearchUrl}
+                  query={activeQuery}
+                />
+              )}
+              {selectedCountry === 'CA' && (
+                <OfficialSearches
+                  id="ca-official"
+                  market="Canada"
+                  sources={CANADA_SOURCE_ASSESSMENTS}
+                  urlFor={officialCanadaSearchUrl}
+                  query={activeQuery}
+                />
+              )}
             </>
-          )}
-          {compare.length > 0 && (
-            <div
-              className="compare-bar fixed bottom-4 right-4 z-40 p-4 bg-card border border-border rounded-xl shadow-lg flex items-center gap-4"
-              role="region"
-              aria-label="Comparison"
-            >
-              <span className="text-xs font-semibold text-foreground">
-                {compare.length} of {MAX_COMPARE} selected for comparison
-              </span>
-              <div className="flex gap-2">
-                <Link
-                  href={`/opportunities/compare?ids=${compare.join(',')}`}
-                  className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'text-xs')}
-                  aria-disabled={compare.length < 2}
-                >
-                  Compare {compare.length < 2 ? '(pick at least 2)' : 'now'}
-                </Link>
-                <button
-                  type="button"
-                  className="quiet text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-                  onClick={() => setCompare([])}
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-          )}
-          {selectedCountry === 'JP' && (
-            <OfficialSearches
-              id="jp-official"
-              market="Japan"
-              sources={JAPAN_SOURCE_ASSESSMENTS}
-              urlFor={officialJapanSearchUrl}
-              query={activeQuery}
-            />
-          )}
-          {selectedCountry === 'SG' && (
-            <OfficialSearches
-              id="sg-official"
-              market="Singapore"
-              sources={SINGAPORE_SOURCE_ASSESSMENTS}
-              urlFor={officialSingaporeSearchUrl}
-              query={activeQuery}
-            />
-          )}
-          {selectedCountry === 'AE' && (
-            <OfficialSearches
-              id="ae-official"
-              market="UAE"
-              sources={UAE_SOURCE_ASSESSMENTS}
-              urlFor={officialUaeSearchUrl}
-              query={activeQuery}
-            />
-          )}
-          {selectedCountry === 'IN' && (
-            <OfficialSearches
-              id="in-official"
-              market="India"
-              sources={INDIA_SOURCE_ASSESSMENTS}
-              urlFor={officialIndiaSearchUrl}
-              query={activeQuery}
-            />
-          )}
-          {selectedCountry === 'DE' && (
-            <OfficialSearches
-              id="de-official"
-              market="Germany"
-              sources={GERMANY_SOURCE_ASSESSMENTS}
-              urlFor={officialGermanySearchUrl}
-              query={activeQuery}
-            />
-          )}
-          {selectedCountry === 'GB' && (
-            <OfficialSearches
-              id="gb-official"
-              market="United Kingdom"
-              sources={UK_SOURCE_ASSESSMENTS}
-              urlFor={officialUkSearchUrl}
-              query={activeQuery}
-            />
-          )}
-          {selectedCountry === 'AU' && (
-            <OfficialSearches
-              id="au-official"
-              market="Australia"
-              sources={AUSTRALIA_SOURCE_ASSESSMENTS}
-              urlFor={officialAustraliaSearchUrl}
-              query={activeQuery}
-            />
-          )}
-          {selectedCountry === 'CA' && (
-            <OfficialSearches
-              id="ca-official"
-              market="Canada"
-              sources={CANADA_SOURCE_ASSESSMENTS}
-              urlFor={officialCanadaSearchUrl}
-              query={activeQuery}
-            />
           )}
         </>
       )}

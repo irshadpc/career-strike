@@ -14,6 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
 import { type CompanyFormValues, companySchema } from '../-schema/company';
+import { Company360Modal } from './Company360Modal';
 
 const SIGNAL: Record<RegistrySignal, { label: string; variant: 'teal' | 'warning' | 'secondary' | 'outline' }> = {
   VERIFIED_OPEN_ROLES: { label: 'Locally verified open roles', variant: 'teal' },
@@ -34,6 +35,7 @@ export function CompanyRegistry({ country }: { country: string }) {
   const [countryOnly, setCountryOnly] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -247,33 +249,52 @@ export function CompanyRegistry({ country }: { country: string }) {
                     <li key={line}>{line}</li>
                   ))}
                 </ul>
-                <div className="flex flex-wrap gap-3 text-xs">
-                  {company.careersUrl && (
-                    <a
-                      className="text-primary hover:underline"
-                      href={company.careersUrl}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
-                      Careers page
-                    </a>
-                  )}
-                  {company.officialWebsite && (
-                    <a
-                      className="text-primary hover:underline"
-                      href={company.officialWebsite}
-                      target="_blank"
-                      rel="noreferrer noopener"
-                    >
-                      Official site
-                    </a>
-                  )}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1 text-xs">
+                  <div className="flex flex-wrap gap-3">
+                    {company.careersUrl && (
+                      <a
+                        className="text-primary hover:underline"
+                        href={company.careersUrl}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        Careers page
+                      </a>
+                    )}
+                    {company.officialWebsite && (
+                      <a
+                        className="text-primary hover:underline"
+                        href={company.officialWebsite}
+                        target="_blank"
+                        rel="noreferrer noopener"
+                      >
+                        Official site
+                      </a>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setSelectedCompanyId(company.id)}
+                  >
+                    Company 360° →
+                  </Button>
                 </div>
               </li>
             );
           })}
         </ul>
       )}
+
+      <Company360Modal
+        companyId={selectedCompanyId}
+        onClose={() => {
+          setSelectedCompanyId(null);
+          void load();
+        }}
+      />
     </section>
   );
 }

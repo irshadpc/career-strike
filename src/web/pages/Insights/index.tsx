@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/button';
 import { formatDate } from '../../format';
 import { BySourceTable } from './-components/BySourceTable';
 import { CampaignSummaryTable } from './-components/CampaignSummaryTable';
+import { MarketPulseSection } from './-components/MarketPulseSection';
 import { MetricSummaryCards } from './-components/MetricSummaryCards';
 import { ProposalList } from './-components/ProposalList';
 import type { Strategy } from './-helpers/rates';
@@ -55,6 +56,8 @@ export function Insights() {
         title="What your search is telling you"
         lede={`Counted only from what you recorded. Every rate shows how many cases it rests on; with fewer than ${data.minSample}, Career Strike does not compare.`}
       />
+
+      <MarketPulseSection />
 
       <section
         className="mb-8 p-5 bg-card rounded-lg border border-border shadow-xs space-y-4"

@@ -6,7 +6,7 @@ describe('learning evaluation harness', () => {
     const report = evaluateLearning(new Date('2026-11-15T12:00:00.000Z'));
     expect(report.passed).toBe(true);
     expect(report.summary.failed).toBe(0);
-    expect(report.summary.checks).toBe(18);
+    expect(report.summary.checks).toBe(24);
     expect(report.scenarios.map((scenario) => scenario.id)).toEqual([
       'sample-size-honesty',
       'comparison-with-n',
@@ -14,6 +14,9 @@ describe('learning evaluation harness', () => {
       'accept-and-undo',
       'edit-snooze-dismiss',
       'tamper-refusal',
+      'company-360-provenance',
+      'compensation-percentile-honesty',
+      'shortlist-eligibility-preservation',
     ]);
     for (const scenario of report.scenarios) {
       expect(
