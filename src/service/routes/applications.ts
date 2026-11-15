@@ -1,9 +1,11 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
+import { buildApplicationRehearsal } from '../../applications/rehearsal.js';
 import { ApplicationError, type ApplicationService } from '../../applications/service.js';
 import { TransitionError } from '../../applications/states.js';
 import type { SubmissionEngine } from '../../applications/submission.js';
 import { PersonalizationError, type PersonalizationService } from '../../personalization/service.js';
+import type { Db } from '../../store/db.js';
 import {
   ACCEPTED_DOCUMENT_TYPES,
   DocumentError,
@@ -95,9 +97,11 @@ export function registerApplicationRoutes(
     vault: DocumentVault;
     submissions: SubmissionEngine;
     personalization: PersonalizationService;
+    db?: Db;
   },
 ): void {
   const { applications, vault, submissions, personalization } = deps;
+  const db = deps.db ?? (applications as unknown as { db: Db }).db;
 
   // ---- documents (SENSITIVE; never exposes vault paths) ----
 
@@ -167,6 +171,11 @@ export function registerApplicationRoutes(
   app.get<{ Params: { id: string } }>('/api/applications/:id', async (req, reply) => {
     const view = await applications.get(req.params.id);
     return view ? { application: view } : reply.code(404).send({ error: 'NOT_FOUND' });
+  });
+
+  app.get<{ Params: { id: string } }>('/api/applications/:id/rehearsal', async (req, reply) => {
+    const rehearsal = await buildApplicationRehearsal(db, applications, req.params.id);
+    return rehearsal ? { rehearsal } : reply.code(404).send({ error: 'NOT_FOUND' });
   });
 
   // Local, deterministic document preparation. These routes are unavailable to MCP clients by

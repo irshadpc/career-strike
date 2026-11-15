@@ -348,7 +348,7 @@ export function buildServer({
   registerReadinessRoutes(app, { db });
   registerDocumentRoutes(app, { db });
 
-  registerApplicationRoutes(app, { applications, vault, submissions, personalization });
+  registerApplicationRoutes(app, { applications, vault, submissions, personalization, db });
   registerInterviewRoutes(app, { interviews });
   registerOutreachRoutes(app, { outreach });
   registerAssistantRoutes(app, { db });

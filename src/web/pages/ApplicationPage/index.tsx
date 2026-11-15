@@ -20,6 +20,7 @@ import { uploadDocument } from '../../helpers/documents';
 import { ExternalLink, Link, useNavigateTo } from '../../router';
 import { FollowUps } from './-components/FollowUps';
 import { Interviews } from './-components/Interviews';
+import { RehearsalWorkbench } from './-components/RehearsalWorkbench';
 
 const SOURCE_NOTE: Record<PayloadField['source'], string> = {
   identity: 'from your contact details',
@@ -139,6 +140,7 @@ export function ApplicationPage({ id }: { id: string }) {
             <p className="text-sm text-muted-foreground italic">This application can no longer be edited.</p>
           )}
           <PersonalizationPanel application={view} editable={editable} onChanged={() => void load()} />
+          <RehearsalWorkbench applicationId={view.id} />
         </div>
         <aside
           className="bg-card p-5 rounded-lg border border-border shadow-xs space-y-6"
