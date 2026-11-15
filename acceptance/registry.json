@@ -10,10 +10,10 @@
       "requiredEvidence": ["unit", "integration"],
       "tests": ["test/unit/paths.test.ts", "test/integration/cli.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "integration"]
       },
       "failureCause": null,
@@ -28,10 +28,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/store.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -46,10 +46,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/service.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -64,10 +64,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/service.test.ts", "test/integration/cli.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -82,10 +82,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/cli.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -100,10 +100,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/dashboard.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -118,10 +118,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/service.test.ts", "test/integration/store.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -141,10 +141,10 @@
         "test/e2e/assistants.spec.ts"
       ],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -159,10 +159,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/opportunities.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -177,10 +177,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/opportunities.spec.ts", "test/e2e/matching.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -195,10 +195,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/opportunities.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -213,10 +213,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/dashboard.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -231,10 +231,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/dashboard.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -249,10 +249,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/accessibility.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -267,10 +267,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/accessibility.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -285,10 +285,10 @@
       "requiredEvidence": ["integration", "e2e"],
       "tests": ["test/integration/session.test.ts", "test/e2e/dashboard.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -303,10 +303,10 @@
       "requiredEvidence": ["integration", "e2e"],
       "tests": ["test/integration/service.test.ts", "test/e2e/dashboard.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -321,10 +321,10 @@
       "requiredEvidence": ["integration", "e2e"],
       "tests": ["test/integration/discovery.test.ts", "test/e2e/opportunities.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -339,10 +339,10 @@
       "requiredEvidence": ["unit", "live-source"],
       "tests": ["test/unit/sources.test.ts", "test/live/sources.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "live-source"]
       },
       "failureCause": null,
@@ -357,10 +357,10 @@
       "requiredEvidence": ["unit", "live-source"],
       "tests": ["test/unit/sources.test.ts", "test/live/sources.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "live-source"]
       },
       "failureCause": null,
@@ -375,10 +375,10 @@
       "requiredEvidence": ["unit", "live-source"],
       "tests": ["test/unit/sources.test.ts", "test/live/sources.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "live-source"]
       },
       "failureCause": null,
@@ -393,10 +393,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/discovery.test.ts", "test/unit/jobs.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "unit"]
       },
       "failureCause": null,
@@ -411,10 +411,10 @@
       "requiredEvidence": ["unit", "integration"],
       "tests": ["test/unit/jobs.test.ts", "test/integration/discovery.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "integration"]
       },
       "failureCause": null,
@@ -429,10 +429,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/discovery.test.ts", "test/integration/supervisor.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -447,10 +447,10 @@
       "requiredEvidence": ["unit", "integration"],
       "tests": ["test/unit/sources.test.ts", "test/integration/opportunities-api.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "integration"]
       },
       "failureCause": null,
@@ -465,10 +465,10 @@
       "requiredEvidence": ["unit", "e2e"],
       "tests": ["test/unit/sources.test.ts", "test/e2e/opportunities.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "e2e"]
       },
       "failureCause": null,
@@ -483,10 +483,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/profile-fit.test.ts", "test/e2e/matching.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -501,10 +501,10 @@
       "requiredEvidence": ["unit", "e2e"],
       "tests": ["test/unit/matching.test.ts", "test/e2e/matching.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "e2e"]
       },
       "failureCause": null,
@@ -519,10 +519,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/matching.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit"]
       },
       "failureCause": null,
@@ -537,10 +537,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/matching.test.ts", "test/e2e/matching.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "e2e"]
       },
       "failureCause": null,
@@ -555,10 +555,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/matching.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit"]
       },
       "failureCause": null,
@@ -577,10 +577,10 @@
         "test/integration/tracking.test.ts"
       ],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "integration"]
       },
       "failureCause": null,
@@ -595,10 +595,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/applications.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit"]
       },
       "failureCause": null,
@@ -613,10 +613,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/applications.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -631,10 +631,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/applications.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -653,10 +653,10 @@
         "test/integration/secrets.test.ts"
       ],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "integration"]
       },
       "failureCause": null,
@@ -671,10 +671,10 @@
       "requiredEvidence": ["integration", "e2e"],
       "tests": ["test/integration/applications.test.ts", "test/e2e/applications.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -689,10 +689,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/applications.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -707,10 +707,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/applications.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -725,10 +725,10 @@
       "requiredEvidence": ["integration", "e2e"],
       "tests": ["test/integration/submission.test.ts", "test/e2e/submission.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -743,10 +743,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/submission.test.ts", "test/e2e/submission.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -761,10 +761,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/submission.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -779,10 +779,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/applications.test.ts", "test/integration/tracking.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "integration"]
       },
       "failureCause": null,
@@ -797,10 +797,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/integration/tracking.test.ts", "test/e2e/tracking.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -815,10 +815,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/tracking.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -833,10 +833,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/classification.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit"]
       },
       "failureCause": null,
@@ -851,10 +851,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/mcp.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -869,10 +869,10 @@
       "requiredEvidence": ["integration", "e2e"],
       "tests": ["test/integration/mcp.test.ts", "test/e2e/assistants.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -887,10 +887,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/integration/mcp.test.ts", "test/e2e/disclosure.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -905,10 +905,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/applications.test.ts", "test/integration/mcp.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -923,10 +923,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/log.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit"]
       },
       "failureCause": null,
@@ -941,10 +941,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/privacy-scan.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -959,10 +959,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/lifecycle.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -977,10 +977,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/secrets.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -995,10 +995,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/mcp.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1013,10 +1013,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/mcp.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1125,10 +1125,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/mcp.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1143,10 +1143,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/discovery.test.ts", "test/integration/supervisor.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1161,10 +1161,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/supervisor.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1179,10 +1179,10 @@
       "requiredEvidence": ["integration", "e2e"],
       "tests": ["test/integration/supervisor.test.ts", "test/e2e/activity.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -1197,10 +1197,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/supervisor.test.ts", "test/integration/submission.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1215,10 +1215,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/e2e/activity.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["e2e"]
       },
       "failureCause": null,
@@ -1233,10 +1233,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/supervisor.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1251,10 +1251,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/unit/interview.test.ts", "test/e2e/interviews.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "e2e"]
       },
       "failureCause": null,
@@ -1269,10 +1269,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/integration/interviews.test.ts", "test/e2e/interviews.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -1287,10 +1287,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/integration/interviews.test.ts", "test/e2e/interviews.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -1305,10 +1305,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/learning.test.ts", "test/integration/learning.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "integration"]
       },
       "failureCause": null,
@@ -1323,10 +1323,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/learning.test.ts", "test/e2e/insights.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "e2e"]
       },
       "failureCause": null,
@@ -1341,10 +1341,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/unit/learning.test.ts", "test/integration/learning.test.ts", "test/e2e/insights.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "integration", "e2e"]
       },
       "failureCause": null,
@@ -1359,10 +1359,10 @@
       "requiredEvidence": ["e2e"],
       "tests": ["test/integration/learning.test.ts", "test/e2e/insights.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e"]
       },
       "failureCause": null,
@@ -1377,10 +1377,10 @@
       "requiredEvidence": ["unit", "e2e"],
       "tests": ["test/unit/learning.test.ts", "test/e2e/insights.spec.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "e2e"]
       },
       "failureCause": null,
@@ -1423,10 +1423,10 @@
         "test/integration/submission.test.ts"
       ],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration", "e2e", "unit"]
       },
       "failureCause": null,
@@ -1446,10 +1446,10 @@
         "test/integration/submission.test.ts"
       ],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1464,10 +1464,10 @@
       "requiredEvidence": ["unit"],
       "tests": ["test/unit/registry.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit"]
       },
       "failureCause": null,
@@ -1495,10 +1495,10 @@
         "test/e2e/tracking.spec.ts"
       ],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "e2e"]
       },
       "failureCause": null,
@@ -1513,10 +1513,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/install.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1531,10 +1531,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/migrations.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1549,10 +1549,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/install.test.ts", "test/integration/lifecycle.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1567,10 +1567,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/lifecycle.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
@@ -1585,10 +1585,10 @@
       "requiredEvidence": ["manual"],
       "tests": ["test/unit/docs.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["unit", "manual"],
         "notes": "Install, privacy-model and known-limitations docs exist and pass the PII scan; automated checks in test/unit/docs.test.ts pass and the manual review of all three docs was completed."
       },
@@ -1604,10 +1604,10 @@
       "requiredEvidence": ["integration"],
       "tests": ["test/integration/cli.test.ts", "test/integration/lifecycle.test.ts"],
       "evidence": {
-        "revision": "2a2626f73b671bf911f413bdfff63039b4afe754",
+        "revision": "69ae72e0d64cad02a0507c087430eabf40634106",
         "command": "vitest run test/unit/paths.test.ts test/integration/cli.test.ts test/integration/store.test.ts test/integration/service.test.ts test/integration/session.test.ts test/integration/discovery.test.ts test/unit/sources.test.ts test/live/sources.test.ts test/unit/jobs.test.ts test/integration/supervisor.test.ts test/integration/opportunities-api.test.ts test/integration/profile-fit.test.ts test/unit/matching.test.ts test/unit/next-actions.test.ts test/integration/tracking.test.ts test/unit/applications.test.ts test/integration/applications.test.ts test/integration/secrets.test.ts test/integration/submission.test.ts test/unit/classification.test.ts test/integration/mcp.test.ts test/unit/log.test.ts test/integration/privacy-scan.test.ts test/integration/lifecycle.test.ts test/unit/interview.test.ts test/integration/interviews.test.ts test/unit/learning.test.ts test/integration/learning.test.ts test/integration/failures.test.ts test/unit/registry.test.ts test/unit/journeys.test.ts test/integration/install.test.ts test/integration/migrations.test.ts test/unit/docs.test.ts && playwright test test/e2e/dashboard.spec.ts test/e2e/opportunities.spec.ts test/e2e/tracking.spec.ts test/e2e/assistants.spec.ts test/e2e/matching.spec.ts test/e2e/accessibility.spec.ts test/e2e/applications.spec.ts test/e2e/submission.spec.ts test/e2e/disclosure.spec.ts test/e2e/activity.spec.ts test/e2e/interviews.spec.ts test/e2e/insights.spec.ts test/e2e/security.spec.ts test/e2e/journeys.spec.ts test/e2e/live.spec.ts",
         "exitCode": 0,
-        "at": "2026-11-15T03:39:50.327Z",
+        "at": "2026-11-15T05:08:56.767Z",
         "kinds": ["integration"]
       },
       "failureCause": null,
