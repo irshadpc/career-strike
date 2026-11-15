@@ -6,7 +6,9 @@ import {
   addEvidence,
   confirmEvidence,
   deleteEvidence,
+  evidenceConflicts,
   listEvidence,
+  listEvidenceRevisions,
   NewEvidence,
   updateEvidence,
 } from '../../career/evidence.js';
@@ -140,10 +142,10 @@ export function registerOpportunityRoutes(
 
   // ---- candidate profile (SENSITIVE) ----
 
-  app.get('/api/profile', async () => ({
-    facts: listFacts(db),
-    evidence: listEvidence(db),
-  }));
+  app.get('/api/profile', async () => {
+    const evidence = listEvidence(db);
+    return { facts: listFacts(db), evidence, conflicts: evidenceConflicts(evidence) };
+  });
 
   app.post('/api/profile/facts', async (req, reply) => {
     const parsed = NewFact.safeParse(req.body);
@@ -212,7 +214,13 @@ export function registerOpportunityRoutes(
   app.post<{ Params: { id: string } }>('/api/profile/evidence/:id/confirm', async (req, reply) => {
     const item = confirmEvidence(db, req.params.id, actorOf(req));
     if (!item) return reply.code(404).send({ error: 'NOT_FOUND' });
-    return { evidence: item };
+    return { evidence: item, revisions: listEvidenceRevisions(db, item.id) };
+  });
+
+  app.get<{ Params: { id: string } }>('/api/profile/evidence/:id/revisions', async (req, reply) => {
+    const exists = db.prepare('SELECT 1 FROM profile_evidence WHERE id = ?').get(req.params.id);
+    if (!exists) return reply.code(404).send({ error: 'NOT_FOUND' });
+    return { revisions: listEvidenceRevisions(db, req.params.id) };
   });
 
   app.put<{ Params: { id: string } }>('/api/profile/evidence/:id', async (req, reply) => {

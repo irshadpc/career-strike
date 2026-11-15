@@ -10,8 +10,9 @@ import { type Logger, nullLogger } from '../core/log.js';
 import { type AppPaths, appPaths } from '../core/paths.js';
 import { InterviewService } from '../interview/service.js';
 import { computeMetrics, MIN_SAMPLE, observations } from '../learning/metrics.js';
-import { ProposalError, StrategyProposals } from '../learning/proposals.js';
+import { ProposalAction, type ProposalDecisionKind, ProposalError, StrategyProposals } from '../learning/proposals.js';
 import { McpClientStore, type Scope } from '../mcp/clients.js';
+import { OutreachService } from '../outreach/service.js';
 import { PersonalizationService } from '../personalization/service.js';
 import { createAdapters } from '../sources/adapters.js';
 import type { SourceAdapter, SourceId } from '../sources/types.js';
@@ -30,6 +31,7 @@ import { registerDocumentRoutes } from './routes/documents.js';
 import { registerInterviewRoutes } from './routes/interviews.js';
 import { registerMcpRoutes } from './routes/mcp.js';
 import { registerOpportunityRoutes } from './routes/opportunities.js';
+import { registerOutreachRoutes } from './routes/outreach.js';
 import { registerReadinessRoutes } from './routes/readiness.js';
 import { registerUpdateRoutes } from './routes/updates.js';
 import { isAllowedHost, isAllowedOrigin, SECURITY_HEADERS, tokensEqual } from './security.js';
@@ -93,6 +95,7 @@ export function buildServer({
   const vault = new DocumentVault(db, vaultDir);
   const disclosures = new Disclosures(db);
   const personalization = new PersonalizationService(db);
+  const outreach = new OutreachService(db);
   const applications = new ApplicationService(
     db,
     secrets,
@@ -346,6 +349,7 @@ export function buildServer({
 
   registerApplicationRoutes(app, { applications, vault, submissions, personalization });
   registerInterviewRoutes(app, { interviews });
+  registerOutreachRoutes(app, { outreach });
 
   const proposals = new StrategyProposals(db);
   app.get('/api/strategy', async (req, reply) => {
@@ -367,10 +371,32 @@ export function buildServer({
     async (req, reply) => {
       // Accepting a proposal changes settings: only the candidate, in the dashboard.
       if (req.principal?.kind !== 'dashboard') return reply.code(403).send({ error: 'REQUIRES_DASHBOARD' });
-      const decision = req.params.decision;
-      if (decision !== 'accept' && decision !== 'dismiss') return reply.code(404).send({ error: 'NOT_FOUND' });
+      const map: Record<string, ProposalDecisionKind> = {
+        accept: 'ACCEPT',
+        reject: 'REJECT',
+        dismiss: 'DISMISS',
+        edit: 'EDIT',
+        snooze: 'SNOOZE',
+        undo: 'UNDO',
+      };
+      const decision = map[req.params.decision];
+      if (!decision) return reply.code(404).send({ error: 'NOT_FOUND' });
+      const body = (req.body ?? {}) as { action?: unknown; days?: unknown };
+      const action = body.action === undefined ? undefined : ProposalAction.safeParse(body.action);
+      if (action && !action.success)
+        return reply.code(400).send({ error: 'INVALID_ACTION', issues: action.error.issues });
       try {
-        return { proposal: proposals.decide(req.params.id, decision === 'accept' ? 'ACCEPTED' : 'DISMISSED') };
+        return {
+          proposal: proposals.decide(
+            req.params.id,
+            decision,
+            {
+              ...(action?.success ? { action: action.data } : {}),
+              ...(typeof body.days === 'number' ? { days: body.days } : {}),
+            },
+            'dashboard',
+          ),
+        };
       } catch (err) {
         if (err instanceof ProposalError) return reply.code(409).send({ error: 'PROPOSAL', message: err.message });
         throw err;

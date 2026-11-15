@@ -121,9 +121,65 @@ export const CLASSIFICATION: Readonly<Record<string, Readonly<Record<string, Col
     source_ref: c('SENSITIVE'),
   },
   profile_evidence: {
-    ...all('INTERNAL', ['id', 'kind', 'source', 'confirmed', 'created_at', 'updated_at']),
+    ...all('INTERNAL', [
+      'id',
+      'kind',
+      'source',
+      'confirmed',
+      'created_at',
+      'updated_at',
+      'revision',
+      'last_confirmed_at',
+      'last_confirmed_by',
+    ]),
     value_json: c('SENSITIVE'),
     source_ref: c('SENSITIVE'),
+  },
+  profile_evidence_revisions: {
+    ...all('INTERNAL', ['id', 'evidence_id', 'revision', 'change', 'confirmed', 'actor', 'at']),
+    value_json: c('SENSITIVE'),
+    source: c('SENSITIVE'),
+  },
+  company_registry: {
+    ...all('PUBLIC', [
+      'id',
+      'employer_key',
+      'display_name',
+      'aliases_json',
+      'origin',
+      'official_website',
+      'careers_url',
+      'first_observed_at',
+      'last_observed_at',
+      'notes',
+    ]),
+  },
+  company_registry_sources: all('PUBLIC', ['company_id', 'source', 'board', 'first_seen_at', 'last_seen_at']),
+  professional_contacts: {
+    ...all('INTERNAL', ['id', 'created_at', 'updated_at']),
+    ...all('SENSITIVE', ['name', 'employer', 'role_title', 'profile_url', 'email', 'notes']),
+  },
+  outreach_drafts: {
+    ...all('INTERNAL', [
+      'id',
+      'channel',
+      'purpose',
+      'state',
+      'created_at',
+      'updated_at',
+      'approved_at',
+      'sent_at',
+      'decided_by',
+    ]),
+    ...all('SENSITIVE', ['contact_id', 'application_id', 'subject', 'body']),
+  },
+  outreach_events: {
+    ...all('INTERNAL', ['id', 'outreach_id', 'to_state', 'actor', 'at']),
+    ...all('PERSONAL', ['from_state', 'note']),
+  },
+  document_exports: {
+    ...all('INTERNAL', ['id', 'source', 'kind', 'format', 'size_bytes', 'created_by', 'created_at']),
+    ...all('SENSITIVE', ['application_id', 'variant_id', 'filename', 'sha256']),
   },
   documents: {
     ...all('INTERNAL', ['id', 'kind', 'mime', 'size_bytes', 'created_at']),
@@ -214,14 +270,18 @@ export const CLASSIFICATION: Readonly<Record<string, Readonly<Record<string, Col
     content_hash: c('SENSITIVE', ['disclosures.content_json']),
   },
   strategy_proposals: {
-    ...all('INTERNAL', ['id', 'rule', 'fingerprint', 'status', 'created_at', 'decided_at']),
+    ...all('INTERNAL', ['id', 'rule', 'fingerprint', 'status', 'created_at', 'decided_at', 'snoozed_until']),
     // Gap and role proposals name skills missing from the profile and roles that reached interview.
     ...Object.fromEntries(
-      ['title', 'rationale', 'action_json'].map((k) => [
+      ['title', 'rationale', 'action_json', 'edited_action_json'].map((k) => [
         k,
         c('SENSITIVE', [...PROFILE, 'applications.state', 'jobs.title']),
       ]),
     ),
+  },
+  strategy_proposal_decisions: {
+    ...all('INTERNAL', ['id', 'proposal_id', 'decision', 'previous_status', 'new_status', 'actor', 'at']),
+    ...all('SENSITIVE', ['previous_action_json', 'new_action_json', 'setting_reverts_json']),
   },
   strategy_snapshots: {
     day: c('INTERNAL'),

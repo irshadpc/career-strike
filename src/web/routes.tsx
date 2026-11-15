@@ -11,6 +11,7 @@ import { JobPage } from './pages/JobPage';
 import { Markets } from './pages/Markets';
 import { NotFound } from './pages/NotFound';
 import { Opportunities } from './pages/Opportunities';
+import { Outreach } from './pages/Outreach';
 import { Prep } from './pages/Prep';
 import { Profile } from './pages/Profile';
 import { ResumeStudio } from './pages/ResumeStudio';
@@ -64,6 +65,7 @@ const routeTree = rootRoute.addChildren([
   page('/', Home),
   page('/settings', Settings),
   page('/profile', Profile),
+  page('/outreach', Outreach),
   page('/markets', Markets),
   page('/activity', Activity),
   page('/insights', Insights),

@@ -5,6 +5,7 @@ import { ErrorPanel, Loading } from '../../components/states';
 import { Button, buttonVariants } from '../../components/ui/button';
 import { cn } from '../../helpers/cn';
 import { Link } from '../../router';
+import { CompanyRegistry } from './-components/CompanyRegistry';
 import { CompanySignals } from './-components/CompanySignals';
 import { MarketDetailRail } from './-components/MarketDetailRail';
 import { MarketFilters } from './-components/MarketFilters';
@@ -193,6 +194,7 @@ export function Markets() {
       </div>
 
       <CompanySignals companies={companies} />
+      <CompanyRegistry country={activeMarketCode} />
     </div>
   );
 }

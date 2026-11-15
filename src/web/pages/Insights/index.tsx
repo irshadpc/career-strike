@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api';
 import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
+import { Button } from '../../components/ui/button';
 import { formatDate } from '../../format';
 import { BySourceTable } from './-components/BySourceTable';
 import { CampaignSummaryTable } from './-components/CampaignSummaryTable';
@@ -29,13 +30,18 @@ export function Insights() {
   if (!data) return <Loading label="Loading insights" />;
 
   const m = data.metrics;
-  const open = data.proposals.filter((p) => p.status === 'OPEN');
-  const decided = data.proposals.filter((p) => p.status !== 'OPEN');
+  const open = data.proposals.filter((p) => p.status === 'OPEN' || p.status === 'EDITED' || p.status === 'SNOOZED');
+  const decided = data.proposals.filter((p) => p.status !== 'OPEN' && p.status !== 'EDITED' && p.status !== 'SNOOZED');
 
-  const decide = async (id: string, how: 'accept' | 'dismiss', title: string): Promise<void> => {
+  const decide = async (
+    id: string,
+    how: 'accept' | 'reject' | 'dismiss' | 'edit' | 'snooze' | 'undo',
+    title: string,
+    body?: unknown,
+  ): Promise<void> => {
     try {
-      await api(`/api/strategy/proposals/${id}/${how}`, { method: 'POST' });
-      setMessage(how === 'accept' ? `Accepted: ${title}` : `Dismissed: ${title}`);
+      await api(`/api/strategy/proposals/${id}/${how}`, { method: 'POST', ...(body === undefined ? {} : { body }) });
+      setMessage(`${how[0]!.toUpperCase()}${how.slice(1)}ed: ${title}`);
     } catch {
       setMessage('That did not work.');
     }
@@ -164,11 +170,20 @@ export function Insights() {
         {decided.length > 0 && (
           <ul className="space-y-1.5 p-0 m-0 list-none text-xs text-muted-foreground" data-testid="decided">
             {decided.map((p) => (
-              <li key={p.id} className="p-2 rounded bg-muted/30 border border-border/40">
-                <span className="font-medium text-foreground">
-                  {p.status === 'ACCEPTED' ? 'Accepted' : 'Dismissed'}
-                </span>{' '}
-                on {formatDate(p.decidedAt!)}: {p.title}
+              <li
+                key={p.id}
+                className="p-2 rounded bg-muted/30 border border-border/40 flex flex-wrap items-center gap-2"
+              >
+                <span>
+                  <span className="font-medium text-foreground">
+                    {p.status === 'ACCEPTED' ? 'Accepted' : p.status.charAt(0) + p.status.slice(1).toLowerCase()}
+                  </span>{' '}
+                  on {formatDate(p.decidedAt!)}: {p.title}
+                  {p.decisions.some((decision) => decision.decision === 'UNDO') ? ' · has undo history' : ''}
+                </span>
+                <Button type="button" variant="ghost" size="sm" onClick={() => void decide(p.id, 'undo', p.title)}>
+                  Undo<span className="sr-only"> {p.title}</span>
+                </Button>
               </li>
             ))}
           </ul>

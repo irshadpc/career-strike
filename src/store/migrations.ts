@@ -494,4 +494,177 @@ export const MIGRATIONS: readonly Migration[] = [
       );
     `,
   },
+  {
+    version: 16,
+    name: 'company_registry',
+    sql: `
+      -- PUBLIC: every employer observed in a posting held by this installation, plus the curated
+      -- targets and any company the candidate adds by hand. The registry records what was seen and
+      -- where; it never claims that a company is or is not hiring.
+      CREATE TABLE company_registry (
+        id                TEXT PRIMARY KEY,
+        employer_key      TEXT NOT NULL UNIQUE,
+        display_name      TEXT NOT NULL,
+        aliases_json      TEXT NOT NULL DEFAULT '[]',
+        origin            TEXT NOT NULL CHECK (origin IN ('OBSERVED_POSTING', 'CURATED_TARGET', 'CANDIDATE_ENTRY')),
+        official_website  TEXT,
+        careers_url       TEXT,
+        first_observed_at TEXT NOT NULL,
+        last_observed_at  TEXT NOT NULL,
+        notes             TEXT
+      );
+      CREATE INDEX company_registry_name ON company_registry (display_name);
+
+      -- PUBLIC: the public board and source where a registry employer was observed.
+      CREATE TABLE company_registry_sources (
+        company_id    TEXT NOT NULL REFERENCES company_registry (id) ON DELETE CASCADE,
+        source        TEXT NOT NULL,
+        board         TEXT NOT NULL,
+        first_seen_at TEXT NOT NULL,
+        last_seen_at  TEXT NOT NULL,
+        PRIMARY KEY (company_id, source, board)
+      );
+    `,
+  },
+  {
+    version: 17,
+    name: 'evidence_provenance',
+    sql: `
+      -- SENSITIVE: revision history for candidate evidence. Every add, edit and confirmation is
+      -- retained so the candidate can see exactly what changed, when and by whom.
+      ALTER TABLE profile_evidence ADD COLUMN revision INTEGER NOT NULL DEFAULT 1;
+      ALTER TABLE profile_evidence ADD COLUMN last_confirmed_at TEXT;
+      ALTER TABLE profile_evidence ADD COLUMN last_confirmed_by TEXT;
+      UPDATE profile_evidence
+        SET last_confirmed_at = updated_at
+        WHERE confirmed = 1 AND last_confirmed_at IS NULL;
+
+      CREATE TABLE profile_evidence_revisions (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        evidence_id TEXT NOT NULL REFERENCES profile_evidence (id) ON DELETE CASCADE,
+        revision    INTEGER NOT NULL,
+        change      TEXT NOT NULL CHECK (change IN ('CREATED', 'UPDATED', 'CONFIRMED', 'BACKFILLED')),
+        value_json  TEXT NOT NULL,
+        source      TEXT NOT NULL,
+        confirmed   INTEGER NOT NULL,
+        actor       TEXT NOT NULL,
+        at          TEXT NOT NULL,
+        UNIQUE (evidence_id, revision)
+      );
+      CREATE INDEX profile_evidence_revisions_evidence ON profile_evidence_revisions (evidence_id, revision);
+
+      INSERT INTO profile_evidence_revisions (evidence_id, revision, change, value_json, source, confirmed, actor, at)
+        SELECT id, 1, 'BACKFILLED', value_json, source, confirmed, 'migration', updated_at
+        FROM profile_evidence;
+    `,
+  },
+  {
+    version: 18,
+    name: 'professional_outreach',
+    sql: `
+      -- SENSITIVE: people the candidate has decided to contact about their search.
+      CREATE TABLE professional_contacts (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        employer    TEXT,
+        role_title  TEXT,
+        profile_url TEXT,
+        email       TEXT,
+        notes       TEXT,
+        created_at  TEXT NOT NULL,
+        updated_at  TEXT NOT NULL
+      );
+      CREATE INDEX professional_contacts_employer ON professional_contacts (employer);
+
+      -- SENSITIVE: drafts remain local. A person approves the exact text; Career Strike never
+      -- sends anything. SENT_MANUALLY means the candidate confirmed they sent it themselves.
+      CREATE TABLE outreach_drafts (
+        id             TEXT PRIMARY KEY,
+        contact_id     TEXT NOT NULL REFERENCES professional_contacts (id) ON DELETE CASCADE,
+        application_id TEXT REFERENCES applications (id) ON DELETE SET NULL,
+        channel        TEXT NOT NULL CHECK (channel IN ('linkedin', 'email', 'other')),
+        purpose        TEXT NOT NULL CHECK (purpose IN ('referral', 'recruiter', 'follow_up', 'thank_you', 'other')),
+        subject        TEXT,
+        body           TEXT NOT NULL,
+        state          TEXT NOT NULL CHECK (state IN ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'SENT_MANUALLY', 'DISMISSED')),
+        created_at     TEXT NOT NULL,
+        updated_at     TEXT NOT NULL,
+        approved_at    TEXT,
+        sent_at        TEXT,
+        decided_by     TEXT
+      );
+      CREATE INDEX outreach_drafts_state ON outreach_drafts (state, updated_at);
+
+      CREATE TABLE outreach_events (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        outreach_id TEXT NOT NULL REFERENCES outreach_drafts (id) ON DELETE CASCADE,
+        from_state TEXT,
+        to_state   TEXT NOT NULL,
+        actor      TEXT NOT NULL,
+        note       TEXT,
+        at         TEXT NOT NULL
+      );
+      CREATE INDEX outreach_events_draft ON outreach_events (outreach_id, id);
+    `,
+  },
+  {
+    version: 19,
+    name: 'learning_feedback',
+    sql: `
+      -- Rebuild strategy_proposals so candidate feedback can be richer than accept/dismiss.
+      CREATE TABLE strategy_proposals_v19 (
+        id                 TEXT PRIMARY KEY,
+        rule               TEXT NOT NULL,
+        fingerprint        TEXT NOT NULL UNIQUE,
+        title              TEXT NOT NULL,
+        rationale          TEXT NOT NULL,
+        action_json        TEXT NOT NULL,
+        edited_action_json TEXT,
+        status             TEXT NOT NULL CHECK (status IN ('OPEN', 'ACCEPTED', 'DISMISSED', 'REJECTED', 'EDITED', 'SNOOZED')),
+        snoozed_until      TEXT,
+        created_at         TEXT NOT NULL,
+        decided_at         TEXT
+      );
+      INSERT INTO strategy_proposals_v19 (id, rule, fingerprint, title, rationale, action_json, status, created_at, decided_at)
+        SELECT id, rule, fingerprint, title, rationale, action_json, status, created_at, decided_at FROM strategy_proposals;
+      DROP TABLE strategy_proposals;
+      ALTER TABLE strategy_proposals_v19 RENAME TO strategy_proposals;
+
+      CREATE TABLE strategy_proposal_decisions (
+        id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+        proposal_id        TEXT NOT NULL REFERENCES strategy_proposals (id) ON DELETE CASCADE,
+        decision           TEXT NOT NULL CHECK (decision IN ('ACCEPT', 'REJECT', 'DISMISS', 'EDIT', 'SNOOZE', 'UNDO')),
+        previous_status    TEXT NOT NULL,
+        new_status         TEXT NOT NULL,
+        previous_action_json TEXT,
+        new_action_json    TEXT,
+        setting_reverts_json TEXT,
+        actor              TEXT NOT NULL,
+        at                 TEXT NOT NULL
+      );
+      CREATE INDEX strategy_proposal_decisions_proposal ON strategy_proposal_decisions (proposal_id, id);
+    `,
+  },
+  {
+    version: 20,
+    name: 'document_exports',
+    sql: `
+      -- SENSITIVE: a record of each PDF/DOCX export. Files are generated on demand and are not
+      -- stored separately; the hash lets the candidate verify what was exported.
+      CREATE TABLE document_exports (
+        id             TEXT PRIMARY KEY,
+        application_id TEXT REFERENCES applications (id) ON DELETE CASCADE,
+        variant_id     TEXT REFERENCES document_variants (id) ON DELETE SET NULL,
+        source         TEXT NOT NULL CHECK (source IN ('MASTER', 'VARIANT')),
+        kind           TEXT NOT NULL,
+        format         TEXT NOT NULL CHECK (format IN ('pdf', 'docx')),
+        filename       TEXT NOT NULL,
+        sha256         TEXT NOT NULL,
+        size_bytes     INTEGER NOT NULL,
+        created_by     TEXT NOT NULL,
+        created_at     TEXT NOT NULL
+      );
+      CREATE INDEX document_exports_application ON document_exports (application_id, created_at);
+    `,
+  },
 ];

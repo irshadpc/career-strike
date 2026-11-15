@@ -64,6 +64,10 @@ start, and a job board to monitor). Each item links to the page where you do it.
 | `career-strike revoke-mcp <client>`                           | Revoke a generic MCP credential and remove its local token.                                                                                             |
 | `career-strike plugin-path`                                   | Print the bundled Codex plugin directory.                                                                                                               |
 | `career-strike practice`                                      | Run a practice application endpoint on this computer to try automated submission safely.                                                                |
+| `career-strike schedule-install`                              | Register an OS-level background job (launchd/systemd/schtasks) to fetch monitored boards while the app is closed.                                       |
+| `career-strike schedule-uninstall`                            | Remove the OS-level scheduled job.                                                                                                                      |
+| `career-strike schedule-status`                               | Report whether an OS-level scheduled job is installed.                                                                                                  |
+| `career-strike run-scheduled`                                 | Run one scheduled discovery slot (used by the OS-level job).                                                                                             |
 | `career-strike export <folder>`                               | Write all your data and documents to a new folder, readable without Career Strike.                                                                      |
 | `career-strike backup <folder>`                               | Copy the database and documents for `restore`.                                                                                                          |
 | `career-strike restore <folder>`                              | Replace current data with a verified backup (current data is kept aside first).                                                                         |
@@ -206,6 +210,15 @@ Add a Greenhouse, Lever or Ashby careers page under **Opportunities → Job boar
 fetched when you add them and when you press **Fetch now**. To check them automatically, choose an
 interval under **Settings → Background monitoring** (“Check job boards automatically”).
 Automatic checks run only while the service is running.
+
+To fetch monitored boards even when the dashboard and local service are closed, register an OS-level scheduled job:
+
+    career-strike schedule-install --interval 24
+
+This registers a native operating-system timer (`launchd` user agent on macOS, `systemd` user timer on Linux, or Windows Task Scheduler) that runs `career-strike run-scheduled`. The job runs purely in the background without opening the dashboard or a network port. Inspect or remove the job anytime with:
+
+    career-strike schedule-status
+    career-strike schedule-uninstall
 
 ### Verifying a configured market
 

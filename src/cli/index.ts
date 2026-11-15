@@ -5,8 +5,8 @@ import readline from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import { Command, InvalidArgumentError } from 'commander';
 import { Discovery, DuplicateBoardError } from '../career/discovery.js';
-import { appPaths, ensureHome, findGitRoot } from '../core/paths.js';
-import { MIN_NODE_MAJOR, VERSION } from '../core/version.js';
+import { appPaths, ensureHome } from '../core/paths.js';
+import { VERSION } from '../core/version.js';
 import { type CountryCode, isCountryCode } from '../markets/countries.js';
 import { employerTargetsFor, verifyTargetDiscovery } from '../markets/employers.js';
 import { isMcpClientName } from '../mcp/clients.js';
@@ -16,11 +16,13 @@ import { dashboardUrl, openInBrowser, processAlive, startDetached, stopService }
 import { runDoctorChecks } from '../service/diagnostics.js';
 import { localRequest } from '../service/http-client.js';
 import { probeHealth, readRuntime } from '../service/runtime.js';
-import { AlreadyRunningError, DEFAULT_PORT, startService, WEB_DIR } from '../service/service.js';
+import { AlreadyRunningError, DEFAULT_PORT, startService } from '../service/service.js';
 import { createAdapters } from '../sources/adapters.js';
 import { inspectDb, latestKnownVersion, openDb, schemaVersion } from '../store/db.js';
 import { backup, deleteAllData, exportData, OWNED, restore, rollback } from '../store/lifecycle.js';
 import { getSettings, setSetting } from '../store/settings.js';
+import { installSchedule, scheduleStatus, uninstallSchedule } from '../supervisor/os-schedule.js';
+import { Scheduler } from '../supervisor/scheduler.js';
 import { TaskSupervisor } from '../supervisor/tasks.js';
 import { UPDATE_CHECK_SETTING } from '../updates/checker.js';
 import { latestRelease, UpdateError } from '../updates/releases.js';
@@ -336,6 +338,99 @@ program
     const state = info ? 'stale' : 'stopped';
     console.log(opts.json ? JSON.stringify({ state }) : state);
     process.exitCode = 3;
+  });
+
+function parseHours(value: string): number {
+  const hours = Number(value);
+  if (!Number.isInteger(hours) || hours < 1 || hours > 168)
+    throw new InvalidArgumentError('Use a whole number of hours from 1 to 168.');
+  return hours;
+}
+
+program
+  .command('schedule-install')
+  .description('Register an OS-level job that fetches monitored boards even when the app is closed')
+  .option('--interval <hours>', 'how often the OS job runs (default: your monitoring setting, or 24)', parseHours)
+  .action((opts: { interval?: number }) => {
+    const paths = appPaths();
+    ensureHome(paths);
+    const db = openDb(paths.db);
+    let configured: string;
+    try {
+      configured = String(getSettings(db)['monitoring.discoveryIntervalHours']);
+    } finally {
+      db.close();
+    }
+    const hours = opts.interval ?? (configured === '0' ? 24 : Number(configured));
+    const result = installSchedule({
+      nodePath: process.execPath,
+      cliPath: CLI_ENTRY,
+      intervalHours: hours,
+      careerStrikeHome: process.env.CAREER_STRIKE_HOME ? paths.home : null,
+    });
+    console.log(`Installed an OS schedule every ${result.intervalHours} hour${result.intervalHours === 1 ? '' : 's'}.`);
+    for (const file of result.files) console.log(`  ${file}`);
+    console.log('The job runs `career-strike run-scheduled`; it does not open the dashboard or a network listener.');
+    console.log('Career Strike still never sends an application or message by itself.');
+  });
+
+program
+  .command('schedule-uninstall')
+  .description('Remove the OS-level scheduled job')
+  .action(() => {
+    const result = uninstallSchedule();
+    if (result.removed.length === 0) console.log('No OS schedule was installed.');
+    else for (const file of result.removed) console.log(`Removed ${file}`);
+  });
+
+program
+  .command('schedule-status')
+  .description('Report whether an OS-level scheduled job is installed')
+  .option('--json', 'machine-readable output')
+  .action((opts: { json?: boolean }) => {
+    const status = scheduleStatus();
+    if (opts.json) {
+      console.log(JSON.stringify(status));
+      return;
+    }
+    console.log(`${status.installed ? 'installed' : 'not installed'} (${status.platform})`);
+    for (const file of status.files) console.log(`  ${file.exists ? 'present' : 'missing'}  ${file.path}`);
+    if (status.intervalHours) console.log(`  interval: every ${status.intervalHours} hours`);
+    console.log(status.detail);
+  });
+
+program
+  .command('run-scheduled')
+  .description('Run one scheduled discovery slot (used by the OS-level job)')
+  .option('--interval <hours>', 'slot interval in hours (default 24)', parseHours, 24)
+  .action(async (opts: { interval: number }) => {
+    const paths = appPaths();
+    ensureHome(paths);
+    const db = openDb(paths.db);
+    const tasks = new TaskSupervisor(db);
+    try {
+      const discovery = new Discovery(db, createAdapters(), tasks);
+      const scheduler = new Scheduler(db, discovery);
+      const result = scheduler.runOnce(opts.interval);
+      if (!result.claimed) {
+        console.log('This slot has already been run by another process.');
+        return;
+      }
+      await tasks.idle(120_000);
+      console.log(
+        `Scheduled slot complete: ${result.started.length} board fetch${result.started.length === 1 ? '' : 'es'} started, ${result.skipped.length} in backoff.`,
+      );
+      const failed = tasks
+        .list(result.started.length || 1)
+        .filter((task) => result.started.includes(task.id) && task.state !== 'SUCCEEDED');
+      if (failed.length > 0) {
+        console.error(`${failed.length} scheduled fetch${failed.length === 1 ? '' : 'es'} did not succeed.`);
+        for (const task of failed) console.error(`  ${task.kind}: ${task.error ?? task.state}`);
+        process.exitCode = 1;
+      }
+    } finally {
+      db.close();
+    }
   });
 
 program

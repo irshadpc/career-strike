@@ -45,6 +45,20 @@ export class Scheduler {
   tick(): { claimed: boolean; started: string[]; skipped: string[] } {
     const interval = this.intervalMs();
     if (interval <= 0) return { claimed: false, started: [], skipped: [] };
+    return this.runFor(interval);
+  }
+
+  /**
+   * OS-scheduled execution: run one slot at the requested interval even when the in-process
+   * scheduler is switched off. The slot table still prevents two processes running the same slot.
+   */
+  runOnce(intervalHours: number): { claimed: boolean; started: string[]; skipped: string[] } {
+    if (!Number.isFinite(intervalHours) || intervalHours <= 0)
+      throw new Error('Scheduled interval must be a positive number of hours.');
+    return this.runFor(intervalHours * 3600_000);
+  }
+
+  private runFor(interval: number): { claimed: boolean; started: string[]; skipped: string[] } {
     const now = this.now();
     const slot = new Date(Math.floor(now / interval) * interval).toISOString();
     const claimed =

@@ -95,7 +95,7 @@ describe('candidate profile', () => {
     expect(audit).not.toContain('Kubernetes');
 
     expect((await call('DELETE', `/api/profile/facts/${id}`)).status).toBe(200);
-    expect((await call('GET', '/api/profile')).body).toEqual({ facts: [], evidence: [] });
+    expect((await call('GET', '/api/profile')).body).toEqual({ facts: [], evidence: [], conflicts: [] });
   });
 
   it('ignores unapproved facts when matching', async () => {

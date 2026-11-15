@@ -1,4 +1,5 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { AUSTRALIA_SOURCE_ASSESSMENTS, officialAustraliaSearchUrl } from '../../../markets/australia-sources';
 import { CANADA_SOURCE_ASSESSMENTS, officialCanadaSearchUrl } from '../../../markets/canada-sources';
 import { COUNTRY_CODES, COUNTRY_REGISTRY } from '../../../markets/countries';
@@ -85,7 +86,8 @@ export function Opportunities() {
     state: 'loading',
   });
   const [limit, setLimit] = useState(PAGE);
-  const [query, setQuery] = useState(params.get('q') ?? '');
+  const searchForm = useForm<{ q: string }>({ defaultValues: { q: params.get('q') ?? '' } });
+  const activeQuery = searchForm.watch('q');
   const [compare, setCompare] = useState<string[]>([]);
   const [reload, setReload] = useState(0);
   const [filtersOpen, setFiltersOpen] = useState(() =>
@@ -98,7 +100,7 @@ export function Opportunities() {
     (params.get('includeExcludedEmployers') ? 1 : 0) +
     (params.get('immediateStart') ? 1 : 0);
 
-  useEffect(() => setQuery(new URLSearchParams(search).get('q') ?? ''), [search]);
+  useEffect(() => searchForm.reset({ q: new URLSearchParams(search).get('q') ?? '' }), [search, searchForm]);
 
   useEffect(() => {
     let cancelled = false;
@@ -124,10 +126,7 @@ export function Opportunities() {
     navigate(`/opportunities${p.toString() ? `?${p.toString()}` : ''}`, { replace: true });
   };
 
-  const submitQuery = (e: FormEvent): void => {
-    e.preventDefault();
-    update('q', query.trim());
-  };
+  const submitQuery = searchForm.handleSubmit(({ q }) => update('q', q.trim()));
 
   const handleDisposition = (jobId: string, disposition: Disposition): void => {
     setList((l) =>
@@ -194,9 +193,8 @@ export function Opportunities() {
           type="search"
           placeholder="Search title, employer or description"
           aria-label="Search title, employer or description"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
           className="flex-1"
+          {...searchForm.register('q')}
         />
         <Button type="submit" size="sm">
           Search
@@ -367,7 +365,7 @@ export function Opportunities() {
               market="Japan"
               sources={JAPAN_SOURCE_ASSESSMENTS}
               urlFor={officialJapanSearchUrl}
-              query={query}
+              query={activeQuery}
             />
           )}
           {selectedCountry === 'SG' && (
@@ -376,7 +374,7 @@ export function Opportunities() {
               market="Singapore"
               sources={SINGAPORE_SOURCE_ASSESSMENTS}
               urlFor={officialSingaporeSearchUrl}
-              query={query}
+              query={activeQuery}
             />
           )}
           {selectedCountry === 'AE' && (
@@ -385,7 +383,7 @@ export function Opportunities() {
               market="UAE"
               sources={UAE_SOURCE_ASSESSMENTS}
               urlFor={officialUaeSearchUrl}
-              query={query}
+              query={activeQuery}
             />
           )}
           {selectedCountry === 'IN' && (
@@ -394,7 +392,7 @@ export function Opportunities() {
               market="India"
               sources={INDIA_SOURCE_ASSESSMENTS}
               urlFor={officialIndiaSearchUrl}
-              query={query}
+              query={activeQuery}
             />
           )}
           {selectedCountry === 'DE' && (
@@ -403,7 +401,7 @@ export function Opportunities() {
               market="Germany"
               sources={GERMANY_SOURCE_ASSESSMENTS}
               urlFor={officialGermanySearchUrl}
-              query={query}
+              query={activeQuery}
             />
           )}
           {selectedCountry === 'GB' && (
@@ -412,7 +410,7 @@ export function Opportunities() {
               market="United Kingdom"
               sources={UK_SOURCE_ASSESSMENTS}
               urlFor={officialUkSearchUrl}
-              query={query}
+              query={activeQuery}
             />
           )}
           {selectedCountry === 'AU' && (
@@ -421,7 +419,7 @@ export function Opportunities() {
               market="Australia"
               sources={AUSTRALIA_SOURCE_ASSESSMENTS}
               urlFor={officialAustraliaSearchUrl}
-              query={query}
+              query={activeQuery}
             />
           )}
           {selectedCountry === 'CA' && (
@@ -430,7 +428,7 @@ export function Opportunities() {
               market="Canada"
               sources={CANADA_SOURCE_ASSESSMENTS}
               urlFor={officialCanadaSearchUrl}
-              query={query}
+              query={activeQuery}
             />
           )}
         </>

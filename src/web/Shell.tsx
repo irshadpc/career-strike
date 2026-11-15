@@ -11,6 +11,7 @@ const NAV = [
   { href: '/resume', label: 'Resume Studio' },
   { href: '/applications', label: 'Applications' },
   { href: '/profile', label: 'Profile' },
+  { href: '/outreach', label: 'Outreach' },
   { href: '/insights', label: 'Insights' },
   { href: '/activity', label: 'Activity' },
   { href: '/settings', label: 'Settings' },

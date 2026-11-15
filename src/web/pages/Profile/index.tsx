@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ApiError,
   api,
+  type EvidenceConflict,
   type ProfileEvidence,
   type ProfileFact,
   type ProfileReadinessReport,
@@ -24,6 +25,7 @@ import { getInitials, SECTIONS, validLinkedin } from './-helpers/profileHelpers'
 export function Profile() {
   const [facts, setFacts] = useState<ProfileFact[] | null>(null);
   const [evidence, setEvidence] = useState<ProfileEvidence[] | null>(null);
+  const [conflicts, setConflicts] = useState<EvidenceConflict[]>([]);
   const [documents, setDocuments] = useState<StoredDocument[]>([]);
   const [, setReadiness] = useState<ProfileReadinessReport | null>(null);
   const [savedSettings, setSavedSettings] = useState<Record<string, unknown>>({});
@@ -51,7 +53,7 @@ export function Profile() {
   const load = useCallback(async () => {
     try {
       const [profileRes, settingsRes, readinessRes, docsRes] = await Promise.all([
-        api<{ facts: ProfileFact[]; evidence: ProfileEvidence[] }>('/api/profile'),
+        api<{ facts: ProfileFact[]; evidence: ProfileEvidence[]; conflicts: EvidenceConflict[] }>('/api/profile'),
         api<{ settings: Record<string, unknown> }>('/api/settings').catch(() => null),
         api<{ readiness: ProfileReadinessReport }>('/api/profile/readiness').catch(() => null),
         api<{ documents: StoredDocument[] }>('/api/documents').catch(() => null),
@@ -59,6 +61,7 @@ export function Profile() {
 
       setFacts(profileRes.facts);
       setEvidence(profileRes.evidence);
+      setConflicts(profileRes.conflicts ?? []);
       if (docsRes?.documents) setDocuments(docsRes.documents);
 
       if (settingsRes?.settings) {
@@ -578,6 +581,7 @@ export function Profile() {
             {evidence && (
               <EvidenceSection
                 evidence={evidence}
+                conflicts={conflicts}
                 roles={facts.filter((f) => f.kind === 'role')}
                 onChange={() => void load()}
               />

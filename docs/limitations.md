@@ -50,14 +50,16 @@ tracked with evidence in `acceptance/registry.json`.
   claims discovery only through those monitored feeds.
 - A posting counts as open only if its board listed it within the last 72 hours. Boards are
   checked when you add them, when you press **Fetch now**, and on your chosen schedule.
-- Scheduled checks run only while the service is running; there is no operating-system background
-  job that starts it for you.
+- In-app scheduled checks run while the service is running. To monitor boards while the application
+  is closed, register an OS-level scheduled job with `career-strike schedule-install`, which runs
+  `run-scheduled` via a native timer (`launchd`, `systemd`, or Windows Task Scheduler) without
+  keeping a web server or browser port active.
 - Salary is shown only when the employer published it.
 - Employer application questions are read from Greenhouse's public form data. For Lever and Ashby,
   the questions are not available through their public APIs, so the package covers your details
   and documents and you answer the employer's questions on their site.
 
-## Matching and insights
+## Matching, insights and efficacy
 
 - Fit is explained rule by rule from your approved profile and the posting's stated requirements.
   Skills are recognised from a built-in dictionary of common technologies; a skill it does not know
@@ -77,10 +79,19 @@ tracked with evidence in `acceptance/registry.json`.
   (identity, contact details, confirmed experience, evidence coverage, placeholders, plain-text
   layout and consistency with confirmed skills). It does not simulate Greenhouse, Lever, Workday
   or Ashby, is not an ATS certification, and cannot guarantee parsing, ranking or an interview.
+- Export testing (PDF/DOCX) checks text extractability and word retention using local extractors. It
+  is an offline integrity heuristic, not a guarantee that any commercial ATS will accept or rank the
+  document.
 - Company hiring signals are derived only from a curated employer target, the adopted board's
   health and postings actually retrieved into this installation. "No open roles observed" and
   "not yet observed" are not statements that an employer has stopped hiring. Funding, news,
   headcount and third-party vacancy estimates are not used.
+- Independent validation of AutoPlaced.ai and automated placement efficacy: Career Strike conducted
+  an independent review of AutoPlaced.ai and comparable automated job-hunting tools. No independent,
+  audited, peer-reviewed, or reproducible empirical evidence was found supporting claims that
+  automated submissions or algorithmic optimization produce guaranteed interviews or superior hiring
+  outcomes. Career Strike asserts no such claims, guarantees no hiring outcomes, and enforces candidate
+  approval on every real-world action.
 
 ## Platforms and installation
 

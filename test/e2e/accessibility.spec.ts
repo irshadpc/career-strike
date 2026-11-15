@@ -13,6 +13,7 @@ async function seriousViolations(page: Page): Promise<string[]> {
 
 for (const scheme of ['light', 'dark'] as const) {
   test(`no serious or critical axe violations (${scheme})`, async ({ page, cs }) => {
+    test.slow();
     await page.emulateMedia({ colorScheme: scheme });
     await page.goto(`${cs.origin}/`);
     await expect(page.getByRole('heading', { name: 'Open the dashboard from your terminal' })).toBeVisible();
@@ -44,6 +45,8 @@ for (const scheme of ['light', 'dark'] as const) {
       '/profile',
       '/resume',
       '/insights',
+      '/markets',
+      '/outreach',
     ]) {
       await page.goto(`${cs.origin}${route}`);
       await expect(page.locator('main h1')).toBeVisible();
@@ -90,17 +93,26 @@ for (const width of [375, 768, 1280]) {
       kind: 'role',
       value: { title: 'Synthetic Engineer', startYear: 2019 },
     });
+    const created = (await cs.api('POST', '/api/applications', { jobId: ids[0] })).body as {
+      application: { id: string };
+    };
     for (const route of [
       '/',
       '/settings',
       '/opportunities',
       `/jobs/${ids[0]}`,
+      `/opportunities/compare?ids=${ids.join(',')}`,
       '/opportunities/sources',
       '/opportunities/new',
+      '/applications',
+      `/applications/${created.application.id}`,
+      `/applications/${created.application.id}/prep`,
       '/profile',
       '/resume',
       '/activity',
       '/insights',
+      '/markets',
+      '/outreach',
     ]) {
       await page.goto(`${cs.origin}${route}`);
       await expect(page.locator('main h1')).toBeVisible();

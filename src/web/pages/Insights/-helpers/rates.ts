@@ -13,6 +13,25 @@ export interface CampaignWeekSummary {
   interviews: number;
 }
 
+export interface Proposal {
+  id: string;
+  rule: string;
+  title: string;
+  rationale: string;
+  status: 'OPEN' | 'ACCEPTED' | 'DISMISSED' | 'REJECTED' | 'EDITED' | 'SNOOZED';
+  snoozedUntil: string | null;
+  decidedAt: string | null;
+  action: { type: string; hours?: string; role?: string; skill?: string };
+  editedAction: { type: string; hours?: string; role?: string; skill?: string } | null;
+  effectiveAction: { type: string; hours?: string; role?: string; skill?: string };
+  decisions: {
+    id: number;
+    decision: 'ACCEPT' | 'REJECT' | 'DISMISS' | 'EDIT' | 'SNOOZE' | 'UNDO';
+    actor: string;
+    at: string;
+  }[];
+}
+
 export interface Strategy {
   minSample: number;
   metrics: {
@@ -43,14 +62,7 @@ export interface Strategy {
     discoveryHealth: { monitored: number; healthy: number; degraded: number; notFound: number; neverRun: number };
   };
   observations: { kind: string; text: string }[];
-  proposals: {
-    id: string;
-    title: string;
-    rationale: string;
-    status: 'OPEN' | 'ACCEPTED' | 'DISMISSED';
-    decidedAt: string | null;
-    action: { type: string };
-  }[];
+  proposals: Proposal[];
   history: { day: string; totals: { submitted: number; responses: number; interviews: number } }[];
 }
 

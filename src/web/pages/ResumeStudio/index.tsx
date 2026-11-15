@@ -16,6 +16,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Link } from '../../router';
 import { DocumentReadinessCard } from './-components/AtsScorecard';
+import { ExportPanel } from './-components/ExportPanel';
 import { TailoredResumeEditor } from './-components/TailoredResumeEditor';
 
 export function ResumeStudio() {
@@ -206,6 +207,16 @@ export function ResumeStudio() {
       <section aria-labelledby="document-readiness-title">
         <DocumentReadinessCard readiness={documentReadiness} />
       </section>
+
+      {viewMode === 'master' ? (
+        <ExportPanel label="master resume" />
+      ) : activeVariant ? (
+        <ExportPanel
+          label={activeVariant.kind === 'resume' ? 'tailored resume' : 'tailored cover letter'}
+          applicationId={selectedAppId}
+          variantId={activeVariant.id}
+        />
+      ) : null}
 
       {viewMode === 'master' ? (
         <section

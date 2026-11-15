@@ -32,6 +32,7 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm test",
     "acceptance": "node --import tsx scripts/acceptance.ts",
+    "evaluate": "node --import tsx scripts/evaluate.ts",
     "prepare": "lefthook install || true",
     "privacy-scan": "node --import tsx scripts/privacy-scan.ts",
     "test:e2e": "npm run build && playwright test",

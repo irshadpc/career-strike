@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { api } from '../../../api';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -49,7 +50,8 @@ export function DataAndPrivacy() {
   const [labels, setLabels] = useState<Record<string, string>>({});
   const [diagnostics, setDiagnostics] = useState<{ checks: DiagnosticCheck[]; allOk: boolean } | null>(null);
   const [confirming, setConfirming] = useState(false);
-  const [confirmText, setConfirmText] = useState('');
+  const deleteForm = useForm<{ confirm: string }>({ defaultValues: { confirm: '' } });
+  const confirmText = deleteForm.watch('confirm');
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
@@ -73,20 +75,21 @@ export function DataAndPrivacy() {
     void load();
   }, [load]);
 
-  const handleDelete = async (): Promise<void> => {
-    if (confirmText !== 'delete my career data') return;
+  const handleDelete = deleteForm.handleSubmit(async ({ confirm }) => {
+    if (confirm !== 'delete my career data') return;
     try {
       setDeleteError(null);
       await api<{ ok: boolean }>('/api/data/delete', {
         method: 'POST',
-        body: { confirm: confirmText },
+        body: { confirm },
       });
       setDeleteStatus('All career data deleted permanently from this computer.');
       setConfirming(false);
+      deleteForm.reset();
     } catch {
       setDeleteError('Could not delete data. Try running `career-strike delete-data` in a terminal.');
     }
-  };
+  });
 
   const shared = disclosures?.filter((d) => d.state === 'DELIVERED') ?? [];
   const preUpgrade = backups?.backups.filter((b) => b.kind === 'pre-upgrade').length ?? 0;
@@ -228,14 +231,7 @@ export function DataAndPrivacy() {
             {deleteStatus}
           </p>
         ) : confirming ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void handleDelete();
-            }}
-            data-testid="delete-confirmation-form"
-            className="space-y-3 pt-2"
-          >
+          <form onSubmit={handleDelete} data-testid="delete-confirmation-form" className="space-y-3 pt-2">
             <p className="p-3 rounded-lg border border-destructive/30 bg-destructive/10 text-destructive text-xs">
               This action cannot be undone. To permanently erase your data, type <strong>delete my career data</strong>{' '}
               below.
@@ -248,9 +244,8 @@ export function DataAndPrivacy() {
                 id="delete-confirm-input"
                 type="text"
                 className="flex h-9 w-full max-w-sm rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={confirmText}
-                onChange={(e) => setConfirmText(e.target.value)}
                 placeholder="delete my career data"
+                {...deleteForm.register('confirm')}
                 autoComplete="off"
                 data-testid="delete-confirm-input"
               />
@@ -279,7 +274,7 @@ export function DataAndPrivacy() {
                 size="sm"
                 onClick={() => {
                   setConfirming(false);
-                  setConfirmText('');
+                  deleteForm.reset();
                 }}
               >
                 Cancel

@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
+import { indexEmployer } from '../markets/company-registry.js';
 import { isCountryCode } from '../markets/countries.js';
 import { evaluateFit, type Fit, type FitSettings, type Tier } from '../matching/fit.js';
 import { extractRequirements, type PostingRequirements, REQUIREMENTS_VERSION } from '../matching/requirements.js';
@@ -188,6 +189,8 @@ export function syncBoard(
         insertSource.run(id, source, board, p.sourceJobId, p.postingUrl, at, hash);
         result.added += 1;
       }
+      // The registry indexes every employer seen, not only curated targets.
+      indexEmployer(db, p.employer, at, { source, board });
     }
 
     const open = db
@@ -300,6 +303,7 @@ export function addManualJob(db: Db, input: z.infer<typeof ManualJobInput>, now 
     db.prepare(
       'INSERT INTO job_sources (job_id, source, board, source_job_id, source_url, fetched_at, content_hash) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run(id, 'manual', 'manual', id, url, at, sha256(JSON.stringify(input)));
+    indexEmployer(db, input.employer, at, { source: 'manual', board: 'manual' });
     linkDuplicates(db);
   })();
   return id;

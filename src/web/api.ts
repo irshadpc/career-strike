@@ -469,8 +469,134 @@ export interface ProfileEvidence {
   value: Record<string, unknown>;
   source: 'user' | 'document';
   confirmed: boolean;
+  revision: number;
+  lastConfirmedAt: string | null;
+  lastConfirmedBy: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface EvidenceRevision {
+  id: number;
+  evidenceId: string;
+  revision: number;
+  change: 'CREATED' | 'UPDATED' | 'CONFIRMED' | 'BACKFILLED';
+  value: Record<string, unknown>;
+  source: 'user' | 'document';
+  confirmed: boolean;
+  actor: string;
+  at: string;
+}
+
+export interface EvidenceConflict {
+  evidenceId: string;
+  otherId: string;
+  kind: ProfileEvidence['kind'];
+  reason: 'DUPLICATE_IDENTITY_WITH_DIFFERENT_DETAILS';
+  message: string;
+}
+
+export type RegistrySignal =
+  | 'VERIFIED_OPEN_ROLES'
+  | 'NO_CURRENT_ROLES_OBSERVED'
+  | 'EVIDENCE_STALE'
+  | 'REGISTRY_ONLY'
+  | 'CANDIDATE_ENTRY_UNVERIFIED';
+
+export interface CompanyRegistryEntry {
+  id: string;
+  name: string;
+  origin: 'OBSERVED_POSTING' | 'CURATED_TARGET' | 'CANDIDATE_ENTRY';
+  officialWebsite: string | null;
+  careersUrl: string | null;
+  markets: string[];
+  sources: { source: string; board: string; lastSeenAt: string }[];
+  openRoles: number;
+  observedRoles: number;
+  firstObservedAt: string;
+  lastObservedAt: string;
+  signal: RegistrySignal;
+  monitored: boolean;
+  curatedTargetId: string | null;
+  sampleRoles: {
+    title: string;
+    location: string | null;
+    lastSeenAt: string;
+    status: 'OPEN' | 'CLOSED' | 'UNVERIFIED';
+  }[];
+  explanation: string;
+  evidence: string[];
+}
+
+export interface CompanyRegistrySummary {
+  total: number;
+  verifiedOpenRoles: number;
+  registryOnly: number;
+  stale: number;
+  monitored: number;
+}
+
+export type OutreachChannel = 'linkedin' | 'email' | 'other';
+export type OutreachPurpose = 'referral' | 'recruiter' | 'follow_up' | 'thank_you' | 'other';
+export type OutreachState = 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'SENT_MANUALLY' | 'DISMISSED';
+
+export interface ProfessionalContact {
+  id: string;
+  name: string;
+  employer: string | null;
+  roleTitle: string | null;
+  profileUrl: string | null;
+  email: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OutreachDraft {
+  id: string;
+  contactId: string;
+  contact: ProfessionalContact;
+  applicationId: string | null;
+  application: { id: string; title: string; employer: string } | null;
+  channel: OutreachChannel;
+  purpose: OutreachPurpose;
+  subject: string | null;
+  body: string;
+  state: OutreachState;
+  createdAt: string;
+  updatedAt: string;
+  approvedAt: string | null;
+  sentAt: string | null;
+  decidedBy: string | null;
+  events: { from: string | null; to: string; actor: string; note: string | null; at: string }[];
+}
+
+export interface ParserReport {
+  format: 'pdf' | 'docx';
+  mime: string;
+  sizeBytes: number;
+  sha256: string;
+  extracted: boolean;
+  extractedCharacters: number;
+  sourceCharacters: number;
+  wordCoverage: number;
+  missingWords: string[];
+  basis: 'LOCAL_PARSER_TEST_ONLY';
+  note: string;
+}
+
+export interface DocumentExportHistory {
+  id: string;
+  applicationId: string | null;
+  variantId: string | null;
+  source: string;
+  kind: string;
+  format: 'pdf' | 'docx';
+  filename: string;
+  sha256: string;
+  sizeBytes: number;
+  createdBy: string;
+  createdAt: string;
 }
 
 export interface LinkedInImportResult {

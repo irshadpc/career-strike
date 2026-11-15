@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import {
   ApiError,
   type ApplicationView,
@@ -336,22 +337,29 @@ function Editor({
   onSave: (changes: Record<string, unknown>, reason: string) => Promise<void>;
   onUploaded: () => void;
 }) {
-  const initial = Object.fromEntries(
-    view.payload.fields.filter((f) => f.kind !== 'file').map((f) => [f.key, f.value ?? '']),
-  );
-  const [values, setValues] = useState<Record<string, string>>(initial);
   const resumeNow = view.payload.attachments.find((a) => a.kind === 'resume')?.documentId ?? '';
-  const [resume, setResume] = useState(resumeNow);
-  const [reason, setReason] = useState('');
+  const form = useForm<Record<string, string>>({
+    defaultValues: {
+      ...Object.fromEntries(
+        view.payload.fields.filter((f) => f.kind !== 'file').map((f) => [`field_${f.key}`, f.value ?? '']),
+      ),
+      __resume: resumeNow,
+      __reason: '',
+    },
+  });
+  const values = form.watch();
+  const resume = values.__resume ?? '';
+  const reason = values.__reason ?? '';
 
   const changedFields = view.payload.fields.filter(
-    (f) => f.kind !== 'file' && (values[f.key] ?? '') !== (f.value ?? ''),
+    (f) => f.kind !== 'file' && (values[`field_${f.key}`] ?? '') !== (f.value ?? ''),
   );
   const dirty = changedFields.length > 0 || resume !== resumeNow;
 
   const save = (): void => {
     const changes: Record<string, unknown> = {};
-    if (changedFields.length) changes.fields = changedFields.map((f) => ({ key: f.key, value: values[f.key] ?? '' }));
+    if (changedFields.length)
+      changes.fields = changedFields.map((f) => ({ key: f.key, value: values[`field_${f.key}`] ?? '' }));
     if (resume !== resumeNow) changes.resumeDocumentId = resume || null;
     void onSave(changes, reason.trim() || 'Edited by you');
   };
@@ -392,13 +400,7 @@ function Editor({
           </ul>
         </div>
       )}
-      <form
-        className="space-y-4 pt-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          save();
-        }}
-      >
+      <form className="space-y-4 pt-2" onSubmit={form.handleSubmit(() => save())}>
         {view.payload.fields.map((f) => {
           const id = `field-${f.key}`;
           const label = (
@@ -427,9 +429,8 @@ function Editor({
                 {label}
                 <select
                   id={id}
-                  value={resume}
-                  onChange={(e) => setResume(e.target.value)}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
+                  {...form.register('__resume')}
                 >
                   <option value="">No file</option>
                   {docs.map((d) => (
@@ -453,18 +454,12 @@ function Editor({
             <div className="space-y-1.5" key={f.key}>
               {label}
               {f.kind === 'long_text' ? (
-                <Textarea
-                  id={id}
-                  rows={f.key === 'cover_letter_text' ? 12 : 4}
-                  value={values[f.key] ?? ''}
-                  onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}
-                />
+                <Textarea id={id} rows={f.key === 'cover_letter_text' ? 12 : 4} {...form.register(`field_${f.key}`)} />
               ) : f.kind === 'choice' && f.options.length > 0 ? (
                 <select
                   id={id}
-                  value={values[f.key] ?? ''}
-                  onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs"
+                  {...form.register(`field_${f.key}`)}
                 >
                   <option value="">—</option>
                   {f.options.map((o) => (
@@ -474,12 +469,7 @@ function Editor({
                   ))}
                 </select>
               ) : (
-                <Input
-                  id={id}
-                  type="text"
-                  value={values[f.key] ?? ''}
-                  onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}
-                />
+                <Input id={id} type="text" {...form.register(`field_${f.key}`)} />
               )}
               <p className="text-xs text-muted-foreground m-0">{SOURCE_NOTE[f.source]}</p>
             </div>
@@ -490,7 +480,7 @@ function Editor({
             What changed?{' '}
             <span className="text-xs text-muted-foreground font-normal">(optional, kept in the history)</span>
           </label>
-          <Input id="change-reason" type="text" value={reason} onChange={(e) => setReason(e.target.value)} />
+          <Input id="change-reason" type="text" {...form.register('__reason')} />
         </div>
         <div className="flex items-center gap-3 pt-2">
           <Button type="submit" disabled={!dirty || busy}>
@@ -911,15 +901,14 @@ type Run = (label: string, request: () => Promise<{ application: ApplicationView
 const today = (): string => new Date().toISOString().slice(0, 10);
 
 function ConfirmSubmission({ view, busy, post, run }: { view: ApplicationView; busy: boolean; post: Post; run: Run }) {
-  const [date, setDate] = useState(today());
-  const [reference, setReference] = useState('');
-  const [note, setNote] = useState('');
+  const form = useForm({
+    defaultValues: { date: today(), reference: '', note: '' },
+  });
 
   return (
     <form
       className="p-3.5 rounded-lg border border-border bg-card space-y-3 text-xs"
-      onSubmit={(e) => {
-        e.preventDefault();
+      onSubmit={form.handleSubmit(({ date, reference, note }) => {
         void run('Recorded as submitted.', () =>
           post('confirm-submitted', {
             submittedAt: date,
@@ -927,7 +916,7 @@ function ConfirmSubmission({ view, busy, post, run }: { view: ApplicationView; b
             note: note.trim() || null,
           }),
         );
-      }}
+      })}
     >
       <p className="font-semibold text-foreground m-0">
         Did you submit it? Career Strike only counts it as submitted when you confirm.
@@ -940,23 +929,16 @@ function ConfirmSubmission({ view, busy, post, run }: { view: ApplicationView; b
           id="submitted-at"
           type="date"
           required
-          value={date}
           max={today()}
-          onChange={(e) => setDate(e.target.value)}
           className="h-8 text-xs"
+          {...form.register('date')}
         />
       </div>
       <div className="space-y-1">
         <label htmlFor="reference" className="text-muted-foreground font-medium block">
           Confirmation number or reference (optional)
         </label>
-        <Input
-          id="reference"
-          type="text"
-          value={reference}
-          onChange={(e) => setReference(e.target.value)}
-          className="h-8 text-xs"
-        />
+        <Input id="reference" type="text" className="h-8 text-xs" {...form.register('reference')} />
       </div>
       <div className="space-y-1">
         <label htmlFor="confirm-note" className="text-muted-foreground font-medium block">
@@ -966,9 +948,8 @@ function ConfirmSubmission({ view, busy, post, run }: { view: ApplicationView; b
           id="confirm-note"
           type="text"
           placeholder="e.g. confirmation email received"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
           className="h-8 text-xs"
+          {...form.register('note')}
         />
       </div>
       <Button type="submit" disabled={busy} className="w-full h-8 text-xs">
@@ -1004,18 +985,18 @@ function RecordOutcome({
   can: (s: string) => boolean;
 }) {
   const options = OUTCOMES.filter((o) => can(o));
-  const [chosen, setOutcome] = useState<string>(options[0] ?? '');
-  const [date, setDate] = useState(today());
-  const [note, setNote] = useState('');
+  const form = useForm({
+    defaultValues: { outcome: options[0] ?? '', date: today(), note: '' },
+  });
+  const chosen = form.watch('outcome');
   const outcome = options.includes(chosen as (typeof OUTCOMES)[number]) ? chosen : (options[0] ?? '');
 
   return (
     <form
       className="p-3.5 rounded-lg border border-border bg-card space-y-3 text-xs"
-      onSubmit={(e) => {
-        e.preventDefault();
+      onSubmit={form.handleSubmit(({ date, note }) => {
         void run('Recorded.', () => post('outcome', { outcome, occurredAt: date, note: note.trim() || null }));
-      }}
+      })}
     >
       <p className="font-semibold text-foreground m-0">Record what happened</p>
       <div className="space-y-1">
@@ -1024,9 +1005,8 @@ function RecordOutcome({
         </label>
         <select
           id="outcome"
-          value={outcome}
-          onChange={(e) => setOutcome(e.target.value)}
           className="flex h-8 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs"
+          {...form.register('outcome')}
         >
           {options.map((o) => (
             <option key={o} value={o}>
@@ -1043,23 +1023,16 @@ function RecordOutcome({
           id="outcome-date"
           type="date"
           required
-          value={date}
           max={today()}
-          onChange={(e) => setDate(e.target.value)}
           className="h-8 text-xs"
+          {...form.register('date')}
         />
       </div>
       <div className="space-y-1">
         <label htmlFor="outcome-note" className="text-muted-foreground font-medium block">
           Details (optional)
         </label>
-        <Input
-          id="outcome-note"
-          type="text"
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          className="h-8 text-xs"
-        />
+        <Input id="outcome-note" type="text" className="h-8 text-xs" {...form.register('note')} />
       </div>
       <Button type="submit" disabled={busy || !outcome} className="w-full h-8 text-xs">
         Record

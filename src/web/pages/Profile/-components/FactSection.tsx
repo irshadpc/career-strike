@@ -1,4 +1,5 @@
-import { type FormEvent, useState } from 'react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { ApiError, api, type ProfileFact, type ValidationIssue } from '../../../api';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -16,28 +17,28 @@ export function FactSection({
   const empty = Object.fromEntries(
     section.fields.map((f) => [f.name, f.options && f.required ? f.options[0]![0] : '']),
   );
-  const [form, setForm] = useState<Record<string, string>>(empty);
+  const form = useForm<Record<string, string>>({ defaultValues: empty });
   const [status, setStatus] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const submit = async (e: FormEvent): Promise<void> => {
-    e.preventDefault();
-    setErrors({});
+  const submit = async (values: Record<string, string>): Promise<void> => {
+    form.clearErrors();
     const value = Object.fromEntries(
       section.fields.map((f) => {
-        const raw = (form[f.name] ?? '').trim();
+        const raw = (values[f.name] ?? '').trim();
         if (raw === '') return [f.name, f.required ? '' : null];
         return [f.name, f.type === 'number' ? Number(raw) : raw];
       }),
     );
     try {
       await api('/api/profile/facts', { method: 'POST', body: { kind: section.kind, value } });
-      setForm(empty);
+      form.reset(empty);
       setStatus(`Added ${section.describe(value)}.`);
       onChange();
     } catch (err) {
       const issues = err instanceof ApiError ? ((err.body as { issues?: ValidationIssue[] } | null)?.issues ?? []) : [];
-      setErrors(Object.fromEntries(issues.map((i) => [String(i.path.at(-1) ?? 'form'), i.message])));
+      for (const issue of issues) {
+        form.setError(String(issue.path.at(-1) ?? 'form'), { type: 'server', message: issue.message });
+      }
       setStatus(issues.length ? 'Check the highlighted fields.' : 'Could not save. Check that the service is running.');
     }
   };
@@ -118,12 +119,13 @@ export function FactSection({
       )}
       <form
         className="rounded-lg border border-border/70 bg-card/60 p-4 space-y-3"
-        onSubmit={(e) => void submit(e)}
+        onSubmit={form.handleSubmit(submit)}
         noValidate
         aria-label={`Add to ${section.title.toLowerCase()}`}
       >
         {section.fields.map((f) => {
           const id = `${section.kind}-${f.name}`;
+          const error = form.formState.errors[f.name]?.message;
           return (
             <div key={f.name} className="space-y-1">
               <label htmlFor={id} className="block text-xs font-medium text-foreground">
@@ -134,8 +136,7 @@ export function FactSection({
                 <select
                   id={id}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  value={form[f.name] ?? ''}
-                  onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
+                  {...form.register(f.name)}
                 >
                   {f.options!.map(([v, l]) => (
                     <option key={v} value={v}>
@@ -149,26 +150,25 @@ export function FactSection({
                   type={f.type}
                   inputMode={f.type === 'number' ? 'numeric' : undefined}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  value={form[f.name] ?? ''}
-                  onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
-                  aria-invalid={errors[f.name] ? true : undefined}
-                  aria-describedby={errors[f.name] || f.hint ? `${id}-note` : undefined}
+                  {...form.register(f.name)}
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error || f.hint ? `${id}-note` : undefined}
                   autoComplete="off"
                 />
               )}
-              {(errors[f.name] || f.hint) && (
+              {(error || f.hint) && (
                 <span
                   id={`${id}-note`}
-                  className={`block text-xs mt-1 ${errors[f.name] ? 'text-destructive font-medium' : 'text-muted-foreground'}`}
+                  className={`block text-xs mt-1 ${error ? 'text-destructive font-medium' : 'text-muted-foreground'}`}
                 >
-                  {errors[f.name] ?? f.hint}
+                  {error ?? f.hint}
                 </span>
               )}
             </div>
           );
         })}
         <div className="pt-2 flex justify-end">
-          <Button type="submit" size="sm">
+          <Button type="submit" size="sm" disabled={form.formState.isSubmitting}>
             Add
           </Button>
         </div>
