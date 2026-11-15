@@ -1,8 +1,9 @@
-import type { Overview, ProfileReadinessReport } from '../../api';
+import { useState } from 'react';
+import { api, type Overview, type ProfileReadinessReport } from '../../api';
 import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
 import { Badge } from '../../components/ui/badge';
-import { buttonVariants } from '../../components/ui/button';
+import { Button, buttonVariants } from '../../components/ui/button';
 import { ago } from '../../format';
 import { cn } from '../../helpers/cn';
 import { useResource } from '../../hooks/useResource';
@@ -15,6 +16,37 @@ const timeFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', tim
 export function Home() {
   const overview = useResource<Overview>('/api/overview');
   const readiness = useResource<{ readiness: ProfileReadinessReport }>('/api/profile/readiness');
+  const desk = useResource<{
+    mission: any;
+    briefing: {
+      date: string;
+      headline: string;
+      summary: string;
+      completedWork: string[];
+      deservesAttention: any[];
+      answers: Record<string, string>;
+    };
+    plan: any;
+    topRecommendations: any[];
+    ledger: any[];
+  }>('/api/assistant/desk');
+
+  const [decisionPending, setDecisionPending] = useState<string | null>(null);
+
+  const handleDecision = async (jobId: string, decision: 'APPLY' | 'INVESTIGATE' | 'WATCH' | 'SKIP') => {
+    setDecisionPending(jobId);
+    try {
+      await api(`/api/assistant/decision/${jobId}`, {
+        method: 'POST',
+        body: { decision },
+      });
+      if ('reload' in desk) desk.reload();
+    } catch {
+      // Keep UI responsive
+    } finally {
+      setDecisionPending(null);
+    }
+  };
 
   return (
     <div>
@@ -52,6 +84,139 @@ export function Home() {
                   {readiness.data.readiness.actionLabel}
                 </Link>
               </div>
+            </section>
+          )}
+
+          {/* Chief of Staff Desk: Daily Briefing & Spotlight */}
+          {desk.state === 'ready' && desk.data?.briefing && (
+            <section
+              aria-label="Chief of Staff Daily Briefing"
+              className="mb-6 p-5 bg-card border-2 border-primary/25 rounded-xl shadow-xs space-y-4"
+            >
+              <div className="flex justify-between items-center flex-wrap gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="default" className="bg-primary text-primary-foreground font-semibold">
+                    Chief of Staff Desk
+                  </Badge>
+                  <span className="text-xs font-mono text-muted-foreground">{desk.data.briefing.date}</span>
+                  {desk.data.mission && (
+                    <span className="text-xs text-muted-foreground">
+                      · Mission: <strong className="text-foreground">{desk.data.mission.title}</strong> (
+                      {desk.data.mission.weeklyEffortHours}h/wk)
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs font-mono text-muted-foreground">Local-First · Private by Design</span>
+              </div>
+
+              <div>
+                <h2 className="text-base font-bold text-foreground m-0">{desk.data.briefing.headline}</h2>
+                <p className="text-sm text-muted-foreground mt-1 mb-0">{desk.data.briefing.summary}</p>
+              </div>
+
+              {/* The 6 Core Strategic Answers */}
+              {desk.data.briefing.answers && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1">
+                    <span className="font-semibold text-foreground block">What changed?</span>
+                    <span className="text-muted-foreground">{desk.data.briefing.answers.whatChanged}</span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1">
+                    <span className="font-semibold text-foreground block">What completed?</span>
+                    <span className="text-muted-foreground">{desk.data.briefing.answers.whatCompleted}</span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1">
+                    <span className="font-semibold text-foreground block">What deserves attention?</span>
+                    <span className="text-muted-foreground">{desk.data.briefing.answers.whatDeservesAttention}</span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1">
+                    <span className="font-semibold text-foreground block">What next?</span>
+                    <span className="text-muted-foreground">{desk.data.briefing.answers.whatNext}</span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1">
+                    <span className="font-semibold text-foreground block">Why recommended?</span>
+                    <span className="text-muted-foreground">{desk.data.briefing.answers.whyRecommending}</span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/30 border border-border/50 text-xs space-y-1">
+                    <span className="font-semibold text-foreground block">What are you waiting for?</span>
+                    <span className="text-muted-foreground">{desk.data.briefing.answers.whatWaitingFor}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Top 3 Decision-Ready Opportunities */}
+              {desk.data.topRecommendations && desk.data.topRecommendations.length > 0 && (
+                <div className="pt-3 border-t border-border/60">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                    Top Decision-Ready Opportunities
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {desk.data.topRecommendations.map((rec) => (
+                      <div
+                        key={rec.job.id}
+                        className="p-4 rounded-lg border border-border bg-card/60 flex flex-col justify-between space-y-3"
+                      >
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between items-start gap-2">
+                            <span className="text-xs font-bold text-foreground">{rec.job.employer}</span>
+                            <Badge variant="secondary" className="text-[10px]">
+                              {rec.nextBestAction}
+                            </Badge>
+                          </div>
+                          <h4 className="text-sm font-semibold text-foreground m-0">
+                            <Link href={`/jobs/${rec.job.id}`} className="hover:underline">
+                              {rec.job.title}
+                            </Link>
+                          </h4>
+                          <div className="text-xs text-muted-foreground space-y-0.5 pt-1">
+                            <p className="m-0">
+                              <strong>Relevance:</strong> Tier {rec.dimensions.professionalRelevance.tier}
+                            </p>
+                            <p className="m-0">
+                              <strong>Effort:</strong> {rec.dimensions.applicationEffort.level}
+                            </p>
+                            {rec.job.salary && (
+                              <p className="m-0 font-mono text-[11px] text-teal-600 dark:text-teal-400">
+                                {rec.job.salary.currency} {rec.job.salary.min?.toLocaleString() ?? '—'} -{' '}
+                                {rec.job.salary.max?.toLocaleString() ?? '—'}/{rec.job.salary.interval}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 pt-2 border-t border-border/40">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            className="text-xs flex-1 h-7"
+                            disabled={decisionPending === rec.job.id}
+                            onClick={() => void handleDecision(rec.job.id, 'APPLY')}
+                          >
+                            Apply
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="text-xs flex-1 h-7"
+                            disabled={decisionPending === rec.job.id}
+                            onClick={() => void handleDecision(rec.job.id, 'WATCH')}
+                          >
+                            Watch
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs h-7 text-muted-foreground"
+                            disabled={decisionPending === rec.job.id}
+                            onClick={() => void handleDecision(rec.job.id, 'SKIP')}
+                          >
+                            Skip
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           )}
 

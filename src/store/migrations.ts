@@ -751,4 +751,103 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX compensation_benchmarks_query ON compensation_benchmarks (role_family, seniority, country_code);
     `,
   },
+  {
+    version: 22,
+    name: 'chief_of_staff_missions_and_plans',
+    sql: `
+        -- PERSONAL / SENSITIVE: Durable career mission with dual-track strategy.
+        CREATE TABLE career_missions (
+          id                            TEXT PRIMARY KEY,
+          version                       INTEGER NOT NULL DEFAULT 1,
+          title                         TEXT NOT NULL,
+          desired_outcome               TEXT NOT NULL,
+          target_roles_json             TEXT NOT NULL DEFAULT '[]',
+          adjacent_roles_json           TEXT NOT NULL DEFAULT '[]',
+          track_a_params_json           TEXT NOT NULL DEFAULT '{}',
+          track_b_params_json           TEXT NOT NULL DEFAULT '{}',
+          salary_floor                  REAL,
+          salary_currency               TEXT,
+          target_locations_json         TEXT NOT NULL DEFAULT '[]',
+          remote_policy                 TEXT NOT NULL DEFAULT 'remote_only',
+          relocation_willingness        INTEGER NOT NULL DEFAULT 0,
+          work_authorization_json       TEXT NOT NULL DEFAULT '{}',
+          joining_availability          TEXT NOT NULL DEFAULT 'unspecified',
+          company_preferences_json      TEXT NOT NULL DEFAULT '{}',
+          career_growth_priorities_json TEXT NOT NULL DEFAULT '[]',
+          non_negotiables_json          TEXT NOT NULL DEFAULT '[]',
+          search_urgency                TEXT NOT NULL DEFAULT 'moderate',
+          weekly_effort_hours           INTEGER NOT NULL DEFAULT 5,
+          success_criteria_json         TEXT NOT NULL DEFAULT '[]',
+          status                        TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'PAUSED', 'ARCHIVED')),
+          created_at                    TEXT NOT NULL,
+          updated_at                    TEXT NOT NULL
+        );
+        CREATE INDEX career_missions_status ON career_missions (status);
+
+        -- PERSONAL / SENSITIVE: Versioned history of career strategy adjustments.
+        CREATE TABLE career_mission_history (
+          id                            INTEGER PRIMARY KEY AUTOINCREMENT,
+          mission_id                    TEXT NOT NULL REFERENCES career_missions (id) ON DELETE CASCADE,
+          version                       INTEGER NOT NULL,
+          change_summary                TEXT NOT NULL,
+          snapshot_json                 TEXT NOT NULL,
+          actor                         TEXT NOT NULL,
+          created_at                    TEXT NOT NULL
+        );
+        CREATE INDEX career_mission_history_mission ON career_mission_history (mission_id, version DESC);
+
+        -- PERSONAL: Goal-driven career execution plans.
+        CREATE TABLE career_plans (
+          id                            TEXT PRIMARY KEY,
+          mission_id                    TEXT NOT NULL REFERENCES career_missions (id) ON DELETE CASCADE,
+          title                         TEXT NOT NULL,
+          track                         TEXT NOT NULL DEFAULT 'TRACK_A' CHECK (track IN ('TRACK_A', 'TRACK_B', 'HYBRID')),
+          summary                       TEXT NOT NULL,
+          status                        TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'PAUSED', 'COMPLETED', 'CANCELLED')),
+          created_at                    TEXT NOT NULL,
+          updated_at                    TEXT NOT NULL
+        );
+        CREATE INDEX career_plans_mission ON career_plans (mission_id, status);
+
+        -- PERSONAL / INTERNAL: Multi-step plan work items and checkpoints.
+        CREATE TABLE career_plan_steps (
+          id                            TEXT PRIMARY KEY,
+          plan_id                       TEXT NOT NULL REFERENCES career_plans (id) ON DELETE CASCADE,
+          step_order                    INTEGER NOT NULL,
+          objective                     TEXT NOT NULL,
+          reason                        TEXT NOT NULL,
+          priority                      TEXT NOT NULL DEFAULT 'MEDIUM' CHECK (priority IN ('HIGH', 'MEDIUM', 'LOW')),
+          category                      TEXT NOT NULL CHECK (category IN ('DISCOVERY', 'RESEARCH', 'EVALUATION', 'PREPARATION', 'DECISION_REQUEST', 'STRATEGY_REVIEW')),
+          permission_tier               TEXT NOT NULL CHECK (permission_tier IN ('AUTOMATIC', 'CONFIRMATION_REQUIRED', 'APPROVAL_REQUIRED')),
+          dependencies_json             TEXT NOT NULL DEFAULT '[]',
+          estimated_minutes             INTEGER,
+          status                        TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'RUNNING', 'BLOCKED', 'COMPLETED', 'FAILED', 'CANCELLED')),
+          task_id                       TEXT REFERENCES tasks (id) ON DELETE SET NULL,
+          requires_approval             INTEGER NOT NULL DEFAULT 0,
+          approval_state                TEXT NOT NULL DEFAULT 'NONE' CHECK (approval_state IN ('NONE', 'AWAITING_APPROVAL', 'APPROVED', 'REJECTED')),
+          evidence_requirements_json    TEXT NOT NULL DEFAULT '[]',
+          recovery_instructions         TEXT,
+          result_json                   TEXT,
+          error                         TEXT,
+          started_at                    TEXT,
+          completed_at                  TEXT,
+          created_at                    TEXT,
+          updated_at                    TEXT
+        );
+        CREATE INDEX career_plan_steps_plan_order ON career_plan_steps (plan_id, step_order ASC);
+
+        -- PERSONAL: Assistant transparent activity ledger.
+        CREATE TABLE assistant_activity_ledger (
+          id                            TEXT PRIMARY KEY,
+          category                      TEXT NOT NULL CHECK (category IN ('OBSERVATION', 'ACTION_COMPLETED', 'APPROVAL_REQUESTED', 'DECISION_RECORDED', 'ERROR_ENCOUNTERED', 'STRATEGY_SHIFT')),
+          title                         TEXT NOT NULL,
+          detail                        TEXT NOT NULL,
+          entity_type                   TEXT,
+          entity_id                     TEXT,
+          provenance                    TEXT NOT NULL,
+          created_at                    TEXT NOT NULL
+        );
+        CREATE INDEX assistant_activity_ledger_date ON assistant_activity_ledger (created_at DESC);
+    `,
+  },
 ];

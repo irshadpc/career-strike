@@ -27,6 +27,7 @@ import { DocumentVault } from '../vault/documents.js';
 import type { SecretStore } from '../vault/secrets.js';
 import { runDoctorChecks } from './diagnostics.js';
 import { registerApplicationRoutes } from './routes/applications.js';
+import { registerAssistantRoutes } from './routes/assistant.js';
 import { registerDocumentRoutes } from './routes/documents.js';
 import { registerInterviewRoutes } from './routes/interviews.js';
 import { registerMcpRoutes } from './routes/mcp.js';
@@ -350,6 +351,7 @@ export function buildServer({
   registerApplicationRoutes(app, { applications, vault, submissions, personalization });
   registerInterviewRoutes(app, { interviews });
   registerOutreachRoutes(app, { outreach });
+  registerAssistantRoutes(app, { db });
 
   const proposals = new StrategyProposals(db);
   app.get('/api/strategy', async (req, reply) => {

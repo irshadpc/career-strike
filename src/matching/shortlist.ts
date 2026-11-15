@@ -51,13 +51,22 @@ export interface ShortlistDimensions {
   };
 }
 
-export type NextBestAction = 'APPLY' | 'INVESTIGATE_COMPANY' | 'PRACTICE_GAPS' | 'SKIP';
+export type NextBestAction = 'APPLY' | 'INVESTIGATE' | 'INVESTIGATE_COMPANY' | 'WATCH' | 'PRACTICE_GAPS' | 'SKIP';
+
+export interface DecisionFactors {
+  why: string;
+  supportingEvidence: string[];
+  missingInformation: string[];
+  tradeoffs: string[];
+  recommendedNextStep: string;
+}
 
 export interface DecisionReadyShortlistEntry {
   job: JobSummary;
   dimensions: ShortlistDimensions;
   recommendationExplanation: string;
   nextBestAction: NextBestAction;
+  decisionFactors?: DecisionFactors;
 }
 
 export function evaluateDecisionReadyOpportunity(
@@ -188,24 +197,59 @@ export function evaluateDecisionReadyOpportunity(
 
   // Recommendation & Next Best Action Synthesis
   let recommendationExplanation = '';
-  let nextBestAction: NextBestAction = 'INVESTIGATE_COMPANY';
+  let nextBestAction: NextBestAction = 'INVESTIGATE';
+
+  const supportingEvidence: string[] = [];
+  const missingInformation: string[] = [];
+  const tradeoffs: string[] = [];
+  let why = '';
+  let recommendedNextStep = '';
 
   if (!hardEligibilityPassed) {
     nextBestAction = 'SKIP';
+    why = 'Critical statutory or candidate eligibility blocker identified.';
     recommendationExplanation = `Ineligible: ${criticalFailures.join(' ')}`;
+    tradeoffs.push(...criticalFailures);
+    recommendedNextStep = 'Skip this role or mark Not for me to keep your discovery feed focused.';
   } else if (fit?.tier === 'strong') {
     nextBestAction = 'APPLY';
+    why = 'High professional relevance with verified skills meeting stated requirements.';
     recommendationExplanation = `Strong fit: Your verified skills meet employer requirements and no critical eligibility gaps were observed.`;
+    supportingEvidence.push(...eligibilityReasons);
+    if (professionalRelevance.matchedSkills.length > 0) {
+      supportingEvidence.push(`Confirmed skills: ${professionalRelevance.matchedSkills.join(', ')}`);
+    }
+    recommendedNextStep = 'Prepare tailored application package and review screening questions.';
   } else if (companyContext.isWatched) {
     nextBestAction = 'APPLY';
+    why = `Watched employer: You are actively monitoring ${job.employer}.`;
     recommendationExplanation = `Watched company: You are following ${job.employer}, and this role aligns with your target preferences.`;
+    supportingEvidence.push(`Employer is on your personal watchlist with alert settings enabled.`);
+    recommendedNextStep = 'Inspect company 360 intelligence and prepare tailored application package.';
   } else if (professionalRelevance.missingSkills.length > 0) {
-    nextBestAction = 'PRACTICE_GAPS';
+    nextBestAction = 'INVESTIGATE';
+    why = `Promising opportunity with addressable skill or seniority stretch.`;
     recommendationExplanation = `Possible fit with skills gaps: Missing ${professionalRelevance.missingSkills.join(', ')}. Review interview prep topics before applying.`;
+    tradeoffs.push(`Requires skills: ${professionalRelevance.missingSkills.join(', ')}`);
+    recommendedNextStep = 'Investigate company tech stack and practice gap topics in Prep.';
   } else {
-    nextBestAction = 'INVESTIGATE_COMPANY';
+    nextBestAction = 'INVESTIGATE';
+    why = 'Matches your preferred role family and work arrangement.';
     recommendationExplanation = `Worth exploring: Matches your target role and work arrangement. Inspect company 360 intelligence to decide.`;
+    recommendedNextStep = 'Inspect company 360 profile and verify team stage.';
   }
+
+  if (!job.salary) {
+    missingInformation.push('Employer did not disclose compensation range in posting.');
+  }
+
+  const decisionFactors: DecisionFactors = {
+    why,
+    supportingEvidence,
+    missingInformation,
+    tradeoffs,
+    recommendedNextStep,
+  };
 
   return {
     job,
@@ -223,5 +267,6 @@ export function evaluateDecisionReadyOpportunity(
     },
     recommendationExplanation,
     nextBestAction,
+    decisionFactors,
   };
 }
