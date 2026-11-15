@@ -4,7 +4,7 @@
 
 **Find opportunities. Understand your strengths. Prepare better applications. Move forward with confidence.**
 
-[![Version](https://img.shields.io/badge/version-0.5.0-17695F.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.6.0-17695F.svg)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-Apache--2.0-1D2930.svg)](LICENSE)
 [![Architecture](https://img.shields.io/badge/architecture-local--first%20%26%20private-17695F.svg)](docs/privacy.md)
 [![MCP](https://img.shields.io/badge/mcp-compatible-2A554A.svg)](docs/job-hunt-guide.md#optional-connect-an-ai-assistant)
@@ -106,11 +106,29 @@ We believe in complete product truth. The table below outlines the exact impleme
 | **Model Context Protocol (MCP) Server**  | `AVAILABLE` | Stdio MCP server with 20 scoped tools (companies, hiring signals, compensation, market pulse, watchlist, jobs, fit, disclosures).                                                                 |
 | **Single-Use Personal Info Disclosures** | `AVAILABLE` | AI assistants request specific fields with a stated purpose; you preview and approve exact values in the dashboard.                                                                              |
 | **Data Export, Backup & Rollback**       | `AVAILABLE` | CLI commands for transactional export, backup, restore, and pre-upgrade rollback.                                                                                                                |
+| **Personal Career Mission Engine**      | `AVAILABLE` | Dual-track career mission model (Track A immediate vs Track B growth) with salary floor, mobility, and effort allocation ([`src/career/mission.ts`](src/career/mission.ts)). |
+| **Assistant Desk & Autonomous Planner**  | `AVAILABLE` | Daily executive briefing on `/`, multi-phase execution planner, and transparent assistant activity ledger ([`src/career/planner.ts`](src/career/planner.ts)). |
+| **Proactive Opportunity Hunter**         | `AVAILABLE` | Track-aware opportunity hunting matching live postings to mission criteria without speculative vacancies ([`src/career/proactive-hunter.ts`](src/career/proactive-hunter.ts)). |
+| **Application Concierge & Rehearsal**    | `AVAILABLE` | 7-point readiness checklist, custom screening gap review, and candidate-controlled submission guarantee ([`src/applications/rehearsal.ts`](src/applications/rehearsal.ts)). |
+| **Multi-Offer Decision Adviser**         | `AVAILABLE` | Evaluates competing offers against P25/P50/P75 market benchmarks and generates role-specific negotiation talking points ([`src/career/offer-adviser.ts`](src/career/offer-adviser.ts)). |
+| **Continuous Strategy Evaluation Harness**| `AVAILABLE`| 11-scenario, 29-check invariant evaluation suite verifying track isolation, candidate control, and data provenance ([`src/learning/evaluation.ts`](src/learning/evaluation.ts)). |
 | **Permanent Data Erasure**               | `AVAILABLE` | Single-command complete wipe of local databases, documents, and OS keychain items.                                                                                                               |
 
 ---
 
 ## Feature Showcase
+
+### 0. The Personal Career Chief of Staff & Assistant Desk
+
+Career Strike acts as your proactive, trustworthy career chief of staff, turning ambiguous career ambitions into structured execution while keeping you firmly in control:
+
+- **Durable Career Missions**: Separate confirmed profile facts from exploratory preferences with dual tracks: **Track A** (realistic, high-confidence near-term employment) and **Track B** (ambitious, high-leverage growth targets).
+- **Assistant Desk & Daily Mission Briefing**: Get an executive summary on your dashboard featuring today's top recommended actions, proactive opportunity highlights, and pending strategy suggestions.
+- **Autonomous Career Planner & Activity Ledger**: Automatically maps out multi-phase execution plans across Discovery, Preparation, Outreach, and Evaluation, tracked in an auditable activity ledger.
+- **Application Concierge & Pre-Flight Rehearsal**: Ensure every submission packet is candidate-verified with a 7-point pre-flight checklist, custom screening answer reviews, contradiction detection, and zero autonomous mass-submission guarantees.
+- **Multi-Offer Decision Adviser & Outreach**: Objectively compare competing job offers against local market compensation curves (P25/P50/P75) and leverage structured outreach templates for high-impact follow-ups.
+
+---
 
 ### 1. Candidate Career Profile & Evidence Graph
 
