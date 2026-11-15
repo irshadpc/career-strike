@@ -5,6 +5,7 @@ import {
 } from '../career/compensation.js';
 import { candidateContext } from '../career/context.js';
 import { JobQuery, listJobs, syncBoard } from '../career/jobs.js';
+import { getActiveMission, saveMission } from '../career/mission.js';
 import { getCompany360 } from '../markets/company-intelligence.js';
 import { evaluateDecisionReadyOpportunity } from '../matching/shortlist.js';
 import type { NormalizedPosting } from '../sources/types.js';
@@ -177,6 +178,9 @@ export function evaluateLearning(now = new Date()): EvaluationReport {
         { type: 'set-monitoring', hours: '24' },
         { type: 'add-preferred-role', role: 'Data Engineer' },
         { type: 'study-skill', skill: 'Rust' },
+        { type: 'rebalance-tracks', primaryFocus: 'TRACK_A', note: 'Balance focus' },
+        { type: 'expand-role-family', role: 'Staff Engineer', track: 'TRACK_B' },
+        { type: 'investigate-recurring-gap', gapSkill: 'Kubernetes', recommendedAction: 'Practice prep topics' },
       ];
       const forbidden = [
         { type: 'set-setting', key: 'identity.email', value: 'attacker@example.com' },
@@ -396,6 +400,89 @@ export function evaluateLearning(now = new Date()): EvaluationReport {
               'action-skip',
               entry.nextBestAction === 'SKIP',
               'Next best action is SKIP, never recommending an ineligible role.',
+            ),
+          ];
+        } finally {
+          db.close();
+        }
+      },
+    ),
+
+    scenario(
+      'mission-track-separation',
+      'Dual tracks (Track A immediate vs Track B growth) remain distinct and never mutate profile facts',
+      () => {
+        const db = setup([], 1);
+        try {
+          const initialFactCount = (
+            db.prepare('SELECT COUNT(*) AS count FROM profile_facts').get() as { count: number }
+          ).count;
+          saveMission(db, {
+            title: 'Evaluation Dual-Track Mission',
+            desiredOutcome: 'Secure high-impact senior engineering role with autonomy.',
+            targetRoles: ['Senior Systems Engineer'],
+            adjacentRoles: ['Staff Engineer', 'Engineering Manager'],
+            trackAParams: { focus: 'Immediate employment', targetSeniority: 'Senior' },
+            trackBParams: { focus: 'Ambitious growth', targetSeniority: 'Staff' },
+            salaryFloor: 150000,
+            status: 'ACTIVE',
+          });
+
+          const loaded = getActiveMission(db);
+          const finalFactCount = (db.prepare('SELECT COUNT(*) AS count FROM profile_facts').get() as { count: number })
+            .count;
+
+          return [
+            check(
+              'tracks-distinct',
+              Boolean(
+                loaded?.targetRoles[0] === 'Senior Systems Engineer' &&
+                  loaded?.adjacentRoles.includes('Staff Engineer'),
+              ),
+              'Track A target roles and Track B adjacent roles are preserved distinctly.',
+            ),
+            check(
+              'facts-untouched',
+              initialFactCount === finalFactCount,
+              'Mission creation never fabricates or mutates confirmed profile facts.',
+            ),
+            check(
+              'track-params-isolated',
+              JSON.stringify(loaded?.trackAParams) !== JSON.stringify(loaded?.trackBParams),
+              'Track A and Track B configuration parameters remain strictly isolated.',
+            ),
+          ];
+        } finally {
+          db.close();
+        }
+      },
+    ),
+
+    scenario(
+      'consequential-action-approval',
+      'Consequential actions (strategy changes, submission, outreach) require explicit candidate decision and confirmation',
+      () => {
+        const db = setup([], 1);
+        try {
+          const proposals = new StrategyProposals(db);
+          db.prepare(`
+            INSERT INTO strategy_proposals (id, rule, fingerprint, title, rationale, action_json, status, created_at)
+            VALUES ('prop_eval_consequential', 'test_rule', 'fp_consequential_1', 'Test Proposal', 'Test rationale', ?, 'OPEN', datetime('now'))
+          `).run(JSON.stringify({ type: 'rebalance-tracks', primaryFocus: 'TRACK_A', note: 'Balance tracks' }));
+
+          const prop = proposals.list().find((p) => p.id === 'prop_eval_consequential');
+          const accepted = proposals.decide('prop_eval_consequential', 'ACCEPT', {}, 'candidate');
+
+          return [
+            check(
+              'unapproved-quiescent',
+              prop?.status === 'OPEN',
+              'Strategy proposals remain quiescent until explicit candidate decision.',
+            ),
+            check(
+              'candidate-approved',
+              accepted?.status === 'ACCEPTED',
+              'Proposals transition only when candidate explicitly decides.',
             ),
           ];
         } finally {

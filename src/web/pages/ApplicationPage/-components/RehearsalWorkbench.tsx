@@ -100,19 +100,24 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
     readinessSummary.overallStatus === 'READY' ? (
       <Badge
         variant="outline"
-        className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800"
+        className="bg-emerald-100 text-emerald-900 border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800"
       >
         Ready for Candidate Approval
       </Badge>
     ) : readinessSummary.overallStatus === 'NEEDS_ATTENTION' ? (
       <Badge
         variant="outline"
-        className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800"
+        className="bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800"
       >
         Review Warnings
       </Badge>
     ) : (
-      <Badge variant="destructive">Submission Blocked</Badge>
+      <Badge
+        variant="outline"
+        className="bg-rose-100 text-rose-950 border-rose-400 dark:bg-rose-950 dark:text-rose-100 dark:border-rose-800"
+      >
+        Submission Blocked
+      </Badge>
     );
 
   return (
@@ -127,16 +132,16 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
           <CardDescription>{readinessSummary.advisory}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 text-xs text-neutral-600 dark:text-neutral-400 border-t border-neutral-100 dark:border-neutral-800 pt-3">
+          <div className="flex gap-4 text-xs text-neutral-700 dark:text-neutral-300 border-t border-neutral-100 dark:border-neutral-800 pt-3">
             <span>
               Passed:{' '}
-              <strong className="text-emerald-600 dark:text-emerald-400">{readinessSummary.passingCount}</strong>
+              <strong className="text-emerald-800 dark:text-emerald-300">{readinessSummary.passingCount}</strong>
             </span>
             <span>
-              Warnings: <strong className="text-amber-600 dark:text-amber-400">{readinessSummary.warningCount}</strong>
+              Warnings: <strong className="text-amber-800 dark:text-amber-300">{readinessSummary.warningCount}</strong>
             </span>
             <span>
-              Blockers: <strong className="text-rose-600 dark:text-rose-400">{readinessSummary.failingCount}</strong>
+              Blockers: <strong className="text-rose-800 dark:text-rose-300">{readinessSummary.failingCount}</strong>
             </span>
           </div>
         </CardContent>
@@ -157,18 +162,20 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-neutral-900 dark:text-neutral-100">{item.title}</span>
-                    <span className="text-[10px] text-neutral-400 uppercase tracking-wider">{item.category}</span>
+                    <span className="text-[10px] text-neutral-600 dark:text-neutral-400 uppercase tracking-wider font-medium">
+                      {item.category}
+                    </span>
                   </div>
-                  <p className="text-neutral-600 dark:text-neutral-400 mt-0.5">{item.detail}</p>
+                  <p className="text-neutral-700 dark:text-neutral-300 mt-0.5">{item.detail}</p>
                   {item.actionRequired && (
-                    <p className="text-amber-600 dark:text-amber-400 font-medium mt-1">Action: {item.actionRequired}</p>
+                    <p className="text-amber-900 dark:text-amber-300 font-medium mt-1">Action: {item.actionRequired}</p>
                   )}
                 </div>
                 <div>
                   {item.status === 'PASS' && (
                     <Badge
                       variant="outline"
-                      className="text-emerald-600 border-emerald-300 dark:text-emerald-400 text-[10px]"
+                      className="bg-emerald-100 text-emerald-900 border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800 text-[10px]"
                     >
                       PASS
                     </Badge>
@@ -176,13 +183,16 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
                   {item.status === 'WARN' && (
                     <Badge
                       variant="outline"
-                      className="text-amber-600 border-amber-300 dark:text-amber-400 text-[10px]"
+                      className="bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800 text-[10px]"
                     >
                       WARN
                     </Badge>
                   )}
                   {item.status === 'FAIL' && (
-                    <Badge variant="destructive" className="text-[10px]">
+                    <Badge
+                      variant="outline"
+                      className="bg-rose-100 text-rose-950 border-rose-400 dark:bg-rose-950 dark:text-rose-100 dark:border-rose-800 text-[10px]"
+                    >
                       FAIL
                     </Badge>
                   )}
@@ -203,7 +213,9 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
         </CardHeader>
         <CardContent>
           {rehearsalItems.length === 0 ? (
-            <p className="text-xs text-neutral-500">No custom screening questions detected for this application.</p>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400">
+              No custom screening questions detected for this application.
+            </p>
           ) : (
             <div className="space-y-3">
               {rehearsalItems.map((item) => (
@@ -213,16 +225,17 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
                 >
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                      {item.label} {item.required && <span className="text-rose-500">*</span>}
+                      {item.label}{' '}
+                      {item.required && <span className="text-rose-600 dark:text-rose-400 font-bold">*</span>}
                     </span>
                     <Badge
                       variant="outline"
                       className={`text-[10px] ${
                         item.status === 'READY'
-                          ? 'text-emerald-600 border-emerald-300 dark:text-emerald-400'
+                          ? 'bg-emerald-100 text-emerald-900 border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800'
                           : item.status === 'ATTENTION_NEEDED'
-                            ? 'text-rose-600 border-rose-300 dark:text-rose-400'
-                            : 'text-neutral-500 border-neutral-300'
+                            ? 'bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800'
+                            : 'bg-neutral-100 text-neutral-800 border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200'
                       }`}
                     >
                       {item.status === 'READY'
@@ -232,12 +245,12 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
                           : 'Optional Blank'}
                     </Badge>
                   </div>
-                  <div className="bg-white dark:bg-neutral-950 p-2 rounded border border-neutral-200 dark:border-neutral-800 font-mono text-[11px] text-neutral-800 dark:text-neutral-200">
-                    {item.draftValue ?? <span className="text-neutral-400 italic">Empty</span>}
+                  <div className="bg-white dark:bg-neutral-950 p-2 rounded border border-neutral-200 dark:border-neutral-800 font-mono text-[11px] text-neutral-900 dark:text-neutral-100">
+                    {item.draftValue ?? <span className="text-neutral-600 dark:text-neutral-400 italic">Empty</span>}
                   </div>
-                  <p className="text-neutral-500 dark:text-neutral-400 mt-1.5 text-[11px]">{item.rehearsalNotes}</p>
+                  <p className="text-neutral-700 dark:text-neutral-300 mt-1.5 text-[11px]">{item.rehearsalNotes}</p>
                   {item.potentialGapsOrContradictions.length > 0 && (
-                    <div className="mt-1 text-rose-600 dark:text-rose-400 text-[11px] font-medium">
+                    <div className="mt-1 text-rose-800 dark:text-rose-300 text-[11px] font-medium">
                       {item.potentialGapsOrContradictions.join(' ')}
                     </div>
                   )}
@@ -249,8 +262,8 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
       </Card>
 
       {/* Zero Autonomous Submission Policy Notice */}
-      <div className="p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/70 text-xs text-neutral-600 dark:text-neutral-400">
-        <p className="font-semibold text-neutral-800 dark:text-neutral-200 mb-1">Candidate-Controlled Submissions</p>
+      <div className="p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/70 text-xs text-neutral-700 dark:text-neutral-300">
+        <p className="font-semibold text-neutral-900 dark:text-neutral-100 mb-1">Candidate-Controlled Submissions</p>
         <p>{policyNotice.statement}</p>
       </div>
     </div>

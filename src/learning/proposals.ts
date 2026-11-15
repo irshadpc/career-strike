@@ -12,6 +12,27 @@ export const ProposalAction = z.discriminatedUnion('type', [
   z.object({ type: z.literal('set-monitoring'), hours: z.enum(['6', '12', '24']) }).strict(),
   z.object({ type: z.literal('add-preferred-role'), role: z.string().trim().min(1).max(100) }).strict(),
   z.object({ type: z.literal('study-skill'), skill: z.string().trim().min(1).max(80) }).strict(),
+  z
+    .object({
+      type: z.literal('rebalance-tracks'),
+      primaryFocus: z.enum(['TRACK_A', 'TRACK_B', 'BALANCED']),
+      note: z.string().max(200),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('expand-role-family'),
+      role: z.string().trim().min(1).max(100),
+      track: z.enum(['TRACK_A', 'TRACK_B']),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('investigate-recurring-gap'),
+      gapSkill: z.string().trim().min(1).max(80),
+      recommendedAction: z.string().max(200),
+    })
+    .strict(),
 ]);
 export type ProposalAction = z.infer<typeof ProposalAction>;
 
@@ -357,14 +378,15 @@ export class StrategyProposals {
       reverts.push({ key: 'monitoring.discoveryIntervalHours', previousValue: before, appliedValue: action.hours });
       setSetting(this.db, 'monitoring.discoveryIntervalHours', action.hours, 'strategy-proposal');
     }
-    if (action.type === 'add-preferred-role') {
+    if (action.type === 'add-preferred-role' || action.type === 'expand-role-family') {
+      const roleName = action.type === 'add-preferred-role' ? action.role : action.role;
       const roles = (getSettings(this.db)['search.preferredRoles'] as string[]) ?? [];
-      if (!roles.includes(action.role)) {
-        reverts.push({ key: 'search.preferredRoles', previousValue: roles, appliedValue: [...roles, action.role] });
-        setSetting(this.db, 'search.preferredRoles', [...roles, action.role], 'strategy-proposal');
+      if (!roles.includes(roleName)) {
+        reverts.push({ key: 'search.preferredRoles', previousValue: roles, appliedValue: [...roles, roleName] });
+        setSetting(this.db, 'search.preferredRoles', [...roles, roleName], 'strategy-proposal');
       }
     }
-    // study-skill changes no setting: it becomes part of the learning history.
+    // study-skill, rebalance-tracks, investigate-recurring-gap become part of the learning history.
     return reverts;
   }
 
