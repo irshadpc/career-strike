@@ -1,13 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { candidateContext } from '../../career/context.js';
 import { JobQuery, listJobs } from '../../career/jobs.js';
-import {
-  type CareerMission,
-  CareerMissionSchema,
-  getActiveMission,
-  listMissionHistory,
-  saveMission,
-} from '../../career/mission.js';
+import { CareerMissionSchema, getActiveMission, listMissionHistory, saveMission } from '../../career/mission.js';
+import { compareOffers, type OfferDetails } from '../../career/offer-adviser.js';
 import { CareerPlanner } from '../../career/planner.js';
 import { evaluateDecisionReadyOpportunity } from '../../matching/shortlist.js';
 import type { Db } from '../../store/db.js';
@@ -202,4 +197,12 @@ export function registerAssistantRoutes(app: FastifyInstance, { db }: { db: Db }
       return { ok: true, entityId, decision, recordedAt: now };
     },
   );
+
+  // Multi-Offer Compensation & Growth Comparison
+  app.post<{ Body: { offers: OfferDetails[] } }>('/api/assistant/compare-offers', async (req, reply) => {
+    if (req.principal?.kind === 'mcp-client') return reply.code(403).send({ error: 'FORBIDDEN' });
+    const offers = req.body?.offers ?? [];
+    const comparison = compareOffers(db, offers);
+    return { comparison };
+  });
 }
