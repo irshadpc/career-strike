@@ -972,4 +972,78 @@ export const MIGRATIONS: readonly Migration[] = [
         ALTER TABLE source_boards ADD COLUMN jobs_fetched_count INTEGER;
     `,
   },
+  {
+    version: 25,
+    name: 'resume_studio_master_vault_and_snapshots',
+    sql: `
+        -- 1. Canonical Master Vault Entities (Roles, Projects, Education, Certs)
+        CREATE TABLE IF NOT EXISTS master_entries (
+          id TEXT PRIMARY KEY,
+          entry_type TEXT NOT NULL CHECK (entry_type IN ('experience','project','education','certification')),
+          organization TEXT NOT NULL,
+          title TEXT NOT NULL,
+          location TEXT,
+          start_date TEXT,
+          end_date TEXT,
+          is_current INTEGER NOT NULL DEFAULT 0,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX idx_master_entries_type ON master_entries (entry_type, sort_order);
+
+        -- 2. Atomic Achievements / Brag-Doc Bullets with Verified Provenance
+        CREATE TABLE IF NOT EXISTS master_bullets (
+          id TEXT PRIMARY KEY,
+          entry_id TEXT NOT NULL REFERENCES master_entries(id) ON DELETE CASCADE,
+          raw_text TEXT NOT NULL,
+          verified_metrics_json TEXT NOT NULL DEFAULT '[]',
+          canonical_skill_ids_json TEXT NOT NULL DEFAULT '[]',
+          scope_level TEXT CHECK (scope_level IN ('individual','team','org')),
+          xyz_score INTEGER NOT NULL DEFAULT 0,
+          star_story_id TEXT,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX idx_master_bullets_entry ON master_bullets (entry_id);
+
+        -- 3. Per-Job Tailored Variants (Copy-on-Write Inheritance Overlay)
+        -- Upgrades the existing resume_variants table with relational inheritance columns.
+        ALTER TABLE resume_variants ADD COLUMN job_application_id TEXT;
+        ALTER TABLE resume_variants ADD COLUMN template_id TEXT NOT NULL DEFAULT 'classic-single-col';
+        ALTER TABLE resume_variants ADD COLUMN page_format TEXT NOT NULL DEFAULT 'LETTER';
+        ALTER TABLE resume_variants ADD COLUMN summary_override TEXT;
+        ALTER TABLE resume_variants ADD COLUMN included_entries_json TEXT NOT NULL DEFAULT '[]';
+        ALTER TABLE resume_variants ADD COLUMN bullet_overrides_json TEXT NOT NULL DEFAULT '{}';
+        ALTER TABLE resume_variants ADD COLUMN design_tokens_json TEXT NOT NULL DEFAULT '{}';
+        ALTER TABLE resume_variants ADD COLUMN updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP;
+        CREATE INDEX idx_resume_variants_app ON resume_variants (job_application_id);
+
+        -- 4. Immutable Submitted Snapshots (Verified Audit Trail + A/B Conversion Analytics)
+        CREATE TABLE IF NOT EXISTS resume_snapshots (
+          id TEXT PRIMARY KEY,
+          variant_id TEXT NOT NULL REFERENCES resume_variants(id) ON DELETE CASCADE,
+          job_application_id TEXT,
+          format TEXT NOT NULL CHECK (format IN ('pdf','docx')),
+          file_path TEXT NOT NULL,
+          file_size_bytes INTEGER NOT NULL,
+          sha256 TEXT NOT NULL,
+          resolved_payload_json TEXT NOT NULL,
+          ats_audit_report_json TEXT NOT NULL,
+          jd_alignment_json TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX idx_resume_snapshots_variant ON resume_snapshots (variant_id);
+
+        -- 5. Local Skills Taxonomy (ESCO v1.2.1 + O*NET 31.0 + Curated Aliases)
+        CREATE TABLE IF NOT EXISTS skills_taxonomy (
+          canonical_id TEXT PRIMARY KEY,
+          preferred_label TEXT NOT NULL,
+          source TEXT NOT NULL CHECK (source IN ('esco','onet','curated')),
+          category TEXT,
+          aliases_text TEXT NOT NULL DEFAULT '',
+          embedding_blob BLOB
+        );
+        CREATE INDEX idx_skills_preferred_label ON skills_taxonomy (preferred_label);
+        CREATE INDEX idx_skills_source ON skills_taxonomy (source);
+    `,
+  },
 ];

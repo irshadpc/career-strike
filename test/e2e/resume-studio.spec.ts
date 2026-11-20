@@ -80,4 +80,49 @@ test.describe('resume studio and profile readiness', () => {
     await expect(page.getByRole('status')).toContainText('Saved document edit');
     await expect(page.getByText('Candidate Edited')).toBeVisible();
   });
+
+  test('exercises 3-pane studio workspace: lenses, XYZ linter, and 7-check gate', async ({ page, cs }) => {
+    // 1. Seed facts
+    await cs.api('POST', '/api/profile/facts', {
+      kind: 'role',
+      value: { title: 'Staff Platform Engineer', employer: 'Acme Systems', startYear: 2021, endYear: null },
+    });
+    await cs.api('POST', '/api/profile/facts', {
+      kind: 'skill',
+      value: { name: 'Kubernetes', years: 4, level: 'expert' },
+    });
+
+    await signIn(page, cs);
+    await page.goto(`${cs.origin}/resume`);
+
+    // Verify 3-pane workspace is mounted
+    await expect(page.getByText('Studio Workspace: ATS X-Ray, Recruiter Simulation & Master Vault')).toBeVisible();
+    await expect(page.getByText('Master Vault Outliner')).toBeVisible();
+
+    // Verify Lens switching (⌘1 Human Print, ⌘2 ATS X-Ray, ⌘3 7.4s Recruiter Scan, ⌘4 Variant Diff)
+    const xrayButton = page.getByRole('button', { name: '⌘2 ATS X-Ray' });
+    await expect(xrayButton).toBeVisible();
+    await xrayButton.click();
+    await expect(page.getByText('/H1')).toBeVisible();
+    await expect(page.getByText('/Document')).toBeVisible();
+
+    // Switch to 7.4s Recruiter Scan
+    const scanButton = page.getByRole('button', { name: '⌘3 7.4s Recruiter Scan' });
+    await expect(scanButton).toBeVisible();
+    await scanButton.click();
+    await expect(page.getByRole('button', { name: 'Start 7.4s Flash Test' })).toBeVisible();
+
+    // Switch back to Human Print
+    await page.getByRole('button', { name: '⌘1 Human Print' }).click();
+
+    // Verify Right Pane tabs: 7-Check Verification, 3-Tier JD Alignment, Impact Scorecard
+    await expect(page.getByRole('button', { name: '7-Check Verification' })).toBeVisible();
+    await page.getByRole('button', { name: 'Impact Scorecard' }).click();
+    await expect(page.getByText('Quantification Rate')).toBeVisible();
+    await expect(page.getByText('Clichés / Buzzwords')).toBeVisible();
+
+    // Verify 3-Tier JD Alignment
+    await page.getByRole('button', { name: '3-Tier JD Alignment' }).click();
+    await expect(page.getByRole('button', { name: 'Run Alignment Analysis' })).toBeVisible();
+  });
 });

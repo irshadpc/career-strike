@@ -435,8 +435,16 @@ export const CLASSIFICATION: Readonly<Record<string, Readonly<Record<string, Col
     plan_json: c('SENSITIVE'),
   },
   resume_variants: {
-    ...all('INTERNAL', ['id', 'created_at']),
-    ...all('SENSITIVE', ['name', 'content']),
+    ...all('INTERNAL', [
+      'id',
+      'created_at',
+      'job_application_id',
+      'template_id',
+      'page_format',
+      'design_tokens_json',
+      'updated_at',
+    ]),
+    ...all('SENSITIVE', ['name', 'content', 'summary_override', 'included_entries_json', 'bullet_overrides_json']),
   },
   offer_scenarios: {
     ...all('INTERNAL', ['id', 'created_at']),
@@ -449,6 +457,31 @@ export const CLASSIFICATION: Readonly<Record<string, Readonly<Record<string, Col
   imap_candidates: {
     ...all('INTERNAL', ['id', 'message_id', 'detected_at', 'status']),
     ...all('PERSONAL', ['from_addr', 'subject']),
+  },
+
+  master_entries: {
+    ...all('INTERNAL', ['id', 'is_current', 'sort_order', 'updated_at']),
+    ...all('SENSITIVE', ['entry_type', 'organization', 'title', 'location', 'start_date', 'end_date']),
+  },
+  master_bullets: {
+    ...all('INTERNAL', ['id', 'entry_id', 'xyz_score', 'star_story_id', 'updated_at']),
+    ...all('SENSITIVE', ['raw_text', 'verified_metrics_json', 'canonical_skill_ids_json', 'scope_level']),
+  },
+  resume_snapshots: {
+    ...all('INTERNAL', [
+      'id',
+      'variant_id',
+      'job_application_id',
+      'format',
+      'file_path',
+      'file_size_bytes',
+      'sha256',
+      'created_at',
+    ]),
+    ...all('SENSITIVE', ['resolved_payload_json', 'ats_audit_report_json', 'jd_alignment_json']),
+  },
+  skills_taxonomy: {
+    ...all('PUBLIC', ['canonical_id', 'preferred_label', 'source', 'category', 'aliases_text', 'embedding_blob']),
   },
 };
 

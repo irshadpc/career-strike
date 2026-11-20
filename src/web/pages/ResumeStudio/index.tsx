@@ -16,8 +16,13 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Link } from '../../router';
 import { DocumentReadinessCard } from './-components/AtsScorecard';
+import { CanvasLenses, type StudioLens } from './-components/CanvasLenses';
 import { ExportPanel } from './-components/ExportPanel';
+import { StudioInspector } from './-components/StudioInspector';
 import { TailoredResumeEditor } from './-components/TailoredResumeEditor';
+import { VaultOutliner } from './-components/VaultOutliner';
+import { XyzBulletEditor } from './-components/XyzBulletEditor';
+import type { MasterBullet, MasterEntry } from './-schema/studio-types';
 
 export function ResumeStudio() {
   const [facts, setFacts] = useState<ProfileFact[] | null>(null);
@@ -30,13 +35,38 @@ export function ResumeStudio() {
   const [personalization, setPersonalization] = useState<PersonalizationView | null>(null);
   const [selectedVariantKind, setSelectedVariantKind] = useState<'resume' | 'cover_letter'>('resume');
   const [variantText, setVariantText] = useState<string>('');
-  // Guard against the personalization effect clobbering the candidate's unsaved edits (see the
-  // side-by-side editor: the user types, personalization resolves, and the typed text must stay).
   const userEditedRef = useRef(false);
   const [savingVariant, setSavingVariant] = useState(false);
   const [variantSaveStatus, setVariantSaveStatus] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [viewMode, setViewMode] = useState<'master' | 'compare'>('master');
+
+  // 3-Pane Studio Workspace State
+  const [masterEntries, setMasterEntries] = useState<MasterEntry[]>([]);
+  const [selectedBullet, setSelectedBullet] = useState<MasterBullet | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<MasterEntry | null>(null);
+  const [includedEntryIds, setIncludedEntryIds] = useState<Set<string>>(new Set());
+  const [includedBulletIds, setIncludedBulletIds] = useState<Set<string>>(new Set());
+  const [bulletOverrides, setBulletOverrides] = useState<Record<string, string>>({});
+  const [leftTab, setLeftTab] = useState<'vault' | 'xyz'>('vault');
+  const [activeLens, setActiveLens] = useState<StudioLens>('print');
+
+  const loadMasterVault = useCallback(async () => {
+    try {
+      const res = await api<{ entries: MasterEntry[] }>('/api/studio/master');
+      setMasterEntries(res.entries);
+      setIncludedEntryIds(new Set(res.entries.map((e) => e.id)));
+      const allBullets: string[] = [];
+      for (const e of res.entries) {
+        for (const b of e.bullets) {
+          allBullets.push(b.id);
+        }
+      }
+      setIncludedBulletIds(new Set(allBullets));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const loadBase = useCallback(async () => {
     try {
@@ -62,7 +92,8 @@ export function ResumeStudio() {
 
   useEffect(() => {
     void loadBase();
-  }, [loadBase]);
+    void loadMasterVault();
+  }, [loadBase, loadMasterVault]);
 
   useEffect(() => {
     if (!selectedAppId) {
@@ -108,7 +139,6 @@ export function ResumeStudio() {
   if (!facts || !master || !documentReadiness) return <Loading label="Loading Resume Studio" />;
 
   const masterResumeContent = master.content;
-
   const activeVariant = personalization?.variants.find((v) => v.kind === selectedVariantKind);
   const isCandidateEdited = activeVariant?.status === 'CANDIDATE_EDITED';
   const isDirty = activeVariant ? variantText !== activeVariant.content : false;
@@ -152,6 +182,37 @@ export function ResumeStudio() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleToggleEntry = (entryId: string) => {
+    setIncludedEntryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(entryId)) next.delete(entryId);
+      else next.add(entryId);
+      return next;
+    });
+  };
+
+  const handleToggleBullet = (bulletId: string) => {
+    setIncludedBulletIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(bulletId)) next.delete(bulletId);
+      else next.add(bulletId);
+      return next;
+    });
+  };
+
+  const handleSelectBullet = (bullet: MasterBullet, entry: MasterEntry) => {
+    setSelectedBullet(bullet);
+    setSelectedEntry(entry);
+    setLeftTab('xyz');
+  };
+
+  const handleSaveBulletOverride = (bulletId: string, newText: string) => {
+    setBulletOverrides((prev) => ({
+      ...prev,
+      [bulletId]: newText,
+    }));
   };
 
   return (
@@ -211,56 +272,109 @@ export function ResumeStudio() {
         </section>
       )}
 
-      {/* Deterministic document readiness, not an ATS certification */}
+      {/* Deterministic document readiness */}
       <section aria-labelledby="document-readiness-title">
         <DocumentReadinessCard readiness={documentReadiness} />
       </section>
 
       {viewMode === 'master' ? (
-        <ExportPanel />
-      ) : activeVariant ? (
-        <ExportPanel applicationId={selectedAppId} variantId={activeVariant.id} />
-      ) : null}
+        <>
+          {/* Export Panel */}
+          <ExportPanel />
 
-      {viewMode === 'master' ? (
-        <section
-          className="rounded-xl border border-border bg-card p-6 shadow-xs"
-          aria-labelledby="master-preview-title"
-        >
-          <div className="flex justify-between items-center flex-wrap gap-4 mb-3">
-            <h2 id="master-preview-title" className="text-lg font-semibold tracking-tight text-foreground m-0">
-              Master Resume Document
-            </h2>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => downloadText('master-resume.txt', masterResumeContent)}
-              >
-                Download Plain Text (.txt)
-              </Button>
-              <Link
-                href="/profile"
-                className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground px-3 py-1.5 transition-colors"
-              >
-                Edit Facts in Profile
-              </Link>
+          {/* 3-Pane Studio Workspace */}
+          <section className="space-y-3" aria-label="3-Pane Studio Workspace">
+            <div className="flex items-center justify-between pb-1 border-b border-border">
+              <h2 className="text-base font-semibold tracking-tight text-foreground m-0">
+                Studio Workspace: ATS X-Ray, Recruiter Simulation &amp; Master Vault
+              </h2>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => downloadText('master-resume.txt', masterResumeContent)}
+                >
+                  Download Plain Text (.txt)
+                </Button>
+                <Link
+                  href="/profile"
+                  className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground px-3 py-1.5 transition-colors"
+                >
+                  Edit Facts in Profile
+                </Link>
+              </div>
             </div>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Automatically compiled from your confirmed profile facts ({master.counts.roles} roles,{' '}
-            {master.counts.skills} skills, {master.counts.projects + master.counts.achievements} evidence items).
-          </p>
-          <div
-            tabIndex={0}
-            role="region"
-            aria-label="Master Resume content"
-            className="font-mono text-sm leading-relaxed bg-background border border-border rounded-xl p-6 whitespace-pre-wrap max-h-[600px] overflow-y-auto"
-          >
-            {masterResumeContent}
-          </div>
-        </section>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full max-w-full">
+              {/* Left Pane (30% / 4 cols): Outliner & Focused XYZ Editor */}
+              <div className="lg:col-span-4 min-w-0 w-full rounded-xl border border-border bg-card p-4 shadow-xs space-y-3">
+                <div className="flex border-b border-border pb-1 gap-1 flex-wrap">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={leftTab === 'vault' ? 'default' : 'ghost'}
+                    onClick={() => setLeftTab('vault')}
+                    className="text-xs h-7"
+                  >
+                    Vault Outliner
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={leftTab === 'xyz' ? 'default' : 'ghost'}
+                    onClick={() => setLeftTab('xyz')}
+                    className="text-xs h-7"
+                  >
+                    Focused XYZ Editor
+                  </Button>
+                </div>
+
+                {leftTab === 'vault' ? (
+                  <VaultOutliner
+                    entries={masterEntries}
+                    selectedBulletId={selectedBullet?.id ?? null}
+                    includedEntryIds={includedEntryIds}
+                    includedBulletIds={includedBulletIds}
+                    onSelectBullet={handleSelectBullet}
+                    onToggleEntry={handleToggleEntry}
+                    onToggleBullet={handleToggleBullet}
+                    onRefresh={() => void loadMasterVault()}
+                  />
+                ) : (
+                  <XyzBulletEditor
+                    bullet={selectedBullet}
+                    entry={selectedEntry}
+                    onSaveOverride={handleSaveBulletOverride}
+                  />
+                )}
+              </div>
+
+              {/* Center Pane (42% / 5 cols): Paginated Canvas & 4 Lenses */}
+              <div className="lg:col-span-5 min-w-0 w-full space-y-3">
+                <CanvasLenses
+                  master={master}
+                  entries={masterEntries}
+                  includedEntryIds={includedEntryIds}
+                  includedBulletIds={includedBulletIds}
+                  bulletOverrides={bulletOverrides}
+                  activeLens={activeLens}
+                  onLensChange={setActiveLens}
+                />
+              </div>
+
+              {/* Right Pane (28% / 3 cols): Inspector & 7-Check Verification */}
+              <div className="lg:col-span-3 min-w-0 w-full rounded-xl border border-border bg-card p-4 shadow-xs space-y-3">
+                <StudioInspector
+                  entries={masterEntries}
+                  includedBulletIds={includedBulletIds}
+                  bulletOverrides={bulletOverrides}
+                  applications={applications}
+                />
+              </div>
+            </div>
+          </section>
+        </>
       ) : (
         <section className="rounded-xl border border-border bg-card p-6 shadow-xs" aria-labelledby="compare-title">
           <div className="flex justify-between items-center flex-wrap gap-4 mb-4">
