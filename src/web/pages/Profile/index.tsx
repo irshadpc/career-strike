@@ -12,6 +12,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { useToast } from '../../components/ui/toast';
 import { uploadDocument } from '../../helpers/documents';
 import { ExternalLink, Link } from '../../router';
 import { CURATED_MARKETS } from '../Markets';
@@ -23,6 +24,7 @@ import { SuggestSkillsSection } from './-components/SuggestSkillsSection';
 import { getInitials, SECTIONS, validLinkedin } from './-helpers/profileHelpers';
 
 export function Profile() {
+  const { toast } = useToast();
   const [facts, setFacts] = useState<ProfileFact[] | null>(null);
   const [evidence, setEvidence] = useState<ProfileEvidence[] | null>(null);
   const [conflicts, setConflicts] = useState<EvidenceConflict[]>([]);
@@ -218,54 +220,84 @@ export function Profile() {
                 const msg = await uploadDocument(file, 'resume');
                 setSaveStatus(msg);
                 e.target.value = '';
-                void load();
-                if (msg.startsWith('Uploaded')) {
-                  // Auto-extract suggested facts from the uploaded résumé; manual entry remains the fallback.
-                  try {
-                    const docs = await api<{ documents: StoredDocument[] }>('/api/documents');
-                    const latest = docs.documents
-                      .filter((d) => d.kind === 'resume')
-                      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
-                    if (latest) {
-                      const res = await api<{
-                        suggested: unknown[];
-                        profile?: { fullName?: string; headline?: string; summary?: string };
-                      }>('/api/profile/suggestions', {
-                        method: 'POST',
-                        body: { documentId: latest.id },
-                      });
-                      const n = Array.isArray(res.suggested) ? res.suggested.length : 0;
-                      // Auto-fill identity fields from the résumé when they are currently empty.
-                      const p = res.profile;
-                      if (p) {
-                        if (p.fullName && !fullName.trim()) {
-                          setFullName(p.fullName);
-                          void api(`/api/settings/${encodeURIComponent('identity.fullName')}`, {
-                            method: 'PUT',
-                            body: { value: p.fullName },
-                          }).catch(() => {});
-                        }
-                        if (p.headline && !headline.trim()) {
-                          setHeadline(p.headline);
-                          void api(`/api/settings/${encodeURIComponent('identity.headline')}`, {
-                            method: 'PUT',
-                            body: { value: p.headline },
-                          }).catch(() => {});
-                        }
-                        if (p.summary && !summary.trim()) {
-                          setSummary(p.summary);
-                          void api(`/api/settings/${encodeURIComponent('identity.summary')}`, {
-                            method: 'PUT',
-                            body: { value: p.summary },
-                          }).catch(() => {});
-                        }
-                      }
-                      setSaveStatus(`${msg} ${n} item${n === 1 ? '' : 's'} suggested for review.`);
-                      void load();
-                    }
-                  } catch {
-                    // Suggestion is best-effort; the document is still stored.
+                if (!msg.startsWith('Uploaded')) {
+                  toast({ variant: 'destructive', title: 'Résumé upload failed', description: msg });
+                  return;
+                }
+                toast({ variant: 'success', title: 'Résumé uploaded', description: 'Reading it on this computer…' });
+                // Auto-extract suggested facts from the uploaded résumé; manual entry remains the fallback.
+                try {
+                  const docs = await api<{ documents: StoredDocument[] }>('/api/documents');
+                  const latest = docs.documents
+                    .filter((d) => d.kind === 'resume')
+                    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
+                  if (!latest) {
+                    void load();
+                    return;
                   }
+                  const res = await api<{
+                    suggested: unknown[];
+                    profile?: { fullName?: string; headline?: string; summary?: string };
+                  }>('/api/profile/suggestions', {
+                    method: 'POST',
+                    body: { documentId: latest.id },
+                  });
+                  const n = Array.isArray(res.suggested) ? res.suggested.length : 0;
+                  // Auto-fill identity fields from the résumé when they are currently empty.
+                  const p = res.profile;
+                  if (p) {
+                    if (p.fullName && !fullName.trim()) {
+                      setFullName(p.fullName);
+                      void api(`/api/settings/${encodeURIComponent('identity.fullName')}`, {
+                        method: 'PUT',
+                        body: { value: p.fullName },
+                      }).catch(() => {});
+                    }
+                    if (p.headline && !headline.trim()) {
+                      setHeadline(p.headline);
+                      void api(`/api/settings/${encodeURIComponent('identity.headline')}`, {
+                        method: 'PUT',
+                        body: { value: p.headline },
+                      }).catch(() => {});
+                    }
+                    if (p.summary && !summary.trim()) {
+                      setSummary(p.summary);
+                      void api(`/api/settings/${encodeURIComponent('identity.summary')}`, {
+                        method: 'PUT',
+                        body: { value: p.summary },
+                      }).catch(() => {});
+                    }
+                  }
+                  setSaveStatus(`${msg} ${n} item${n === 1 ? '' : 's'} suggested for review.`);
+                  toast(
+                    n > 0
+                      ? {
+                          variant: 'success',
+                          title: `${n} item${n === 1 ? '' : 's'} found in your résumé`,
+                          description: 'Review the suggestions below — nothing is used until you approve it.',
+                          action: {
+                            label: 'Review suggestions',
+                            onClick: () =>
+                              document
+                                .getElementById('profile-skill')
+                                ?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+                          },
+                        }
+                      : {
+                          title: 'No new items found',
+                          description: 'Your profile already covers what this résumé contains. Add any gaps by hand.',
+                        },
+                  );
+                  void load();
+                } catch (err) {
+                  // The document is stored even when text extraction is not possible.
+                  const detail =
+                    err instanceof ApiError && err.status === 400
+                      ? 'This file has no readable text (scanned PDFs need manual entry).'
+                      : 'The file is saved, but its text could not be read. Add anything missing by hand.';
+                  setSaveStatus(`${msg} ${detail}`);
+                  toast({ variant: 'destructive', title: 'Could not read the résumé', description: detail });
+                  void load();
                 }
               }}
             />

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, type StoredDocument } from '../../../api';
 import { Button } from '../../../components/ui/button';
+import { useToast } from '../../../components/ui/toast';
 import { formatDate } from '../../../format';
 import { uploadDocument } from '../../../helpers/documents';
 
@@ -11,6 +12,7 @@ export function DocumentsSection({
   onChange?: () => void;
   onProfileExtracted?: (profile: { fullName?: string; headline?: string; summary?: string }) => void;
 } = {}) {
+  const { toast } = useToast();
   const [docs, setDocs] = useState<StoredDocument[] | null>(null);
   const [kind, setKind] = useState<'resume' | 'cover_letter' | 'other'>('resume');
   const [status, setStatus] = useState<string | null>(null);
@@ -36,11 +38,34 @@ export function DocumentsSection({
       const n = Array.isArray(res.suggested) ? res.suggested.length : 0;
       if (res.profile) onProfileExtracted?.(res.profile);
       setStatus((prev) => `${prev ?? 'Uploaded.'} ${n} item${n === 1 ? '' : 's'} suggested for review.`);
+      toast(
+        n > 0
+          ? {
+              variant: 'success',
+              title: `${n} item${n === 1 ? '' : 's'} found in your résumé`,
+              description: 'Review the suggestions — nothing is used until you approve it.',
+              action: {
+                label: 'Review suggestions',
+                onClick: () =>
+                  document.getElementById('profile-skill')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+              },
+            }
+          : {
+              title: 'No new items found',
+              description: 'Your profile already covers what this résumé contains. Add any gaps by hand.',
+            },
+      );
       onChange?.();
-    } catch {
-      // Suggestion is best-effort; the document is still stored.
+    } catch (err) {
+      const detail =
+        err instanceof Error && err.message.includes('UNSUPPORTED_TYPE')
+          ? 'This file has no readable text (scanned PDFs need manual entry).'
+          : 'The file is saved, but its text could not be read. Add anything missing by hand.';
+      setStatus(detail);
+      toast({ variant: 'destructive', title: 'Could not read the résumé', description: detail });
+      onChange?.();
     }
-  }, [onChange]);
+  }, [onChange, onProfileExtracted, toast]);
 
   useEffect(() => {
     void load();
@@ -114,7 +139,7 @@ export function DocumentsSection({
         </div>
         <div className="space-y-1">
           <label htmlFor="doc-file" className="block text-xs font-medium text-foreground">
-            File (PDF, .docx or .txt, up to 10 MB)
+            File (PDF, .docx, .txt or .md, up to 10 MB)
           </label>
           <input
             id="doc-file"
@@ -128,7 +153,12 @@ export function DocumentsSection({
               setStatus(msg);
               e.target.value = '';
               void load();
-              if (kind === 'resume' && msg.startsWith('Uploaded')) {
+              if (!msg.startsWith('Uploaded')) {
+                toast({ variant: 'destructive', title: 'Upload failed', description: msg });
+                return;
+              }
+              toast({ variant: 'success', title: 'Document uploaded', description: file.name });
+              if (kind === 'resume') {
                 await suggestFromLatestResume();
               }
             }}

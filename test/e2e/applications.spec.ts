@@ -37,7 +37,7 @@ test.describe('applications', () => {
 
     await page.goto(`${cs.origin}/profile`);
     await page
-      .getByLabel('File (PDF, .docx or .txt, up to 10 MB)')
+      .getByLabel('File (PDF, .docx, .txt or .md, up to 10 MB)')
       .setInputFiles({ name: 'Jordan Resume.pdf', mimeType: 'application/pdf', buffer: PDF });
     await expect(page.getByTestId('documents')).toContainText('Jordan Resume.pdf');
     await expect(page.getByRole('link', { name: 'Download Jordan Resume.pdf' })).toHaveAttribute(

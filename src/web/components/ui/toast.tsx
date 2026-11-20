@@ -11,7 +11,7 @@ interface ToastItem {
   id: number;
   title?: string;
   description?: string;
-  variant: ToastVariant;
+  variant?: ToastVariant;
   action?: ToastAction;
   duration?: number;
 }

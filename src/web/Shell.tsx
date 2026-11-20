@@ -1,25 +1,18 @@
-import * as Dialog from '@radix-ui/react-dialog';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Outlet } from '@tanstack/react-router';
-import { ChevronDown, Menu, X } from 'lucide-react';
-import { useState } from 'react';
 import { UpdateBanner } from './components/Updates';
 import { Button } from './components/ui/button';
 import { ToastProvider } from './components/ui/toast';
 import { RETRY_MS, useConnection } from './connection';
 import { Link, usePath } from './router';
 
-const PRIMARY_NAV = [
+const NAV = [
   { href: '/', label: 'Home' },
   { href: '/opportunities', label: 'Opportunities' },
-  { href: '/applications', label: 'Applications' },
-  { href: '/resume', label: 'Resume Studio' },
-  { href: '/outreach', label: 'Outreach' },
-] as const;
-
-const WORKSPACE_NAV = [
   { href: '/markets', label: 'Markets' },
+  { href: '/resume', label: 'Resume Studio' },
+  { href: '/applications', label: 'Applications' },
   { href: '/profile', label: 'Profile' },
+  { href: '/outreach', label: 'Outreach' },
   { href: '/insights', label: 'Insights' },
   { href: '/activity', label: 'Activity' },
   { href: '/settings', label: 'Settings' },
@@ -34,10 +27,6 @@ function isCurrent(href: string, path: string): boolean {
 export function Shell() {
   const { connection, generation, logout } = useConnection();
   const path = usePath();
-  const [mobileOpen, setMobileOpen] = useState(false);
-
-  const workspaceActive = WORKSPACE_NAV.find((item) => isCurrent(item.href, path));
-  const workspaceLabel = workspaceActive ? workspaceActive.label : 'Workspace';
 
   return (
     <ToastProvider>
@@ -48,178 +37,42 @@ export function Shell() {
         >
           Skip to content
         </a>
-        <header className="flex items-center justify-between gap-4 px-5 py-3.5 mt-5 bg-card/85 border border-border border-b-2 border-b-foreground rounded-xl shadow-xs backdrop-blur-md">
+        <header className="flex items-center justify-between gap-4 flex-wrap px-5 py-3.5 mt-5 bg-card/85 border border-border border-b-2 border-b-foreground rounded-xl shadow-xs backdrop-blur-md">
           <Link href="/" className="text-2xl font-bold font-serif text-foreground tracking-tight no-underline">
             Career <span className="text-primary italic font-medium">Strike</span>
           </Link>
-
-          {/* Desktop primary nav */}
-          <nav aria-label="Primary" className="hidden md:flex items-center gap-1 flex-1 justify-center">
-            {PRIMARY_NAV.map((item) => {
-              const active = isCurrent(item.href, path);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  aria-current={active ? 'page' : undefined}
-                  className={`inline-block px-3 py-1.5 rounded-md text-sm font-medium transition-colors no-underline ${
-                    active
-                      ? 'bg-primary/10 text-primary font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <button
-                  type="button"
-                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    workspaceActive
-                      ? 'bg-primary/10 text-primary font-semibold'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                  }`}
-                  aria-label="Workspace menu"
-                >
-                  {workspaceLabel}
-                  <ChevronDown className="h-3.5 w-3.5" />
-                </button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content
-                  className="min-w-[160px] rounded-lg border border-border bg-card p-1 shadow-lg z-50"
-                  sideOffset={6}
-                >
-                  {WORKSPACE_NAV.map((item) => {
-                    const active = isCurrent(item.href, path);
-                    return (
-                      <DropdownMenu.Item key={item.href} asChild>
-                        <Link
-                          href={item.href}
-                          aria-current={active ? 'page' : undefined}
-                          className={`block px-3 py-1.5 rounded-md text-sm no-underline ${
-                            active
-                              ? 'bg-primary/10 text-primary font-semibold'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                          }`}
-                        >
-                          {item.label}
-                        </Link>
-                      </DropdownMenu.Item>
-                    );
-                  })}
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+          <nav aria-label="Primary" className="flex-1 overflow-x-auto">
+            <ul className="flex items-center flex-wrap gap-1 m-0 p-0 list-none">
+              {NAV.map((item) => {
+                const active = isCurrent(item.href, path);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      aria-current={active ? 'page' : undefined}
+                      className={`inline-block px-3 py-1.5 rounded-md text-sm font-medium transition-colors no-underline ${
+                        active
+                          ? 'bg-primary/10 text-primary font-semibold'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </nav>
-
-          {/* Desktop sign out */}
           <Button
             type="button"
             variant="ghost"
             size="sm"
             onClick={() => void logout()}
-            className="hidden md:inline-flex text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground"
           >
             Sign out
           </Button>
-
-          {/* Mobile menu trigger */}
-          <button
-            type="button"
-            className="md:hidden inline-flex items-center justify-center h-9 w-9 rounded-md border border-border text-foreground"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Open navigation"
-          >
-            <Menu className="h-5 w-5" />
-          </button>
         </header>
-
-        {/* Mobile drawer */}
-        <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50 md:hidden" />
-            <Dialog.Content
-              className="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-card border-r border-border p-5 flex flex-col gap-4 md:hidden focus:outline-none"
-              aria-label="Mobile navigation"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-lg font-bold font-serif">Career Strike</span>
-                <button
-                  type="button"
-                  onClick={() => setMobileOpen(false)}
-                  aria-label="Close navigation"
-                  className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-2">
-                  Core workflow
-                </p>
-                {PRIMARY_NAV.map((item) => {
-                  const active = isCurrent(item.href, path);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      aria-current={active ? 'page' : undefined}
-                      className={`block px-3 py-2 rounded-md text-sm font-medium no-underline ${
-                        active
-                          ? 'bg-primary/10 text-primary font-semibold'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-2">
-                  Workspace
-                </p>
-                {WORKSPACE_NAV.map((item) => {
-                  const active = isCurrent(item.href, path);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      aria-current={active ? 'page' : undefined}
-                      className={`block px-3 py-2 rounded-md text-sm font-medium no-underline ${
-                        active
-                          ? 'bg-primary/10 text-primary font-semibold'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-              </div>
-              <div className="mt-auto">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setMobileOpen(false);
-                    void logout();
-                  }}
-                  className="w-full justify-start text-muted-foreground hover:text-foreground"
-                >
-                  Sign out
-                </Button>
-              </div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
 
         {connection === 'unavailable' && (
           <div

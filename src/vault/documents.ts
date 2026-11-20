@@ -13,6 +13,10 @@ const TYPES: Readonly<Record<string, { magic: Buffer | null; ext: string }>> = {
     ext: 'docx',
   },
   'text/plain': { magic: null, ext: 'txt' },
+  // Markdown is plain text; browsers often report no type at all for .md files, so the dashboard
+  // maps the extension before uploading. Both spellings are accepted here.
+  'text/markdown': { magic: null, ext: 'md' },
+  'text/x-markdown': { magic: null, ext: 'md' },
 };
 export const ACCEPTED_DOCUMENT_TYPES = Object.keys(TYPES);
 
@@ -84,7 +88,7 @@ export class DocumentVault {
     actor: string,
   ): StoredDocument {
     const type = TYPES[input.mime];
-    if (!type) throw new DocumentError('UNSUPPORTED_TYPE', 'Upload a PDF, Word (.docx) or plain-text file.');
+    if (!type) throw new DocumentError('UNSUPPORTED_TYPE', 'Upload a PDF, Word (.docx), Markdown or plain-text file.');
     if (input.bytes.length === 0) throw new DocumentError('EMPTY', 'The file is empty.');
     if (input.bytes.length > MAX_DOCUMENT_BYTES)
       throw new DocumentError('TOO_LARGE', 'Files must be 10 MB or smaller.');

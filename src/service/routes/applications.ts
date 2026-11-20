@@ -126,7 +126,7 @@ export function registerApplicationRoutes(
     if (!Buffer.isBuffer(req.body))
       return reply
         .code(415)
-        .send({ error: 'UNSUPPORTED_TYPE', message: 'Upload a PDF, Word (.docx) or plain-text file.' });
+        .send({ error: 'UNSUPPORTED_TYPE', message: 'Upload a PDF, Word (.docx), Markdown or plain-text file.' });
     try {
       return reply
         .code(201)

@@ -1,24 +1,23 @@
-import { createRootRoute, createRoute, createRouter, lazyRouteComponent, notFound } from '@tanstack/react-router';
+import { createRootRoute, createRoute, createRouter, notFound } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { Activity } from './pages/Activity';
+import { AddJob } from './pages/AddJob';
+import { ApplicationPage } from './pages/ApplicationPage';
+import { Applications } from './pages/Applications';
+import { Compare } from './pages/Compare';
+import { Home } from './pages/Home';
+import { Insights } from './pages/Insights';
+import { JobPage } from './pages/JobPage';
+import { Markets } from './pages/Markets';
 import { NotFound } from './pages/NotFound';
+import { Opportunities } from './pages/Opportunities';
+import { Outreach } from './pages/Outreach';
+import { Prep } from './pages/Prep';
+import { Profile } from './pages/Profile';
+import { ResumeStudio } from './pages/ResumeStudio';
+import { Settings } from './pages/Settings';
+import { Sources } from './pages/Sources';
 import { Shell } from './Shell';
-
-const Activity = lazyRouteComponent(() => import('./pages/Activity'), 'Activity');
-const AddJob = lazyRouteComponent(() => import('./pages/AddJob'), 'AddJob');
-const ApplicationPage = lazyRouteComponent(() => import('./pages/ApplicationPage'), 'ApplicationPage');
-const Applications = lazyRouteComponent(() => import('./pages/Applications'), 'Applications');
-const Compare = lazyRouteComponent(() => import('./pages/Compare'), 'Compare');
-const Home = lazyRouteComponent(() => import('./pages/Home'), 'Home');
-const Insights = lazyRouteComponent(() => import('./pages/Insights'), 'Insights');
-const JobPage = lazyRouteComponent(() => import('./pages/JobPage'), 'JobPage');
-const Markets = lazyRouteComponent(() => import('./pages/Markets'), 'Markets');
-const Opportunities = lazyRouteComponent(() => import('./pages/Opportunities'), 'Opportunities');
-const Outreach = lazyRouteComponent(() => import('./pages/Outreach'), 'Outreach');
-const Prep = lazyRouteComponent(() => import('./pages/Prep'), 'Prep');
-const Profile = lazyRouteComponent(() => import('./pages/Profile'), 'Profile');
-const ResumeStudio = lazyRouteComponent(() => import('./pages/ResumeStudio'), 'ResumeStudio');
-const Settings = lazyRouteComponent(() => import('./pages/Settings'), 'Settings');
-const Sources = lazyRouteComponent(() => import('./pages/Sources'), 'Sources');
 
 // The dashboard route tree. Record ids are opaque slugs; anything else is "not found" rather
 // than a request to the API.
@@ -29,7 +28,8 @@ const requireId = ({ params }: { params: { id: string } }): void => {
 
 const rootRoute = createRootRoute({ component: Shell, notFoundComponent: NotFound });
 
-const page = (path: string, component: any) => createRoute({ getParentRoute: () => rootRoute, path, component });
+const page = (path: string, component: () => ReactNode) =>
+  createRoute({ getParentRoute: () => rootRoute, path, component });
 
 const jobRoute = createRoute({
   getParentRoute: () => rootRoute,

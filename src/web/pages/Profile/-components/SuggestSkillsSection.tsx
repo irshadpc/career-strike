@@ -5,9 +5,11 @@ import { api, type ProfileFact } from '../../../api';
 import { Button } from '../../../components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../components/ui/form';
 import { Textarea } from '../../../components/ui/textarea';
+import { useToast } from '../../../components/ui/toast';
 import { type SuggestSkillsFormValues, suggestSkillsSchema } from '../-schema/profile';
 
 export function SuggestSkillsSection({ onChange }: { onChange: () => void }) {
+  const { toast } = useToast();
   const [status, setStatus] = useState<string | null>(null);
 
   const form = useForm<SuggestSkillsFormValues>({
@@ -24,14 +26,36 @@ export function SuggestSkillsSection({ onChange }: { onChange: () => void }) {
         body: { text: values.text },
       });
       form.reset();
+      const count = suggested.length;
       setStatus(
-        suggested.length === 0
+        count === 0
           ? 'No new skills found. Add any that are missing by hand below.'
-          : `${suggested.length} skill${suggested.length === 1 ? '' : 's'} suggested below. Approve the ones that are true; nothing is used until you do.`,
+          : `${count} skill${count === 1 ? '' : 's'} suggested below. Approve the ones that are true; nothing is used until you do.`,
       );
+      toast({
+        variant: count > 0 ? 'success' : 'default',
+        title: count === 0 ? 'No new skills found' : `${count} skill${count === 1 ? '' : 's'} suggested`,
+        description:
+          count === 0
+            ? 'Everything recognisable is already in your profile. Add any missing skills by hand.'
+            : 'Approve the ones that are true — nothing is used until you do.',
+        action:
+          count > 0
+            ? {
+                label: 'Review skills',
+                onClick: () =>
+                  document.getElementById('profile-skill')?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+              }
+            : undefined,
+      });
       onChange();
     } catch {
       setStatus('Could not read the text. Check that the service is running.');
+      toast({
+        variant: 'destructive',
+        title: 'Could not read the résumé text',
+        description: 'Check that the service is running, then try again.',
+      });
     }
   };
 

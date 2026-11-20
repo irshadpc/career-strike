@@ -175,6 +175,12 @@ describe('candidate profile', () => {
     expect(
       (res.body as { suggested: { value: { name: string } }[] }).suggested.map((f) => f.value.name).sort(),
     ).toEqual(['PostgreSQL', 'Python']);
+    // Markdown is plain text: browsers often upload it with no MIME type, so the vault accepts it.
+    const md = await upload('text/markdown', Buffer.from('# Résumé\n\nBuilt APIs with Kotlin and Terraform.'));
+    const mdRes = await call('POST', '/api/profile/suggestions', { documentId: md.document.id });
+    expect(
+      (mdRes.body as { suggested: { value: { name: string } }[] }).suggested.map((f) => f.value.name).sort(),
+    ).toEqual(['Kotlin', 'Terraform']);
     const pdf = await upload('application/pdf', Buffer.from('%PDF-1.4\nsynthetic'));
     const refused = await call('POST', '/api/profile/suggestions', { documentId: pdf.document.id });
     expect(refused.status).toBe(400);
