@@ -33,7 +33,13 @@ function extractPdfText(bytes: Buffer): string | null {
   }
   if (!foundStream) chunks.push(extractPdfOperators(raw));
   const text = chunks.join('\n').trim();
-  return text ? text : null;
+  if (text) return text;
+  // Fallback: some PDFs expose text only as parenthesised strings.
+  const fallback = (raw.match(/\((?:\\.|[^()\\])*\)/g) ?? [])
+    .map((t) => decodePdfString(t))
+    .join(' ')
+    .trim();
+  return fallback ? fallback : null;
 }
 
 function extractPdfOperators(content: string): string {

@@ -31,7 +31,9 @@ export function openDb(file: string, migrations: readonly Migration[] = MIGRATIO
     if (file !== ':memory:' && process.platform !== 'win32') fs.chmodSync(file, 0o600);
     db.pragma('journal_mode = WAL');
     db.pragma('foreign_keys = ON');
-    // better-sqlite3 waits synchronously, so keep the wait short: a busy database becomes a clear 503.
+    // Synchronous NORMAL is safe under WAL and materially reduces write latency on consumer hardware.
+    db.pragma('synchronous = NORMAL');
+    // better-sqlite3 waits synchronously; a short, explicit wait keeps the UI responsive under load.
     db.pragma('busy_timeout = 2000');
     migrate(db, migrations, file === ':memory:' ? null : path.join(path.dirname(file), 'backups'));
     return db;

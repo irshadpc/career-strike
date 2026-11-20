@@ -16,6 +16,7 @@ export function DocumentsSection({
   const [docs, setDocs] = useState<StoredDocument[] | null>(null);
   const [kind, setKind] = useState<'resume' | 'cover_letter' | 'other'>('resume');
   const [status, setStatus] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setDocs((await api<{ documents: StoredDocument[] }>('/api/documents').catch(() => ({ documents: [] }))).documents);
@@ -31,12 +32,14 @@ export function DocumentsSection({
       const res = await api<{
         suggested: unknown[];
         profile?: { fullName?: string; headline?: string; summary?: string };
+        extractedPreview?: string;
       }>('/api/profile/suggestions', {
         method: 'POST',
         body: { documentId: latest.id },
       });
       const n = Array.isArray(res.suggested) ? res.suggested.length : 0;
       if (res.profile) onProfileExtracted?.(res.profile);
+      setPreview(res.extractedPreview?.trim() ? res.extractedPreview.trim() : null);
       setStatus((prev) => `${prev ?? 'Uploaded.'} ${n} item${n === 1 ? '' : 's'} suggested for review.`);
       toast(
         n > 0
@@ -169,6 +172,21 @@ export function DocumentsSection({
         <p role="status" aria-live="polite" className="text-xs text-muted-foreground mt-2">
           {status}
         </p>
+      )}
+      {preview && (
+        <details className="mt-4 rounded-lg border border-border/70 bg-muted/30 p-3 text-xs">
+          <summary className="cursor-pointer font-medium text-foreground select-none">
+            What the ATS sees (extracted text)
+          </summary>
+          <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-[11px] text-muted-foreground max-h-64 overflow-auto">
+            {preview.slice(0, 2000)}
+            {preview.length > 2000 ? '\n…' : ''}
+          </pre>
+          <p className="mt-2 text-[10px] text-muted-foreground">
+            If this looks scrambled or empty, the file is likely a scanned PDF or a multi-column layout — paste the text
+            manually.
+          </p>
+        </details>
       )}
     </section>
   );

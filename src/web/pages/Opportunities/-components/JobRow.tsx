@@ -78,6 +78,7 @@ export function JobRow({
             )}
           </div>
         )}
+        <GhostJobTriage job={job} />
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1">
           <StatusChip status={job.status} lastVerifiedAt={job.lastVerifiedAt} />
           <span>{job.sources.map((s) => SOURCE_LABEL[s] ?? s).join(', ')}</span>
@@ -114,6 +115,47 @@ export function JobRow({
         </label>
       </div>
     </li>
+  );
+}
+
+function GhostJobTriage({ job }: { job: JobSummary }) {
+  const ageDays = Math.max(0, Math.floor((Date.now() - new Date(job.firstSeenAt).getTime()) / 86_400_000));
+  const stale = ageDays >= 30;
+  const noSalary = !job.salary;
+  const fitRatio =
+    job.fit && job.fit.matchedSkills.length + job.fit.missingRequiredSkills.length > 0
+      ? job.fit.matchedSkills.length / (job.fit.matchedSkills.length + job.fit.missingRequiredSkills.length)
+      : null;
+  const roleMatch = fitRatio === null ? null : fitRatio >= 0.6 ? 'strong' : fitRatio >= 0.3 ? 'partial' : 'weak';
+  // Only show the triage line when there is something worth flagging or confirming.
+  if (!stale && !noSalary && roleMatch !== 'weak') return null;
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 text-[10px] pt-1" aria-label="Worth your energy triage">
+      <span className="font-semibold text-muted-foreground uppercase tracking-wider">Triage:</span>
+      {stale ? (
+        <Badge variant="warning" className="text-[10px]">
+          Stale posting ({ageDays}d)
+        </Badge>
+      ) : (
+        <Badge variant="outline" className="text-[10px]">
+          Fresh ({ageDays}d)
+        </Badge>
+      )}
+      {noSalary ? (
+        <Badge variant="warning" className="text-[10px]">
+          No salary listed
+        </Badge>
+      ) : (
+        <Badge variant="outline" className="text-[10px]">
+          Salary listed
+        </Badge>
+      )}
+      {roleMatch === 'weak' && (
+        <Badge variant="destructive" className="text-[10px]">
+          Weak role match
+        </Badge>
+      )}
+    </div>
   );
 }
 

@@ -184,7 +184,7 @@ export function registerOpportunityRoutes(
     }
     const suggested = suggestResumeFacts(db, text, actorOf(req));
     const profile = extractResumeProfile(text);
-    return reply.code(201).send({ suggested, profile });
+    return reply.code(201).send({ suggested, profile, extractedPreview: text.slice(0, 800) });
   });
 
   app.post<{ Params: { id: string } }>('/api/profile/facts/:id/approve', async (req, reply) => {

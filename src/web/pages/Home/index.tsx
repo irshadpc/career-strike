@@ -50,6 +50,21 @@ export function Home() {
   const [decisionPending, setDecisionPending] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Daily focus cap: a calm, anti-burnout guardrail (Pillar 1 of the candidate UX audit).
+  // Tracks how many roles the candidate has actively decided on today, on this device.
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const [focusCap, setFocusCap] = useState<number>(() => {
+    const v = window.localStorage.getItem('cs.dailyFocusCap');
+    const n = v ? Number(v) : 5;
+    return Number.isFinite(n) && n > 0 ? n : 5;
+  });
+  const [focusDone, setFocusDone] = useState<number>(() => {
+    const raw = window.localStorage.getItem(`cs.dailyFocus.done.${todayKey}`);
+    const n = raw ? Number(raw) : 0;
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  });
+  const [restOverride, setRestOverride] = useState(false);
+
   const handleDecision = async (jobId: string, decision: 'APPLY' | 'INVESTIGATE' | 'WATCH' | 'SKIP') => {
     setDecisionPending(jobId);
     const label = decision.charAt(0) + decision.slice(1).toLowerCase();
@@ -60,6 +75,11 @@ export function Home() {
       });
       if ('reload' in desk) desk.reload();
       toast({ variant: 'success', title: `${label} recorded`, description: 'Your decision has been saved.' });
+      setFocusDone((d) => {
+        const next = d + 1;
+        window.localStorage.setItem(`cs.dailyFocus.done.${todayKey}`, String(next));
+        return next;
+      });
     } catch {
       toast({
         variant: 'destructive',
@@ -79,6 +99,54 @@ export function Home() {
       {overview.state === 'error' && <ErrorPanel message={overview.message} onRetry={overview.retry} />}
       {overview.state === 'ready' && (
         <>
+          {/* Daily focus cap — calm, anti-burnout guardrail (Pillar 1). */}
+          <section
+            aria-labelledby="focus-cap-title"
+            className="mb-6 p-4 bg-card border border-border rounded-xl shadow-xs"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <h2 id="focus-cap-title" className="text-sm font-semibold text-foreground m-0">
+                  Today's focus
+                </h2>
+                <p className="text-xs text-muted-foreground m-0">
+                  {focusDone >= focusCap && !restOverride
+                    ? "You've reached today's focus cap. Rest is fuel for a multi-month search — pick it back up tomorrow."
+                    : `${focusDone} of ${focusCap} roles decided today. A small, deliberate daily budget beats grinding.`}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  Daily cap
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={focusCap}
+                    onChange={(e) => {
+                      const n = Number(e.target.value);
+                      if (Number.isFinite(n) && n > 0 && n <= 20) {
+                        setFocusCap(n);
+                        window.localStorage.setItem('cs.dailyFocusCap', String(n));
+                      }
+                    }}
+                    className="h-7 w-14 rounded-md border border-input bg-background px-2 text-xs"
+                  />
+                </label>
+                {focusDone >= focusCap && !restOverride && (
+                  <Button size="sm" variant="outline" className="text-xs" onClick={() => setRestOverride(true)}>
+                    Continue anyway
+                  </Button>
+                )}
+                {restOverride && (
+                  <Button size="sm" variant="ghost" className="text-xs" onClick={() => setRestOverride(false)}>
+                    Pause
+                  </Button>
+                )}
+              </div>
+            </div>
+          </section>
+
           {readiness.state === 'ready' && (
             <section
               aria-labelledby="readiness-home-title"
@@ -169,78 +237,95 @@ export function Home() {
               )}
 
               {/* Top 3 Decision-Ready Opportunities */}
-              {desk.data.topRecommendations && desk.data.topRecommendations.length > 0 && (
-                <div className="pt-3 border-t border-border/60">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                    Top Decision-Ready Opportunities
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {desk.data.topRecommendations.map((rec) => (
-                      <div
-                        key={rec.job.id}
-                        className="p-4 rounded-lg border border-border bg-card/60 flex flex-col justify-between space-y-3"
-                      >
-                        <div className="space-y-1.5">
-                          <div className="flex justify-between items-start gap-2">
-                            <span className="text-xs font-bold text-foreground">{rec.job.employer}</span>
-                            <Badge variant="secondary" className="text-[10px]">
-                              {rec.nextBestAction}
-                            </Badge>
-                          </div>
-                          <h4 className="text-sm font-semibold text-foreground m-0">
-                            <Link href={`/jobs/${rec.job.id}`} className="hover:underline">
-                              {rec.job.title}
-                            </Link>
-                          </h4>
-                          <div className="text-xs text-muted-foreground space-y-0.5 pt-1">
-                            <p className="m-0">
-                              <strong>Relevance:</strong> Tier {rec.dimensions.professionalRelevance.tier}
-                            </p>
-                            <p className="m-0">
-                              <strong>Effort:</strong> {rec.dimensions.applicationEffort.level}
-                            </p>
-                            {rec.job.salary && (
-                              <p className="m-0 font-mono text-[11px] text-teal-600 dark:text-teal-400">
-                                {rec.job.salary.currency} {rec.job.salary.min?.toLocaleString() ?? '—'} -{' '}
-                                {rec.job.salary.max?.toLocaleString() ?? '—'}/{rec.job.salary.interval}
+              {desk.data.topRecommendations &&
+                desk.data.topRecommendations.length > 0 &&
+                !(focusDone >= focusCap && !restOverride) && (
+                  <div className="pt-3 border-t border-border/60">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                      Top Decision-Ready Opportunities
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {desk.data.topRecommendations.map((rec) => (
+                        <div
+                          key={rec.job.id}
+                          className="p-4 rounded-lg border border-border bg-card/60 flex flex-col justify-between space-y-3"
+                        >
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between items-start gap-2">
+                              <span className="text-xs font-bold text-foreground">{rec.job.employer}</span>
+                              <Badge variant="secondary" className="text-[10px]">
+                                {rec.nextBestAction}
+                              </Badge>
+                            </div>
+                            <h4 className="text-sm font-semibold text-foreground m-0">
+                              <Link href={`/jobs/${rec.job.id}`} className="hover:underline">
+                                {rec.job.title}
+                              </Link>
+                            </h4>
+                            <div className="text-xs text-muted-foreground space-y-0.5 pt-1">
+                              <p className="m-0">
+                                <strong>Relevance:</strong> Tier {rec.dimensions.professionalRelevance.tier}
                               </p>
-                            )}
+                              <p className="m-0">
+                                <strong>Effort:</strong> {rec.dimensions.applicationEffort.level}
+                              </p>
+                              {rec.job.salary && (
+                                <p className="m-0 font-mono text-[11px] text-teal-600 dark:text-teal-400">
+                                  {rec.job.salary.currency} {rec.job.salary.min?.toLocaleString() ?? '—'} -{' '}
+                                  {rec.job.salary.max?.toLocaleString() ?? '—'}/{rec.job.salary.interval}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5 pt-2 border-t border-border/40">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              className="text-xs flex-1 h-7"
+                              disabled={decisionPending === rec.job.id}
+                              onClick={() => void handleDecision(rec.job.id, 'APPLY')}
+                            >
+                              {decisionPending === rec.job.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="text-xs flex-1 h-7"
+                              disabled={decisionPending === rec.job.id}
+                              onClick={() => void handleDecision(rec.job.id, 'WATCH')}
+                            >
+                              {decisionPending === rec.job.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Watch'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs h-7 text-muted-foreground"
+                              disabled={decisionPending === rec.job.id}
+                              onClick={() => void handleDecision(rec.job.id, 'SKIP')}
+                            >
+                              {decisionPending === rec.job.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Skip'}
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex gap-1.5 pt-2 border-t border-border/40">
-                          <Button
-                            size="sm"
-                            variant="default"
-                            className="text-xs flex-1 h-7"
-                            disabled={decisionPending === rec.job.id}
-                            onClick={() => void handleDecision(rec.job.id, 'APPLY')}
-                          >
-                            {decisionPending === rec.job.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            className="text-xs flex-1 h-7"
-                            disabled={decisionPending === rec.job.id}
-                            onClick={() => void handleDecision(rec.job.id, 'WATCH')}
-                          >
-                            {decisionPending === rec.job.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Watch'}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-xs h-7 text-muted-foreground"
-                            disabled={decisionPending === rec.job.id}
-                            onClick={() => void handleDecision(rec.job.id, 'SKIP')}
-                          >
-                            {decisionPending === rec.job.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Skip'}
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+            </section>
+          )}
+
+          {desk.state === 'ready' && focusDone >= focusCap && !restOverride && (
+            <section
+              aria-labelledby="protected-rest-title"
+              className="mb-6 p-6 bg-card border border-border rounded-xl shadow-xs text-center space-y-2"
+            >
+              <h2 id="protected-rest-title" className="text-base font-semibold text-foreground m-0">
+                Protected rest
+              </h2>
+              <p className="text-sm text-muted-foreground m-0 max-w-md mx-auto">
+                You have reached today's focus cap. Rest is fuel for a multi-month search — your work is saved and
+                waiting for you tomorrow.
+              </p>
             </section>
           )}
 
