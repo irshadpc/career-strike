@@ -86,7 +86,7 @@ export function registerDocumentRoutes(app: FastifyInstance, deps: { db: Db }): 
     const format = parseFormat(req.query.format);
     if (!format) return reply.code(400).send({ error: 'UNSUPPORTED_FORMAT', message: 'Choose pdf or docx.' });
     const master = buildMasterResume(deps.db);
-    const exported = createExport(deps.db, {
+    const exported = await createExport(deps.db, {
       content: master.content,
       title: 'Master Resume',
       kind: 'resume',
@@ -101,11 +101,13 @@ export function registerDocumentRoutes(app: FastifyInstance, deps: { db: Db }): 
     if (!ownerAllowed(req)) return reply.code(403).send({ error: 'FORBIDDEN' });
     const master = buildMasterResume(deps.db);
     return {
-      reports: (['pdf', 'docx'] as const).map((format) =>
-        parserReport(
-          master.content,
-          format === 'pdf' ? renderPdf('Master Resume', master.content) : renderDocx('Master Resume', master.content),
-          format,
+      reports: await Promise.all(
+        (['pdf', 'docx'] as const).map((format) =>
+          parserReport(
+            master.content,
+            format === 'pdf' ? renderPdf('Master Resume', master.content) : renderDocx('Master Resume', master.content),
+            format,
+          ),
         ),
       ),
     };
@@ -120,7 +122,7 @@ export function registerDocumentRoutes(app: FastifyInstance, deps: { db: Db }): 
       const variant = variantFor(deps.db, req.params);
       if (!variant) return reply.code(404).send({ error: 'NOT_FOUND' });
       const title = jobTitleFor(deps.db, req.params.id);
-      const exported = createExport(deps.db, {
+      const exported = await createExport(deps.db, {
         content: variant.content,
         title: variant.kind === 'resume' ? `${title} Resume` : `${title} Cover Letter`,
         kind: variant.kind,
@@ -142,11 +144,13 @@ export function registerDocumentRoutes(app: FastifyInstance, deps: { db: Db }): 
       if (!variant) return reply.code(404).send({ error: 'NOT_FOUND' });
       const title = variant.kind === 'resume' ? 'Tailored Resume' : 'Tailored Cover Letter';
       return {
-        reports: (['pdf', 'docx'] as const).map((format) =>
-          parserReport(
-            variant.content,
-            format === 'pdf' ? renderPdf(title, variant.content) : renderDocx(title, variant.content),
-            format,
+        reports: await Promise.all(
+          (['pdf', 'docx'] as const).map((format) =>
+            parserReport(
+              variant.content,
+              format === 'pdf' ? renderPdf(title, variant.content) : renderDocx(title, variant.content),
+              format,
+            ),
           ),
         ),
       };

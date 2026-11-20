@@ -185,6 +185,10 @@ export interface JobSummary {
   employerExcluded: boolean;
   market: MarketFacts;
   sourceCapabilities: string[];
+  countryCode?: string | null;
+  countryCodes?: string[];
+  workMode?: 'remote' | 'hybrid' | 'onsite' | 'unknown';
+  normalizedLocation?: string | null;
   fit?: FitSummary;
 }
 
@@ -210,6 +214,7 @@ export interface JobList {
   total: number;
   jobs: JobSummary[];
   fitAvailable: boolean;
+  countryCounts?: Record<string, number>;
 }
 
 export interface Task {
@@ -231,7 +236,7 @@ export interface Task {
 
 export interface SourceBoard {
   id: string;
-  source: 'greenhouse' | 'lever' | 'ashby' | 'practice';
+  source: 'greenhouse' | 'lever' | 'ashby' | 'remotive' | 'arbeitnow' | 'practice';
   board: string;
   boardUrl: string;
   addedAt: string;
@@ -239,6 +244,9 @@ export interface SourceBoard {
   lastSuccessAt: string | null;
   lastError: string | null;
   consecutiveFailures: number;
+  lastSyncedAt: string | null;
+  lastStatus: 'ok' | 'error' | 'skipped' | null;
+  jobsFetchedCount: number | null;
   lastTask: { id: string; state: Task['state']; endedAt: string | null } | null;
 }
 
@@ -571,6 +579,27 @@ export interface OutreachDraft {
   events: { from: string | null; to: string; actor: string; note: string | null; at: string }[];
 }
 
+export interface ExportVerificationCheck {
+  id: string;
+  label: string;
+  status: 'PASS' | 'WARN' | 'FAIL';
+  explanation: string;
+}
+export interface ExportVerification {
+  passed: boolean;
+  checks: ExportVerificationCheck[];
+  warnings: string[];
+  failures: string[];
+  generatedSha256: string;
+  extractedCharacters: number;
+  generatedBytes: number;
+}
+export interface ExportResult {
+  filename: string;
+  pdf?: string;
+  docx?: string;
+  verification: ExportVerification;
+}
 export interface ParserReport {
   format: 'pdf' | 'docx';
   mime: string;
@@ -578,6 +607,8 @@ export interface ParserReport {
   sha256: string;
   extracted: boolean;
   extractedCharacters: number;
+  sparse: boolean;
+  ligatureCorruption: boolean;
   sourceCharacters: number;
   wordCoverage: number;
   missingWords: string[];

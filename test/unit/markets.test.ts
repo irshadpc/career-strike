@@ -34,6 +34,11 @@ describe('configured markets', () => {
       'AU',
       'CA',
       'HR',
+      'US',
+      'FR',
+      'NL',
+      'IE',
+      'GLOBAL',
     ]);
     expect(Object.values(COUNTRY_REGISTRY).every((country) => country.status === 'CONFIGURED')).toBe(true);
     expect(COUNTRY_REGISTRY.IN.defaultCities).toContain('Bengaluru');
@@ -302,6 +307,11 @@ describe('configured markets', () => {
       'AU',
       'CA',
       'HR',
+      'US',
+      'FR',
+      'NL',
+      'IE',
+      'GLOBAL',
     ]);
     const india = before.find((m) => m.code === 'IN')!;
     expect(india).toMatchObject({ name: 'India', configuredStatus: 'CONFIGURED', discoveryAvailable: false });

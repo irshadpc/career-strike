@@ -22,6 +22,10 @@ describe('Decision-Ready Opportunity Shortlist Engine', () => {
     duplicateOf: null,
     disposition: 'none',
     employerExcluded: false,
+    countryCode: 'US',
+    countryCodes: ['US'],
+    workMode: 'remote',
+    normalizedLocation: 'San Francisco, United States',
     market: {
       location: { countryCode: 'US', city: 'San Francisco', originalText: 'San Francisco, CA' },
       remoteEligibility: 'country_restricted',

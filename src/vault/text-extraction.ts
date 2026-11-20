@@ -1,52 +1,113 @@
-import { inflateSync } from 'node:zlib';
 import { decodeHTML } from 'entities';
 import { strFromU8, unzipSync } from 'fflate';
 
-/** Best-effort text extraction from a stored document. Returns null when no readable text can be recovered. */
-export function extractDocumentText(mime: string, bytes: Buffer): string | null {
-  if (mime === 'text/plain' || mime === 'text/markdown' || mime === 'text/x-markdown' || mime.startsWith('text/')) {
-    const text = bytes.toString('utf8');
-    return text.trim() ? text : null;
-  }
-  if (mime === 'application/pdf') return extractPdfText(bytes);
-  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return extractDocxText(bytes);
-  return null;
+/**
+ * Best-effort text extraction from a stored document. See the resume-studio blueprint
+ * ("Resilient Multi-Stage Resume Parsing"):
+ *   - PDFs parse through the official, Node-safe pdfjs-dist legacy build. The previous
+ *     hand-rolled regex extractor is kept only as a fallback for PDFs pdfjs cannot read.
+ *   - Sparse pages (<50 chars/page) are flagged for manual attention.
+ */
+export interface ExtractResult {
+  text: string | null;
+  /** True when the parser saw a body but little text — the signature of a scanned PDF. */
+  sparse: boolean;
+  /** True when text carries U+0000 / U+FFFD / Private Use Area — the fingerprint of ToUnicode CMap corruption. */
+  ligatureCorruption: boolean;
+  avgCharsPerPage: number | null;
 }
 
-function extractPdfText(bytes: Buffer): string | null {
-  if (!bytes.subarray(0, 5).equals(Buffer.from('%PDF-'))) return null;
+let pdfPromise: Promise<typeof import('pdfjs-dist/legacy/build/pdf.mjs')> | null = null;
+
+function loadPdf(): Promise<typeof import('pdfjs-dist/legacy/build/pdf.mjs')> {
+  pdfPromise ??= import('pdfjs-dist/legacy/build/pdf.mjs');
+  return pdfPromise;
+}
+
+export interface PdfOptions {
+  sparseCharsPerPage?: number;
+}
+
+async function extractPdfText(bytes: Buffer, options: PdfOptions = {}): Promise<ExtractResult> {
+  const loaded = await loadPdf();
+  const { getDocument, InvalidPDFException } = loaded;
+  try {
+    const doc = await getDocument({
+      // Copy: pdfjs can transfer/detach the source buffer; never mutate the caller's file bytes.
+      data: new Uint8Array(Buffer.from(bytes)),
+      useSystemFonts: false,
+      useWorkerFetch: false,
+    }).promise;
+    const items: string[] = [];
+    let totalChars = 0;
+    let pageCount = 0;
+    try {
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        const pageText: string[] = [];
+        for (const textItem of content.items) {
+          if (!('str' in textItem)) continue;
+          pageText.push(String(textItem.str));
+        }
+        const joined = pageText.join(' ').replace(/\s+/g, ' ').trim();
+        items.push(joined);
+        totalChars += joined.length;
+        pageCount++;
+      }
+    } finally {
+      try {
+        await (doc as unknown as { destroy: () => Promise<void> }).destroy();
+      } catch {
+        /* ignore */
+      }
+    }
+    const avg = pageCount > 0 ? totalChars / pageCount : null;
+    const text = items.join('\n').trim();
+    return {
+      text: text || null,
+      sparse: avg !== null && avg < (options.sparseCharsPerPage ?? 50),
+      ligatureCorruption: hasLigatureCorruption(text),
+      avgCharsPerPage: avg,
+    };
+  } catch (err) {
+    if (err instanceof InvalidPDFException) return fallbackExtractPdf(bytes);
+    throw err;
+  }
+}
+
+/**
+ * U+0000, U+FFFD and Private Use Area code points are the fingerprint of OpenType ToUnicode CMap
+ * corruption from ligature substitution — 'profile' → 'pro le', 'workflow' → 'work ow'.
+ */
+export function hasLigatureCorruption(text: string | null): boolean {
+  if (!text) return false;
+  return /[\u0000\uFFFD\uE000-\uF8FF]/.test(text);
+}
+
+function fallbackExtractPdf(bytes: Buffer): ExtractResult {
   const raw = bytes.toString('latin1');
   const chunks: string[] = [];
   const streamRegex = /stream\r?\n([\s\S]*?)\r?\nendstream/g;
-  let match = streamRegex.exec(raw);
-  let foundStream = false;
+  let match: RegExpExecArray | null = streamRegex.exec(raw);
   while (match !== null) {
-    foundStream = true;
-    let content = Buffer.from(match[1] ?? '', 'latin1');
-    try {
-      content = inflateSync(content);
-    } catch {
-      // Not a FlateDecode stream (or already decoded); keep the raw bytes.
-    }
-    chunks.push(extractPdfOperators(content.toString('latin1')));
+    chunks.push(extractPdfOperators(match[1] ?? ''));
     match = streamRegex.exec(raw);
   }
-  if (!foundStream) chunks.push(extractPdfOperators(raw));
   const text = chunks.join('\n').trim();
-  if (text) return text;
-  // Fallback: some PDFs expose text only as parenthesised strings.
-  const fallback = (raw.match(/\((?:\\.|[^()\\])*\)/g) ?? [])
-    .map((t) => decodePdfString(t))
-    .join(' ')
-    .trim();
-  return fallback ? fallback : null;
+  const fallback = (raw.match(/\((?:\\.|[^()\\])*\)/g) ?? []).map(decodePdfString).join(' ').trim();
+  return {
+    text: text || fallback || null,
+    sparse: false,
+    ligatureCorruption: hasLigatureCorruption(text),
+    avgCharsPerPage: null,
+  };
 }
 
 function extractPdfOperators(content: string): string {
   const out: string[] = [];
-  // Text-showing operators: (string) Tj and [(string) ...] TJ
   const operatorRegex = /\((?:\\.|[^()\\])*\)\s*Tj|\[(?:[^\]]*)\]\s*TJ/gi;
-  let match = operatorRegex.exec(content);
+  const match: RegExpExecArray | null = operatorRegex.exec(content);
   while (match !== null) {
     const token = match[0];
     if (/TJ$/i.test(token)) {
@@ -57,7 +118,6 @@ function extractPdfOperators(content: string): string {
       if (stringMatch) out.push(decodePdfString(`(${stringMatch[1]})`));
     }
     out.push(' ');
-    match = operatorRegex.exec(content);
   }
   return out.join('');
 }
@@ -81,34 +141,22 @@ function decodePdfString(token: string): string {
     if (next === 'n') {
       result += '\n';
       i += 2;
-      continue;
-    }
-    if (next === 'r') {
+    } else if (next === 'r') {
       result += '\r';
       i += 2;
-      continue;
-    }
-    if (next === 't') {
+    } else if (next === 't') {
       result += '\t';
       i += 2;
-      continue;
-    }
-    if (next === 'b') {
+    } else if (next === 'b') {
       result += '\b';
       i += 2;
-      continue;
-    }
-    if (next === 'f') {
+    } else if (next === 'f') {
       result += '\f';
       i += 2;
-      continue;
-    }
-    if (next === '(' || next === ')' || next === '\\') {
+    } else if (next === '(' || next === ')' || next === '\\') {
       result += next;
       i += 2;
-      continue;
-    }
-    if (/[0-7]/.test(next)) {
+    } else if (/[0-7]/.test(next)) {
       let octal = next;
       let j = i + 2;
       while (j < inner.length && j < i + 4 && /[0-7]/.test(inner[j]!)) {
@@ -117,10 +165,9 @@ function decodePdfString(token: string): string {
       }
       result += String.fromCharCode(parseInt(octal, 8));
       i = j;
-      continue;
+    } else {
+      i += 1;
     }
-    // Line continuation or unknown escape: drop the backslash.
-    i += 1;
   }
   return result;
 }
@@ -137,11 +184,31 @@ function extractDocxText(bytes: Buffer): string | null {
   const xml = strFromU8(unzipped[entryName]!);
   const paragraphs = xml.split(/<\/w:p>/i);
   const lines = paragraphs
-    .map((paragraph) => {
-      const strings = [...paragraph.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)].map((m) => decodeHTML(m[1]!));
-      return strings.join('').replace(/\s+/g, ' ').trim();
-    })
-    .filter((line) => line.length > 0);
-  const text = lines.join('\n').trim();
-  return text ? text : null;
+    .map((paragraph) =>
+      [...paragraph.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)].map((m) => decodeHTML(m[1]!)).join(''),
+    )
+    .filter((line) => line.trim().length > 0);
+  return lines.join('\n').trim() || null;
+}
+
+/** Async PDF entry point used by the service layer. */
+export async function extractPdfTextAsync(bytes: Buffer, options?: PdfOptions): Promise<ExtractResult> {
+  return extractPdfText(bytes, options);
+}
+
+export async function extractDocumentText(
+  mime: string,
+  bytes: Buffer,
+  options?: PdfOptions,
+): Promise<ExtractResult | null> {
+  if (mime === 'text/plain' || mime === 'text/markdown' || mime === 'text/x-markdown' || mime.startsWith('text/')) {
+    const text = bytes.toString('utf8');
+    return { text: text.trim() ? text : null, sparse: false, ligatureCorruption: false, avgCharsPerPage: null };
+  }
+  if (mime === 'application/pdf') return extractPdfText(bytes, options);
+  if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    const text = extractDocxText(bytes);
+    return text ? { text, sparse: false, ligatureCorruption: false, avgCharsPerPage: null } : null;
+  }
+  return null;
 }

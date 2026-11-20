@@ -2,11 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api';
 import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { useToast } from '../../components/ui/toast';
-import { cn } from '../../helpers/cn';
 
 interface Contact {
   id: string;

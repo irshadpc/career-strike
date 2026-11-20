@@ -951,4 +951,25 @@ export const MIGRATIONS: readonly Migration[] = [
         );
     `,
   },
+  {
+    version: 24,
+    name: 'job_location_and_source_sync_health',
+    sql: `
+        -- Deterministic location normalisation (resume-studio audit Step 3). The raw employer
+        -- string stays in location_text; these columns are derived from it and used for filtering.
+        ALTER TABLE jobs ADD COLUMN country_code TEXT;
+        ALTER TABLE jobs ADD COLUMN country_codes_json TEXT NOT NULL DEFAULT '[]';
+        ALTER TABLE jobs ADD COLUMN work_mode TEXT NOT NULL DEFAULT 'unknown'
+          CHECK (work_mode IN ('remote', 'hybrid', 'onsite', 'unknown'));
+        ALTER TABLE jobs ADD COLUMN normalized_location TEXT;
+        CREATE INDEX jobs_country_code ON jobs (country_code);
+        CREATE INDEX jobs_work_mode ON jobs (work_mode);
+
+        -- Per-source sync health: a failed fetch is always visible, never silent (audit Step 4).
+        ALTER TABLE source_boards ADD COLUMN last_synced_at TEXT;
+        ALTER TABLE source_boards ADD COLUMN last_status TEXT
+          CHECK (last_status IN ('ok', 'error', 'skipped'));
+        ALTER TABLE source_boards ADD COLUMN jobs_fetched_count INTEGER;
+    `,
+  },
 ];

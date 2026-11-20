@@ -21,32 +21,32 @@ const source = [
 ].join('\n');
 
 describe('local document export', () => {
-  it('writes a readable PDF with a correct header and no external renderer', () => {
+  it('writes a readable PDF with a correct header and no external renderer', async () => {
     const bytes = renderPdf('Master Resume', source);
     expect(bytes.subarray(0, 8).toString('latin1')).toBe('%PDF-1.4');
     expect(bytes.toString('latin1')).toContain('%%EOF');
-    const text = extractDocumentText(EXPORT_MIME.pdf, bytes);
+    const text = (await extractDocumentText(EXPORT_MIME.pdf, bytes))?.text ?? '';
     expect(text).toContain('JORDAN EXAMPLE');
     expect(text).toContain('TypeScript and Kubernetes');
   });
 
-  it('writes a DOCX package that the local extractor reads back', () => {
+  it('writes a DOCX package that the local extractor reads back', async () => {
     const bytes = renderDocx('Master Resume', source);
     expect(bytes.subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
-    const text = extractDocumentText(EXPORT_MIME.docx, bytes);
+    const text = (await extractDocumentText(EXPORT_MIME.docx, bytes))?.text ?? '';
     expect(text).toContain('JORDAN EXAMPLE');
     expect(text).toContain('PROFESSIONAL SUMMARY');
   });
 
-  it('escapes PDF and XML syntax instead of producing a broken file', () => {
+  it('escapes PDF and XML syntax instead of producing a broken file', async () => {
     const tricky = 'Acme (Europe) \\ R&D <team> & "quotes"';
-    expect(extractDocumentText(EXPORT_MIME.pdf, renderPdf('Resume', tricky))).toContain(tricky);
-    expect(extractDocumentText(EXPORT_MIME.docx, renderDocx('Resume', tricky))).toContain(tricky);
+    expect((await extractDocumentText(EXPORT_MIME.pdf, renderPdf('Resume', tricky)))?.text).toContain(tricky);
+    expect((await extractDocumentText(EXPORT_MIME.docx, renderDocx('Resume', tricky)))?.text).toContain(tricky);
   });
 
-  it('reports local parser coverage and states that it is not ATS certification', () => {
+  it('reports local parser coverage and states that it is not ATS certification', async () => {
     const bytes = renderPdf('Master Resume', source);
-    const report = parserReport(source, bytes, 'pdf');
+    const report = await parserReport(source, bytes, 'pdf');
     expect(report.extracted).toBe(true);
     expect(report.basis).toBe('LOCAL_PARSER_TEST_ONLY');
     expect(report.note).toContain('not a test by any named ATS');
@@ -55,10 +55,10 @@ describe('local document export', () => {
     expect(report.missingWords).toEqual([]);
   });
 
-  it('logs each export by hash without storing a second copy', () => {
+  it('logs each export by hash without storing a second copy', async () => {
     const db = openDb(':memory:');
     try {
-      const exported = createExport(db, {
+      const exported = await createExport(db, {
         content: source,
         title: 'Master Resume',
         kind: 'resume',

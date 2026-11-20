@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
+import { normalizeIngestedLocation } from '../ingestion/locationNormalizer.js';
 import { recordCompanyEvent } from '../markets/company-intelligence.js';
 import { indexEmployer } from '../markets/company-registry.js';
 import { isCountryCode } from '../markets/countries.js';
@@ -38,6 +39,11 @@ export interface JobSummary {
   employerExcluded: boolean;
   market: MarketFacts;
   sourceCapabilities: SourceCapability[];
+  /** Primary ISO country (or GLOBAL for worldwide remote roles) derived from the location text. */
+  countryCode: string | null;
+  countryCodes: string[];
+  workMode: 'remote' | 'hybrid' | 'onsite' | 'unknown';
+  normalizedLocation: string | null;
   /** Present when a candidate context was supplied. SENSITIVE: derived from the profile. */
   fit?: FitSummary;
   fitDetail?: Fit;
@@ -130,15 +136,18 @@ export function syncBoard(
   const insertJob = db.prepare(`
     INSERT INTO jobs (id, canonical_key, duplicate_key, employer, title, location_text, remote_policy, employment_type,
       department, salary_json, description_json, description_text, apply_url, posting_url, published_at, status,
-      first_seen_at, last_seen_at, last_verified_at, unresolved_json, requirements_json, requirements_version, market_json)
+      first_seen_at, last_seen_at, last_verified_at, unresolved_json, requirements_json, requirements_version, market_json,
+      country_code, country_codes_json, work_mode, normalized_location)
     VALUES (@id, @canonical, @dup, @employer, @title, @location, @remote, @employment, @department, @salary, @descJson,
-      @descText, @apply, @posting, @published, 'OPEN', @at, @at, @at, @unresolved, @reqJson, @reqVersion, @market)`);
+      @descText, @apply, @posting, @published, 'OPEN', @at, @at, @at, @unresolved, @reqJson, @reqVersion, @market,
+      @countryCode, @countryCodes, @workMode, @normalizedLocation)`);
   const updateJob = db.prepare(`
     UPDATE jobs SET duplicate_key = @dup, employer = @employer, title = @title, location_text = @location,
       remote_policy = @remote, employment_type = @employment, department = @department, salary_json = @salary,
       description_json = @descJson, description_text = @descText, apply_url = @apply, posting_url = @posting,
       published_at = @published, status = 'OPEN', closed_at = NULL, last_seen_at = @at, last_verified_at = @at,
-      unresolved_json = @unresolved, requirements_json = @reqJson, requirements_version = @reqVersion, market_json = @market
+      unresolved_json = @unresolved, requirements_json = @reqJson, requirements_version = @reqVersion, market_json = @market,
+      country_code = @countryCode, country_codes_json = @countryCodes, work_mode = @workMode, normalized_location = @normalizedLocation
     WHERE id = @id`);
   const touchJob = db.prepare(
     "UPDATE jobs SET status = 'OPEN', closed_at = NULL, last_seen_at = ?, last_verified_at = ? WHERE id = ?",
@@ -156,6 +165,7 @@ export function syncBoard(
       if (seen.has(p.sourceJobId)) continue;
       seen.add(p.sourceJobId);
       const hash = sha256(JSON.stringify(p));
+      const normalized = normalizeIngestedLocation(p.locationText, p.remotePolicy);
       const params = {
         canonical: `${source}:${board}:${p.sourceJobId}`,
         dup: duplicateKey(p.employer, p.title, p.locationText),
@@ -175,6 +185,10 @@ export function syncBoard(
         reqJson: JSON.stringify(extractRequirements(p.title, p.description)),
         reqVersion: REQUIREMENTS_VERSION,
         market: JSON.stringify(p.market ?? marketFacts(p.locationText, p.remotePolicy)),
+        countryCode: normalized.countryCode,
+        countryCodes: JSON.stringify(normalized.countryCodes),
+        workMode: normalized.workMode,
+        normalizedLocation: normalized.normalizedLocation,
         at,
       };
       const existing = findSource.get(source, board, p.sourceJobId) as
@@ -311,12 +325,13 @@ export function addManualJob(db: Db, input: z.infer<typeof ManualJobInput>, now 
       locationText: location,
     }),
   ];
+  const norm = normalizeIngestedLocation(location, input.remotePolicy);
   db.transaction(() => {
     db.prepare(
       `INSERT INTO jobs (id, canonical_key, duplicate_key, employer, title, location_text, remote_policy, employment_type,
         description_json, description_text, apply_url, posting_url, status, first_seen_at, last_seen_at, unresolved_json,
-        requirements_json, requirements_version, market_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'unknown', ?, ?, ?, ?, 'UNVERIFIED', ?, ?, ?, ?, ?, ?)`,
+        requirements_json, requirements_version, market_json, country_code, country_codes_json, work_mode, normalized_location)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'unknown', ?, ?, ?, ?, 'UNVERIFIED', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).run(
       id,
       `manual:${id}`,
@@ -335,6 +350,10 @@ export function addManualJob(db: Db, input: z.infer<typeof ManualJobInput>, now 
       JSON.stringify(extractRequirements(input.title, description)),
       REQUIREMENTS_VERSION,
       JSON.stringify(marketFacts(location, input.remotePolicy)),
+      norm.countryCode,
+      JSON.stringify(norm.countryCodes),
+      norm.workMode,
+      norm.normalizedLocation,
     );
     db.prepare(
       'INSERT INTO job_sources (job_id, source, board, source_job_id, source_url, fetched_at, content_hash) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -360,7 +379,7 @@ export const JobQuery = z
     city: z.string().trim().min(1).max(100).optional(),
     // 'any' ignores the candidate's decisions entirely (used where those decisions must not be inferable).
     disposition: z.enum(['none', 'shortlisted', 'excluded', 'not_excluded', 'any']).default('not_excluded'),
-    source: z.enum(['greenhouse', 'lever', 'ashby', 'manual', 'practice']).optional(),
+    source: z.enum(['greenhouse', 'lever', 'ashby', 'remotive', 'arbeitnow', 'manual', 'practice']).optional(),
     includeExcludedEmployers: flag,
     includeDuplicates: flag,
     sort: z.enum(['newest', 'recently_verified', 'employer', 'title', 'best_fit']).default('newest'),
@@ -389,11 +408,16 @@ interface JobRow {
   requirements_json: string | null;
   description_text: string;
   market_json: string;
+  country_code: string | null;
+  country_codes_json: string;
+  work_mode: string;
+  normalized_location: string | null;
 }
 
 const SUMMARY_SELECT = `
   SELECT j.id, j.employer, j.title, j.location_text, j.remote_policy, j.employment_type, j.salary_json, j.status,
     j.first_seen_at, j.last_verified_at, j.published_at, j.duplicate_of, u.disposition, j.requirements_json, j.description_text, j.market_json,
+    j.country_code, j.country_codes_json, j.work_mode, j.normalized_location,
     (SELECT group_concat(DISTINCT s.source) FROM job_sources s WHERE s.job_id = j.id) AS sources
   FROM jobs j LEFT JOIN job_user_state u ON u.job_id = j.id`;
 
@@ -482,8 +506,21 @@ function toSummary(
     employerExcluded: excludedEmployers.has(norm(row.employer)),
     market: marketOf(row),
     sourceCapabilities: row.sources ? [...new Set(row.sources.split(',').map(capabilityForName))] : [],
+    countryCode: row.country_code,
+    countryCodes: safeStringArray(row.country_codes_json),
+    workMode: (row.work_mode as JobSummary['workMode']) ?? 'unknown',
+    normalizedLocation: row.normalized_location,
     ...(fit ? { fit: summariseFit(fit), fitDetail: fit } : {}),
   };
+}
+
+function safeStringArray(json: string | null): string[] {
+  try {
+    const parsed: unknown = json ? JSON.parse(json) : [];
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
 }
 
 const TIER_ORDER: Record<Tier, number> = { strong: 0, possible: 1, stretch: 2, unknown: 3, ineligible: 4 };
@@ -493,7 +530,7 @@ export function listJobs(
   query: z.infer<typeof JobQuery>,
   ctx: CandidateContext,
   now = Date.now(),
-): { total: number; jobs: JobSummary[]; fitAvailable: boolean } {
+): { total: number; jobs: JobSummary[]; fitAvailable: boolean; countryCounts: Record<string, number> } {
   const excludedEmployers = ctx.excludedEmployers;
   const where: string[] = [];
   const params: Record<string, unknown> = {};
@@ -567,17 +604,28 @@ export function listJobs(
       (a, b) => TIER_ORDER[a.fit!.tier] - TIER_ORDER[b.fit!.tier] || urgentMatch(a) - urgentMatch(b),
     );
   }
+  const countryCounts: Record<string, number> = {};
+  for (const j of visible) {
+    const codes = j.countryCodes.length > 0 ? j.countryCodes : j.countryCode ? [j.countryCode] : [];
+    for (const code of codes) {
+      countryCounts[code] = (countryCounts[code] ?? 0) + 1;
+    }
+  }
   if (query.country)
     visible = visible.filter(
       (j) =>
-        j.market.location.countryCode === query.country || j.market.remoteEligibleCountries.includes(query.country!),
+        j.countryCode === query.country ||
+        j.countryCodes.includes(query.country!) ||
+        // Pre-normalisation rows keep working through their market facts.
+        j.market.location.countryCode === query.country ||
+        j.market.remoteEligibleCountries.includes(query.country!),
     );
   if (query.city)
     visible = visible.filter(
       (j) => j.market.location.city !== null && norm(j.market.location.city) === norm(query.city!),
     );
   const page = visible.slice(query.offset, query.offset + query.limit).map(({ fitDetail: _omit, ...j }) => j);
-  return { total: visible.length, jobs: page, fitAvailable };
+  return { total: visible.length, jobs: page, fitAvailable, countryCounts };
 }
 
 export function getJob(db: Db, id: string, ctx: CandidateContext, now = Date.now()): JobDetail | null {

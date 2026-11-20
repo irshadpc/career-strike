@@ -5,6 +5,9 @@ import type { Db } from '../store/db.js';
 import { getSettings } from '../store/settings.js';
 
 export const DISCOVERY_SCHEDULE = 'discover-boards';
+
+/** Polite fetch concurrency for scheduled discovery waves (resume-studio audit Step 2). */
+export const DISCOVERY_CONCURRENCY = 4;
 const TICK_MS = 30_000;
 
 /** Bounded exponential backoff for a failing board: 15 min, 30, 60 … capped at 24 h. */
@@ -58,6 +61,10 @@ export class Scheduler {
     return this.runFor(intervalHours * 3600_000);
   }
 
+  private taskState(taskId: string): 'RUNNING' | 'QUEUED' | 'DONE' | null {
+    return this.discovery.taskState(taskId);
+  }
+
   private runFor(interval: number): { claimed: boolean; started: string[]; skipped: string[] } {
     const now = this.now();
     const slot = new Date(Math.floor(now / interval) * interval).toISOString();
@@ -68,21 +75,65 @@ export class Scheduler {
     if (!claimed) return { claimed: false, started: [], skipped: [] };
     const started: string[] = [];
     const skipped: string[] = [];
+    const pending: string[] = [];
+    // Boards already backing off are recorded as 'skipped' so silence is never mistaken for health.
     for (const board of this.discovery.listBoards()) {
       const next = this.db.prepare('SELECT next_attempt_at FROM source_boards WHERE id = ?').pluck().get(board.id) as
         | string
         | null;
       if (next && Date.parse(next) > now) {
         skipped.push(board.id);
+        this.db
+          .prepare("UPDATE source_boards SET last_synced_at = ?, last_status = 'skipped' WHERE id = ?")
+          .run(new Date(now).toISOString(), board.id);
         continue;
       }
-      const run = this.discovery.discover(board.id, 'schedule', 'scheduler');
-      if (run?.created) started.push(run.task.id);
+      pending.push(board.id);
     }
-    this.db
-      .prepare('UPDATE schedule_slots SET result = ? WHERE schedule = ? AND slot = ?')
-      .run(JSON.stringify({ started, skipped }), DISCOVERY_SCHEDULE, slot);
-    this.logger.info('scheduler.slot', { slot, started: started.length, skipped: skipped.length });
+    // Polite concurrency: at most a few boards are fetched at once, so no single wave of requests
+    // starves the network and every failure remains attributable to one source (audit Step 2).
+    let launchedCount = 0;
+    const pendingBoardIds = [...pending];
+    const topUp = (): number => {
+      let launched = 0;
+      while (launchedCount < DISCOVERY_CONCURRENCY && pendingBoardIds.length > 0) {
+        const boardId = pendingBoardIds.shift()!;
+        const run = this.discovery.discover(boardId, 'schedule', 'scheduler');
+        if (run?.created) {
+          started.push(run.task.id);
+          launchedCount += 1;
+          launched += 1;
+        }
+      }
+      return launched;
+    };
+    topUp();
+    if (pendingBoardIds.length > 0) {
+      const refill = setInterval(() => {
+        try {
+          const stillRunning = started.filter((id) => {
+            const state = this.discovery.taskState(id);
+            return state === 'RUNNING' || state === 'QUEUED';
+          }).length;
+          if (stillRunning < DISCOVERY_CONCURRENCY) topUp();
+          if (pendingBoardIds.length === 0 && stillRunning === 0) {
+            clearInterval(refill);
+            this.db
+              .prepare('UPDATE schedule_slots SET result = ? WHERE schedule = ? AND slot = ?')
+              .run(JSON.stringify({ started, skipped }), DISCOVERY_SCHEDULE, slot);
+            this.logger.info('scheduler.slot', { slot, started: started.length, skipped: skipped.length });
+          }
+        } catch (err) {
+          this.logger.error('scheduler.pool-failed', { message: err instanceof Error ? err.message : String(err) });
+        }
+      }, 5_000);
+      refill.unref();
+    } else {
+      this.db
+        .prepare('UPDATE schedule_slots SET result = ? WHERE schedule = ? AND slot = ?')
+        .run(JSON.stringify({ started, skipped }), DISCOVERY_SCHEDULE, slot);
+      this.logger.info('scheduler.slot', { slot, started: started.length, skipped: skipped.length });
+    }
     return { claimed: true, started, skipped };
   }
 

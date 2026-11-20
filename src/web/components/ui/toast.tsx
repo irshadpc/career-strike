@@ -1,6 +1,5 @@
-import { AlertCircle, CheckCircle2, Loader2, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { Button } from './button';
 
 type ToastVariant = 'default' | 'success' | 'destructive';
 interface ToastAction {

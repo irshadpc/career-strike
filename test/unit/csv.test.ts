@@ -46,7 +46,7 @@ describe('CSV parser', () => {
   });
 
   it('enforces field character limits', () => {
-    const text = 'a,' + 'x'.repeat(50) + '\n';
+    const text = `a,${'x'.repeat(50)}\n`;
     expect(() => parseCsv(text, { maxRows: 10, maxFields: 10, maxFieldChars: 40 })).toThrow(CsvError);
   });
 

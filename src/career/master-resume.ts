@@ -27,6 +27,11 @@ export interface MasterResumeIdentity {
   hasLinkedIn: boolean;
   hasHeadline: boolean;
   hasSummary: boolean;
+  /** Actual values (used by ATS-proof export HTML generation). */
+  fullName: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedin: string | null;
 }
 
 export interface MasterResumeDocument {
@@ -222,6 +227,10 @@ export function buildMasterResume(db: Db, now = new Date()): MasterResumeDocumen
       hasLinkedIn: !!linkedin,
       hasHeadline: !!headline,
       hasSummary: !!summary,
+      fullName: name,
+      email,
+      phone,
+      linkedin,
     },
     sourceFacts: facts.length,
     sourceEvidence: evidence.length,

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../../api';
-import { ErrorPanel, Loading } from '../../../components/states';
+import { ErrorPanel } from '../../../components/states';
 import { Button } from '../../../components/ui/button';
 import { useToast } from '../../../components/ui/toast';
 

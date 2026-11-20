@@ -90,7 +90,7 @@ export function StarVault() {
     rec.lang = 'en-US';
     rec.onresult = (ev: any) => {
       let t = '';
-      for (let i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript + ' ';
+      for (let i = 0; i < ev.results.length; i++) t += `${ev.results[i][0].transcript} `;
       setTranscript(t.trim());
     };
     rec.onend = () => setListening(false);

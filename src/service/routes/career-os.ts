@@ -9,9 +9,6 @@ function id(prefix: string): string {
 function now(): string {
   return new Date().toISOString();
 }
-function actorOf(req: { principal?: { kind: string } }): string {
-  return req.principal?.kind ?? 'local';
-}
 function invalid(reply: { code: (n: number) => { send: (b: unknown) => unknown } }, issues: unknown) {
   return reply.code(400).send({ error: 'INVALID_INPUT', issues });
 }

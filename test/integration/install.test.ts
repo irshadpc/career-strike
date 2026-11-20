@@ -85,7 +85,7 @@ describe('packaged install', () => {
     const prefix = path.join(tempDir('cs-prefix-'), 'prefix');
     const install = spawnSync(
       'npm',
-      ['install', '--global', '--prefix', prefix, '--offline', '--no-audit', '--no-fund', tgz],
+      ['install', '--global', '--prefix', prefix, '--prefer-offline', '--no-audit', '--no-fund', tgz],
       { encoding: 'utf8' },
     );
     expect(install.status, `offline install from the local npm cache failed:\n${install.stderr}`).toBe(0);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AUSTRALIA_SOURCE_ASSESSMENTS, officialAustraliaSearchUrl } from '../../../markets/australia-sources';
 import { CANADA_SOURCE_ASSESSMENTS, officialCanadaSearchUrl } from '../../../markets/canada-sources';
@@ -58,6 +58,8 @@ const FILTERS = {
     ['greenhouse', 'Greenhouse'],
     ['lever', 'Lever'],
     ['ashby', 'Ashby'],
+    ['remotive', 'Remotive (Global Remote)'],
+    ['arbeitnow', 'Arbeitnow (DE/EU)'],
     ['manual', 'Added by you'],
   ],
   tier: [
@@ -96,6 +98,39 @@ export function Opportunities() {
   const [filtersOpen, setFiltersOpen] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 761px)').matches : true,
   );
+  const [syncing, setSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const handleSyncTargets = async () => {
+    setSyncing(true);
+    setSyncMessage(null);
+    try {
+      const res = await api<{ addedCount: number }>('/api/sources/sync-targets', { method: 'POST' });
+      setSyncMessage(
+        res.addedCount > 0
+          ? `Syncing target markets (${res.addedCount} new board${res.addedCount === 1 ? '' : 's'} added).`
+          : 'All target market boards are actively monitored and up to date.',
+      );
+      setReload((r) => r + 1);
+    } catch {
+      setSyncMessage('Target market sync failed. Check that the service is running.');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const countryOptions: readonly (readonly [string, string])[] = useMemo(() => {
+    const counts = list.state === 'ready' ? (list.data.countryCounts ?? {}) : {};
+    return [
+      ['', `All markets${list.state === 'ready' ? ` (${list.data.total})` : ''}`],
+      ...COUNTRY_CODES.map((code) => {
+        const name = COUNTRY_REGISTRY[code]?.name ?? code;
+        const count = counts[code];
+        const label = count !== undefined ? `${name} (${count})` : name;
+        return [code, label] as const;
+      }),
+    ];
+  }, [list]);
 
   const activeFilters =
     (Object.keys(FILTERS) as FilterKey[]).filter((k) => params.get(k)).length +
@@ -163,7 +198,17 @@ export function Opportunities() {
         title="Opportunities"
         lede="Roles found on employer job boards, matched against your verified experience."
         actions={
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center flex-wrap">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void handleSyncTargets()}
+              disabled={syncing}
+              className="text-xs"
+            >
+              {syncing ? 'Syncing…' : '⚡ Auto-sync markets'}
+            </Button>
             <Link
               href="/opportunities/new"
               className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'text-xs')}
@@ -179,6 +224,15 @@ export function Opportunities() {
           </div>
         }
       />
+
+      {syncMessage && (
+        <div
+          className="my-3 p-3 rounded-lg border border-teal-500/30 bg-teal-50 dark:bg-teal-950/20 text-teal-900 dark:text-teal-200 text-xs shadow-xs"
+          role="status"
+        >
+          {syncMessage}
+        </div>
+      )}
 
       <details className="my-4 rounded-lg border border-border bg-card shadow-xs">
         <summary className="cursor-pointer px-4 py-2 text-sm font-medium text-foreground select-none">
@@ -291,18 +345,24 @@ export function Opportunities() {
                     <label htmlFor={`filter-${k}`} className="text-xs font-medium text-muted-foreground block">
                       {filterLabel(k)}
                     </label>
-                    <select
-                      id={`filter-${k}`}
-                      value={params.get(k) ?? ''}
-                      onChange={(e) => update(k, e.target.value)}
-                      className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs shadow-xs"
-                    >
-                      {FILTERS[k].map(([v, label]) => (
-                        <option key={v} value={v}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
+                    {(() => {
+                      const options: readonly (readonly [string, string])[] =
+                        k === 'country' ? countryOptions : FILTERS[k];
+                      return (
+                        <select
+                          id={`filter-${k}`}
+                          value={params.get(k) ?? ''}
+                          onChange={(e) => update(k, e.target.value)}
+                          className="flex h-8 w-full rounded-md border border-input bg-background px-2.5 text-xs shadow-xs"
+                        >
+                          {options.map(([v, label]) => (
+                            <option key={v} value={v}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    })()}
                   </div>
                 ))}
                 {params.get('country') &&

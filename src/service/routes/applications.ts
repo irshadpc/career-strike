@@ -241,7 +241,7 @@ export function registerApplicationRoutes(
     }
   });
 
-  const action = (path: string, run: (id: string, req: FastifyRequest) => void | Promise<unknown>) =>
+  const action = (path: string, run: (id: string, req: FastifyRequest) => Promise<unknown>) =>
     app.post<{ Params: { id: string } }>(`/api/applications/:id/${path}`, async (req, reply) => {
       try {
         await run(req.params.id, req);
@@ -251,16 +251,16 @@ export function registerApplicationRoutes(
       }
     });
 
-  action('ready', (id, req) => applications.markReady(id, actorOf(req)));
-  action('save-for-later', (id, req) => applications.saveForLater(id, actorOf(req)));
-  action('redraft', (id, req) => applications.redraft(id, actorOf(req)));
-  action('reject', (id, req) => {
+  action('ready', async (id, req) => applications.markReady(id, actorOf(req)));
+  action('save-for-later', async (id, req) => applications.saveForLater(id, actorOf(req)));
+  action('redraft', async (id, req) => applications.redraft(id, actorOf(req)));
+  action('reject', async (id, req) => {
     const parsed = Reject.safeParse(req.body ?? {});
     return applications.reject(id, actorOf(req), parsed.success ? parsed.data.note : null);
   });
 
   // Submitting, confirming and reporting outcomes are the candidate's own statements: dashboard only.
-  const dashboardAction = (path: string, run: (id: string, body: unknown) => void | Promise<unknown>) =>
+  const dashboardAction = (path: string, run: (id: string, body: unknown) => Promise<unknown>) =>
     app.post<{ Params: { id: string } }>(`/api/applications/:id/${path}`, async (req, reply) => {
       if (req.principal?.kind !== 'dashboard') {
         return reply
@@ -276,9 +276,9 @@ export function registerApplicationRoutes(
       }
     });
 
-  dashboardAction('start-submission', (id) => applications.startManualSubmission(id, 'dashboard'));
-  dashboardAction('submit', (id) => submissions.submit(id, 'dashboard'));
-  dashboardAction('reconcile', (id) => submissions.reconcile(id, 'dashboard'));
+  dashboardAction('start-submission', async (id) => applications.startManualSubmission(id, 'dashboard'));
+  dashboardAction('submit', async (id) => submissions.submit(id, 'dashboard'));
+  dashboardAction('reconcile', async (id) => submissions.reconcile(id, 'dashboard'));
 
   // ---- practice endpoint (owned, local) ----
 
@@ -298,20 +298,20 @@ export function registerApplicationRoutes(
     }
   });
 
-  app.post('/api/practice/jobs', async (req, reply) => {
+  app.post('/api/practice/jobs', async (_req, reply) => {
     try {
       return reply.code(201).send({ jobId: submissions.createPracticeJob() });
     } catch (err) {
       return fail(reply, err);
     }
   });
-  dashboardAction('confirm-submitted', (id, body) =>
+  dashboardAction('confirm-submitted', async (id, body) =>
     applications.confirmSubmitted(id, Confirm.parse(body), 'dashboard'),
   );
-  dashboardAction('mark-unconfirmed', (id, body) =>
+  dashboardAction('mark-unconfirmed', async (id, body) =>
     applications.markUnconfirmed(id, Reject.parse(body ?? {}).note, 'dashboard'),
   );
-  dashboardAction('outcome', (id, body) => {
+  dashboardAction('outcome', async (id, body) => {
     const o = OutcomeBody.parse(body);
     applications.recordOutcome(id, o.outcome, { occurredAt: o.occurredAt, note: o.note }, 'dashboard');
   });

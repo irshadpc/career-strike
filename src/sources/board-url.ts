@@ -6,6 +6,8 @@ const HOSTS: readonly [RegExp, SourceId][] = [
   [/^(?:job-)?boards\.eu\.greenhouse\.io$/, 'greenhouse'],
   [/^jobs\.(?:eu\.)?lever\.co$/, 'lever'],
   [/^jobs\.ashbyhq\.com$/, 'ashby'],
+  [/^remotive\.com$/, 'remotive'],
+  [/^www\.arbeitnow\.com$/, 'arbeitnow'],
 ];
 
 /** Recognise a public board URL such as https://jobs.lever.co/acme/123 → { lever, acme }. */

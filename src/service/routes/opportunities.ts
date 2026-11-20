@@ -13,7 +13,12 @@ import {
   updateEvidence,
 } from '../../career/evidence.js';
 import { addManualJob, getJob, JobQuery, listJobs, ManualJobInput, setDisposition } from '../../career/jobs.js';
-import { importLinkedInExport, parseLinkedInArchive, parseLinkedInCsvText } from '../../career/linkedin-export.js';
+import {
+  importLinkedInExport,
+  type LinkedInExportData,
+  parseLinkedInArchive,
+  parseLinkedInCsvText,
+} from '../../career/linkedin-export.js';
 import {
   addFact,
   approveAllFacts,
@@ -25,6 +30,7 @@ import {
 } from '../../career/profile.js';
 import { extractResumeProfile } from '../../career/resume-profile.js';
 import { suggestResumeFacts } from '../../career/resume-suggest.js';
+import { EMPLOYER_TARGETS } from '../../markets/employers.js';
 import { evaluateDecisionReadyOpportunity } from '../../matching/shortlist.js';
 import { boardFromUrl } from '../../sources/board-url.js';
 import { SourceError } from '../../sources/types.js';
@@ -97,6 +103,35 @@ export function registerOpportunityRoutes(
     const run = discovery.discover(req.params.id, 'manual', actorOf(req));
     if (!run) return reply.code(404).send({ error: 'NOT_FOUND' });
     return reply.code(run.created ? 202 : 200).send({ task: run.task, alreadyRunning: !run.created });
+  });
+
+  app.post('/api/sources/sync-targets', async (req) => {
+    const rawSettings = getSettings(db);
+    const preferred = rawSettings['search.preferredCountries'];
+    const preferredCountries = new Set<string>(
+      Array.isArray(preferred) && preferred.length > 0
+        ? preferred.map(String)
+        : ['US', 'GB', 'DE', 'SG', 'IN', 'JP', 'AU', 'CA', 'AE', 'NL', 'IE'],
+    );
+    if (typeof rawSettings['candidate.country'] === 'string') {
+      preferredCountries.add(rawSettings['candidate.country']);
+    }
+    const matching = EMPLOYER_TARGETS.filter((t) => t.countries.some((c) => preferredCountries.has(c)));
+    const added: string[] = [];
+    const startedTasks: string[] = [];
+    for (const target of matching) {
+      try {
+        const board = discovery.addBoard(target.source, target.board);
+        const run = discovery.discover(board.id, 'target-sync', actorOf(req));
+        if (run?.task) startedTasks.push(run.task.id);
+        added.push(`${target.employer} (${target.source}/${target.board})`);
+      } catch (err) {
+        if (!(err instanceof DuplicateBoardError)) {
+          // ignore already monitored boards
+        }
+      }
+    }
+    return { ok: true, addedCount: added.length, added, startedTasks };
   });
 
   // ---- tasks ----
@@ -172,15 +207,15 @@ export function registerOpportunityRoutes(
       if (!doc) return reply.code(404).send({ error: 'NOT_FOUND' });
       const bytes = vault.read(doc.id);
       if (!bytes) return reply.code(404).send({ error: 'NOT_FOUND' });
-      const extracted = extractDocumentText(doc.mime, bytes);
-      if (!extracted || !extracted.trim()) {
+      const extracted = await extractDocumentText(doc.mime, bytes);
+      if (!extracted || !extracted.text || !extracted.text.trim()) {
         return reply.code(400).send({
           error: 'UNSUPPORTED_TYPE',
           message:
             'Skills can be suggested from plain-text, Markdown, PDF and Word documents only. This document has no readable text.',
         });
       }
-      text = extracted;
+      text = extracted.text;
     }
     const suggested = suggestResumeFacts(db, text, actorOf(req));
     const profile = extractResumeProfile(text);
@@ -247,7 +282,7 @@ export function registerOpportunityRoutes(
   });
 
   app.post('/api/profile/import/linkedin', { bodyLimit: 15 * 1024 * 1024 }, async (req, reply) => {
-    let data;
+    let data: LinkedInExportData;
     try {
       if (Buffer.isBuffer(req.body)) {
         if (req.body.length >= 4 && req.body[0] === 0x50 && req.body[1] === 0x4b) {

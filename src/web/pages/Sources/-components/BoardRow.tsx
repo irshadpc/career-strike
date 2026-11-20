@@ -19,6 +19,12 @@ const HEALTH_VARIANT: Record<SourceBoard['health'], 'teal' | 'warning' | 'destru
   NEVER_RUN: 'secondary',
 };
 
+const STATUS_LABEL: Record<'ok' | 'error' | 'skipped', string> = {
+  ok: 'Synced',
+  error: 'Sync failed',
+  skipped: 'Deferred (backoff)',
+};
+
 export function BoardRow({
   board,
   task,
@@ -69,12 +75,33 @@ export function BoardRow({
           <ExternalLink href={board.boardUrl}>{board.board}</ExternalLink>
           <span className="text-muted-foreground font-normal text-xs">· {SOURCE_LABEL[board.source]}</span>
         </h2>
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-xs flex-wrap">
           <Badge variant={HEALTH_VARIANT[board.health]}>{HEALTH[board.health]}</Badge>
           {board.lastSuccessAt && (
             <span className="text-muted-foreground">Last successful fetch {ago(board.lastSuccessAt)}.</span>
           )}
         </div>
+        <div className="flex items-center gap-2 text-xs flex-wrap" data-testid="board-sync-health">
+          <span className="text-muted-foreground">ATS: {SOURCE_LABEL[board.source] ?? board.source}</span>
+          {board.lastStatus && (
+            <Badge
+              variant={board.lastStatus === 'ok' ? 'teal' : board.lastStatus === 'error' ? 'destructive' : 'secondary'}
+            >
+              {STATUS_LABEL[board.lastStatus]}
+            </Badge>
+          )}
+          {board.lastSyncedAt && <span className="text-muted-foreground">Last sync {ago(board.lastSyncedAt)}</span>}
+          {board.jobsFetchedCount !== null && (
+            <span className="text-muted-foreground">
+              {board.jobsFetchedCount} posting{board.jobsFetchedCount === 1 ? '' : 's'} fetched
+            </span>
+          )}
+        </div>
+        {board.lastStatus === 'error' && board.lastError && (
+          <p className="text-xs text-destructive font-medium" role="alert">
+            {board.lastError}
+          </p>
+        )}
         {board.lastError && board.health !== 'OK' && <p className="text-xs text-destructive">{board.lastError}</p>}
         <p role="status" aria-live="polite" className="text-xs text-muted-foreground">
           {running && (

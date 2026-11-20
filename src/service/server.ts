@@ -8,6 +8,8 @@ import { backfillRequirements, JobQuery, jobCounts, listJobs } from '../career/j
 import { nextActions } from '../career/next-actions.js';
 import { type Logger, nullLogger } from '../core/log.js';
 import { type AppPaths, appPaths } from '../core/paths.js';
+import { backfillJobLocations } from '../ingestion/locationNormalizer.js';
+import { seedAndDiscoverBoards } from '../ingestion/seedPack.js';
 import { InterviewService } from '../interview/service.js';
 import { computeMetrics, MIN_SAMPLE, observations } from '../learning/metrics.js';
 import { ProposalAction, type ProposalDecisionKind, ProposalError, StrategyProposals } from '../learning/proposals.js';
@@ -30,6 +32,7 @@ import { registerApplicationRoutes } from './routes/applications.js';
 import { registerAssistantRoutes } from './routes/assistant.js';
 import { registerCareerOsRoutes } from './routes/career-os.js';
 import { registerDocumentRoutes } from './routes/documents.js';
+import { registerExportRoutes } from './routes/exports.js';
 import { registerInterviewRoutes } from './routes/interviews.js';
 import { registerMcpRoutes } from './routes/mcp.js';
 import { registerOpportunityRoutes } from './routes/opportunities.js';
@@ -345,6 +348,13 @@ export function buildServer({
   });
 
   registerOpportunityRoutes(app, { db, discovery, tasks, vault });
+  registerExportRoutes(app, { db });
+
+  // Location normalisation backfill + default multi-country board pack (resume-studio audit).
+  backfillJobLocations(db);
+  if (!process.env.VITEST && process.env.NODE_ENV !== 'test') {
+    seedAndDiscoverBoards(db, discovery);
+  }
 
   registerReadinessRoutes(app, { db });
   registerDocumentRoutes(app, { db });

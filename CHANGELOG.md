@@ -3,6 +3,17 @@
 Every release of Career Strike is listed here, newest first. The section for a version is shown in
 the dashboard after you update, and is published as that version's release notes on GitHub.
 
+## [0.7.0] - 2026-11-20
+
+### Added
+
+- **Multi-ATS Keyless Source Adapters & Global Feeds**: Native support for keyless public JSON APIs across Greenhouse (`boards-api.greenhouse.io`), Lever (`api.lever.co`), Ashby (`api.ashbyhq.com`), Remotive (`remotive.com/api/remote-jobs`), and Arbeitnow (`arbeitnow.com/api/job-board-api`) without requiring API keys or brittle HTML scrapers.
+- **Verified Global Multi-Country Seed Pack**: Out-of-the-box local ingestion pack featuring 22 active, verified company boards across global tech hubs spanning India (IN), United States (US), United Kingdom (GB), Germany/EU (DE/NL/IE/FR), Singapore (SG), and Remote.
+- **Deterministic Location-to-Country Normalizer**: Automatic normalization of raw ATS location strings to standard ISO 3166-1 alpha-2 country codes, work mode classification (`remote`, `hybrid`, `onsite`, `unknown`), multi-location token resolution (e.g. "London, UK; Bengaluru, India"), and US state abbreviation matching. Backfills existing local databases seamlessly on migration.
+- **Per-Source Sync Health & Diagnostics**: Added `last_synced_at`, `last_status` (`ok`, `error`, `skipped`), and `jobs_fetched_count` telemetry per source board in SQLite, surfaced on `/sources` with clear status badges, timestamps, and error diagnostics.
+- **Opportunities Dynamic Country Filter & Fast Apply**: Filter job listings with real-time per-country counts (e.g. `India (125)`, `United States (1048)`, `United Kingdom (192)`) and direct one-click `Apply →` routing to official ATS application portals.
+- **ATS Export Studio & Résumé Generation**: Local offline PDF and DOCX document export generation with extractable text validation, Word formatting preservation, and ATS-safe HTML rendering.
+
 ## [0.6.0] - 2026-11-15
 
 ### Added

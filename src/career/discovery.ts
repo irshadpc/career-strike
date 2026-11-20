@@ -18,6 +18,10 @@ export interface SourceBoard {
   consecutiveFailures: number;
   /** When a scheduled fetch may next try a failing board. */
   nextAttemptAt: string | null;
+  /** Last attempt's outcome, whatever it was: a failed sync is never silent. */
+  lastSyncedAt: string | null;
+  lastStatus: 'ok' | 'error' | 'skipped' | null;
+  jobsFetchedCount: number | null;
   lastTask: { id: string; state: string; endedAt: string | null } | null;
 }
 
@@ -31,6 +35,9 @@ interface BoardRow {
   last_error: string | null;
   consecutive_failures: number;
   next_attempt_at: string | null;
+  last_synced_at: string | null;
+  last_status: 'ok' | 'error' | 'skipped' | null;
+  jobs_fetched_count: number | null;
 }
 
 export class DuplicateBoardError extends Error {}
@@ -114,6 +121,9 @@ export class Discovery {
       lastError: r.last_error,
       consecutiveFailures: r.consecutive_failures,
       nextAttemptAt: r.next_attempt_at,
+      lastSyncedAt: r.last_synced_at,
+      lastStatus: r.last_status,
+      jobsFetchedCount: r.jobs_fetched_count,
       lastTask: last ? { id: last.id, state: last.state, endedAt: last.endedAt } : null,
     };
   }
@@ -150,7 +160,7 @@ export class Discovery {
           // the candidate starts by hand never waits.
           this.db
             .prepare(
-              'UPDATE source_boards SET health = ?, last_error = ?, consecutive_failures = ?, next_attempt_at = ? WHERE id = ?',
+              'UPDATE source_boards SET health = ?, last_error = ?, consecutive_failures = ?, next_attempt_at = ?, last_synced_at = ?, last_status = ?, jobs_fetched_count = 0 WHERE id = ?',
             )
             .run(
               health,
@@ -159,18 +169,27 @@ export class Discovery {
               new Date(
                 Date.now() + Math.max(backoffMs(failures), (err instanceof SourceError && err.retryAfterMs) || 0),
               ).toISOString(),
+              new Date().toISOString(),
+              'error',
               board.id,
             );
           throw err;
         }
         this.db
           .prepare(
-            "UPDATE source_boards SET health = 'OK', last_success_at = ?, last_error = NULL, consecutive_failures = 0, next_attempt_at = NULL WHERE id = ?",
+            "UPDATE source_boards SET health = 'OK', last_success_at = ?, last_error = NULL, consecutive_failures = 0, next_attempt_at = NULL, last_synced_at = ?, last_status = 'ok', jobs_fetched_count = ? WHERE id = ?",
           )
-          .run(new Date().toISOString(), board.id);
+          .run(new Date().toISOString(), new Date().toISOString(), result.fetched, board.id);
         return result;
       },
     );
+  }
+
+  /** Expose one supervised task's state so the scheduler can pace concurrent fetches. */
+  taskState(taskId: string): 'RUNNING' | 'QUEUED' | 'DONE' | null {
+    const task = this.tasks.get(taskId);
+    if (!task) return null;
+    return task.state as 'RUNNING' | 'QUEUED' | 'DONE';
   }
 
   lastSuccessfulDiscovery(): string | null {

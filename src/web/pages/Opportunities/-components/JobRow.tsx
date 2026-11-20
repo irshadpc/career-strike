@@ -33,20 +33,20 @@ export function JobRow({
         </h2>
         <p className="flex flex-wrap items-center gap-x-2.5 text-xs text-muted-foreground m-0">
           <span className="font-medium text-foreground">{job.employer}</span>
-          {job.locationText && (
+          {(job.normalizedLocation || job.locationText) && (
             <>
               <span>•</span>
-              <span>{job.locationText}</span>
+              <span>{job.normalizedLocation || job.locationText}</span>
             </>
           )}
-          {job.market.location.countryCode && (
+          {(job.countryCode || job.market.location.countryCode) && (
             <>
               <span>•</span>
-              <span className="font-mono">{job.market.location.countryCode}</span>
+              <span className="font-mono">{job.countryCode || job.market.location.countryCode}</span>
             </>
           )}
           <span>•</span>
-          <span>{REMOTE_LABEL[job.remotePolicy]}</span>
+          <span>{REMOTE_LABEL[job.workMode || job.remotePolicy]}</span>
           {job.employmentType !== 'unknown' && (
             <>
               <span>•</span>
@@ -101,6 +101,14 @@ export function JobRow({
       </div>
       <div className="flex items-center gap-3 shrink-0">
         <DispositionControls jobId={job.id} title={job.title} disposition={job.disposition} onChange={onDisposition} />
+        {job.status !== 'CLOSED' && (
+          <Link
+            href={`/jobs/${job.id}`}
+            className="px-2.5 py-1 text-xs font-semibold rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            Apply →
+          </Link>
+        )}
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
           <input
             type="checkbox"

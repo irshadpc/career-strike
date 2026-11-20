@@ -26,7 +26,7 @@ describe('LinkedIn URL normalization', () => {
   });
 
   it('rejects overly long addresses', () => {
-    const long = 'https://www.linkedin.com/in/' + 'a'.repeat(300);
+    const long = `https://www.linkedin.com/in/${'a'.repeat(300)}`;
     expect(normalizeLinkedInUrl(long)).toEqual({ ok: false, reason: 'That address is too long.' });
   });
 

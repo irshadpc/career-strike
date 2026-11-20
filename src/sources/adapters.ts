@@ -1,6 +1,7 @@
 import { decodeHTML } from 'entities';
 import { z } from 'zod';
 import { type FetchImpl, guardedGetJson } from './fetch-guard.js';
+import { arbeitnow, remotive } from './global-feeds.js';
 import { htmlToBlocks } from './html.js';
 import {
   employmentTypeFrom,
@@ -437,8 +438,10 @@ export function createAdapters(
     greenhouse: greenhouse(fetchImpl),
     lever: lever(fetchImpl),
     ashby: ashby(fetchImpl),
+    remotive: remotive(fetchImpl),
+    arbeitnow: arbeitnow(fetchImpl),
     practice: practice(opts.practiceOrigin ?? (() => null)),
   };
 }
 
-export const SOURCE_IDS: readonly SourceId[] = ['greenhouse', 'lever', 'ashby', 'practice'];
+export const SOURCE_IDS: readonly SourceId[] = ['greenhouse', 'lever', 'ashby', 'remotive', 'arbeitnow', 'practice'];

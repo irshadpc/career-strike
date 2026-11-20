@@ -45,6 +45,22 @@ const RECORDS: Readonly<Record<SourceId, SourceCapabilityRecord>> = {
     applicationRetrieval: false,
     note: 'Public listed-posting feed; unlisted postings are excluded.',
   },
+  remotive: {
+    source: 'remotive',
+    capability: 'PERMITTED_STRUCTURED_FEED',
+    label: 'Global remote feed',
+    automatedRetrieval: true,
+    applicationRetrieval: false,
+    note: 'Public aggregated remote-job feed; applications happen on each employer site.',
+  },
+  arbeitnow: {
+    source: 'arbeitnow',
+    capability: 'PERMITTED_STRUCTURED_FEED',
+    label: 'EU / Germany feed',
+    automatedRetrieval: true,
+    applicationRetrieval: false,
+    note: 'Public aggregated job feed for EU and Germany; applications happen on each employer site.',
+  },
   practice: {
     source: 'practice',
     capability: 'UNAVAILABLE',

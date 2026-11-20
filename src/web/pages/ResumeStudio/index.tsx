@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ApiError,
   type ApplicationSummary,
@@ -30,6 +30,9 @@ export function ResumeStudio() {
   const [personalization, setPersonalization] = useState<PersonalizationView | null>(null);
   const [selectedVariantKind, setSelectedVariantKind] = useState<'resume' | 'cover_letter'>('resume');
   const [variantText, setVariantText] = useState<string>('');
+  // Guard against the personalization effect clobbering the candidate's unsaved edits (see the
+  // side-by-side editor: the user types, personalization resolves, and the typed text must stay).
+  const userEditedRef = useRef(false);
   const [savingVariant, setSavingVariant] = useState(false);
   const [variantSaveStatus, setVariantSaveStatus] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -80,10 +83,14 @@ export function ResumeStudio() {
         if (persRes?.personalization) {
           setPersonalization(persRes.personalization);
           const match = persRes.personalization.variants.find((v) => v.kind === selectedVariantKind);
-          if (match) setVariantText(match.content);
+          if (match && !userEditedRef.current) {
+            setVariantText(match.content);
+          }
+          userEditedRef.current = false;
         } else {
           setPersonalization(null);
-          setVariantText('');
+          if (!userEditedRef.current) setVariantText('');
+          userEditedRef.current = false;
         }
       })
       .catch(() => {
@@ -118,6 +125,7 @@ export function ResumeStudio() {
           body: { content: variantText },
         },
       );
+      userEditedRef.current = false;
       setVariantSaveStatus('Saved document edit.');
       const updated = await api<{ personalization: PersonalizationView }>(
         `/api/applications/${encodeURIComponent(selectedAppId)}/personalization`,
@@ -209,13 +217,9 @@ export function ResumeStudio() {
       </section>
 
       {viewMode === 'master' ? (
-        <ExportPanel label="master resume" />
+        <ExportPanel />
       ) : activeVariant ? (
-        <ExportPanel
-          label={activeVariant.kind === 'resume' ? 'tailored resume' : 'tailored cover letter'}
-          applicationId={selectedAppId}
-          variantId={activeVariant.id}
-        />
+        <ExportPanel applicationId={selectedAppId} variantId={activeVariant.id} />
       ) : null}
 
       {viewMode === 'master' ? (
@@ -312,6 +316,7 @@ export function ResumeStudio() {
                       size="sm"
                       onClick={() => {
                         setSelectedVariantKind('resume');
+                        userEditedRef.current = false;
                         const r = personalization?.variants.find((v) => v.kind === 'resume');
                         if (r) setVariantText(r.content);
                       }}
@@ -324,6 +329,7 @@ export function ResumeStudio() {
                       size="sm"
                       onClick={() => {
                         setSelectedVariantKind('cover_letter');
+                        userEditedRef.current = false;
                         const c = personalization?.variants.find((v) => v.kind === 'cover_letter');
                         if (c) setVariantText(c.content);
                       }}
@@ -387,7 +393,10 @@ export function ResumeStudio() {
                   savingVariant={savingVariant}
                   variantSaveStatus={variantSaveStatus}
                   isCandidateEdited={isCandidateEdited}
-                  onVariantTextChange={setVariantText}
+                  onVariantTextChange={(t) => {
+                    setVariantText(t);
+                    userEditedRef.current = true;
+                  }}
                   onSave={() => void saveVariantEdit()}
                   onDownload={() => downloadText(`tailored-${selectedVariantKind}.txt`, variantText)}
                 />

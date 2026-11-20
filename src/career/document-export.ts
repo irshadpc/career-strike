@@ -25,6 +25,10 @@ export interface ParserReport {
   sha256: string;
   extracted: boolean;
   extractedCharacters: number;
+  /** True when the parse saw a body with almost no text — the signature of a scanned PDF. */
+  sparse: boolean;
+  /** True when the text carries U+0000/U+FFFD/Private-Use-Area — the ToUnicode CMap corruption fingerprint. */
+  ligatureCorruption: boolean;
   sourceCharacters: number;
   /** Share of distinct source words of four or more characters found after extraction. */
   wordCoverage: number;
@@ -44,7 +48,7 @@ export interface DocumentExport {
   report: ParserReport;
 }
 
-const sha256 = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
+export const sha256 = (bytes: Buffer): string => createHash('sha256').update(bytes).digest('hex');
 
 // ---- PDF ----
 
@@ -197,11 +201,11 @@ const words = (text: string): Set<string> =>
     (text.toLowerCase().match(/[\p{L}\p{N}][\p{L}\p{N}+#.-]{3,}/gu) ?? []).map((word) => word.replace(/[.-]+$/g, '')),
   );
 
-export function parserReport(source: string, bytes: Buffer, format: ExportFormat): ParserReport {
+export async function parserReport(source: string, bytes: Buffer, format: ExportFormat): Promise<ParserReport> {
   const mime = EXPORT_MIME[format];
-  const extracted = extractDocumentText(mime, bytes);
+  const extracted = await extractDocumentText(mime, bytes);
   const sourceWords = words(source);
-  const extractedWords = words(extracted ?? '');
+  const extractedWords = words(extracted?.text ?? '');
   const missing = [...sourceWords].filter((word) => !extractedWords.has(word));
   return {
     format,
@@ -209,7 +213,9 @@ export function parserReport(source: string, bytes: Buffer, format: ExportFormat
     sizeBytes: bytes.length,
     sha256: sha256(bytes),
     extracted: extracted !== null,
-    extractedCharacters: extracted?.length ?? 0,
+    extractedCharacters: extracted?.text?.length ?? 0,
+    sparse: extracted?.sparse ?? false,
+    ligatureCorruption: extracted?.ligatureCorruption ?? false,
     sourceCharacters: source.length,
     wordCoverage: sourceWords.size === 0 ? 1 : (sourceWords.size - missing.length) / sourceWords.size,
     missingWords: missing.slice(0, 20),
@@ -267,7 +273,7 @@ const safeBase = (name: string): string =>
     .slice(0, 60) || 'career-document';
 
 /** Generate one file and record its hash. The file itself is returned, never stored twice. */
-export function createExport(db: Db, input: ExportInput, now = new Date()): DocumentExport {
+export async function createExport(db: Db, input: ExportInput, now = new Date()): Promise<DocumentExport> {
   const bytes = input.format === 'pdf' ? renderPdf(input.title, input.content) : renderDocx(input.title, input.content);
   const digest = sha256(bytes);
   const filename = `${safeBase(input.title)}-${now.toISOString().slice(0, 10)}.${input.format}`;
@@ -306,7 +312,7 @@ export function createExport(db: Db, input: ExportInput, now = new Date()): Docu
     sha256: digest,
     sizeBytes: bytes.length,
     format: input.format,
-    report: parserReport(input.content, bytes, input.format),
+    report: await parserReport(input.content, bytes, input.format),
   };
 }
 
