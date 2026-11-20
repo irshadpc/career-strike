@@ -3,6 +3,35 @@
 Every release of Career Strike is listed here, newest first. The section for a version is shown in
 the dashboard after you update, and is published as that version's release notes on GitHub.
 
+## [0.8.0] - 2026-11-21
+
+### Added
+
+- **Canonical Master Career Vault & Relational Data Model**: Dedicated relational storage in SQLite WAL (`master_entries`, `master_bullets`) tracking verified career history, projects, education, and credentials with structured bullet records. Supports Copy-on-Write `resume_variants` with fine-grained entry and bullet inclusion masks, immutable binary `resume_snapshots` with SHA-256 integrity hashes, and a local `skills_taxonomy`.
+- **Deep Round-Trip ATS Binary Verification Engine**: 7-check inspection engine verifying observable structural invariants across PDF and DOCX exports:
+  1. Vector Text Presence & Token Recall ($\ge 98\%$) with contact & title field recall
+  2. Ligature, Null & PUA Scan detecting ToUnicode CMap corruption, U+0000, U+FFFD, and unexpanded presentation ligatures
+  3. PDF/UA Structure Tree Audit (`page.getStructTree()`) verifying standard `/Document`, `/H1`, `/H2`, `/L`, `/LI` tags
+  4. Stream vs. Recursive XY-Cut Reading Order Parity measuring Kendall-tau rank correlation ($\ge 98\%$) to prevent column interleaving on legacy ATS parsers
+  5. Page-Break & Span Concatenation audit flagging accidental token fusions across line boundaries
+  6. File-Size & External Asset Gate ensuring sub-2.5 MB payloads with zero external network image dependencies
+  7. OpenXML Structural Hygiene ensuring body-only contact PII, zero floating text boxes (`<w:txbxContent>`), and zero layout tables
+- **Google XYZ & Anti-Slop Bullet Linter**: Real-time evaluator scoring achievement bullets against the Google formula (*"Accomplished [X] as measured by [Y] by doing [Z]"*). Flags passive duty openers ("Responsible for", "Helped with", "Worked on") with recommended action verbs, audits AI clichés (`delve`, `spearheaded`, `leveraged`, `synergy`), extracts verified metrics (%, $, latency, headcount, scale), and alerts on uniform character length visual symmetry tells.
+- **Three-Tier Local Alignment Engine**:
+  - *Tier 1: Deterministic Lexical & Boolean Gate* separating Must-Have prerequisites from Preferred qualifications
+  - *Tier 2: Local Skills Taxonomy & Synonym Normalization* mapping modern aliases to canonical tech competencies
+  - *Tier 3: Contextual Semantic Alignment* measuring requirement overlap without cloud API latency or external token fees
+  - *Ashby-Style Evidence Rubric* grading requirements across Exact, Synonym, Semantic, and Gap classifications
+  - *Counterfactual Priority Queue* computing exact marginal score lift per identified gap
+- **Calm 3-Pane React 19 Studio Workspace**:
+  - *Left Pane (30%)*: Master Vault Outliner with sectioned tree & inclusion checkboxes, plus Focused XYZ Bullet Editor with real-time linting and active verb suggestions
+  - *Center Canvas (42%)*: Paginated Letter/A4 canvas with 4 live switchable lenses:
+    - `⌘1 Human Print Preview`: true-to-print typography, margins, and page boundaries
+    - `⌘2 ATS X-Ray Mode`: overlays PDF/UA semantic structure badges (`/H1`, `/H2`, `/LI`) and numbered XY-Cut reading flow pills
+    - `⌘3 7.4-Second Recruiter Scan Simulator`: eye-tracking Ladders F-pattern spotlight heatmap and interactive 7.4s Flash test with 3-question recall challenge
+    - `⌘4 Variant Diff View`: visual diff highlighting tailored bullet overrides in emerald green and striking out excluded bullets
+  - *Right Inspector (28%)*: 7-Check Binary Verification Gate with one-click verified PDF and clean DOCX exports, 3-Tier JD Alignment Matrix with counterfactual lifts, and Impact & Anti-Slop Scorecard.
+
 ## [0.7.0] - 2026-11-20
 
 ### Added
