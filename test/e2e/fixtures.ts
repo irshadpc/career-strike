@@ -32,6 +32,8 @@ export class CsService {
     // Update checks go to a closed loopback port: browser tests never contact GitHub.
     return {
       ...process.env,
+      NODE_ENV: 'test',
+      PLAYWRIGHT_TEST: '1',
       CAREER_STRIKE_HOME: this.home,
       CAREER_STRIKE_SECRET_STORE: 'file',
       CAREER_STRIKE_RELEASES_URL: 'http://127.0.0.1:9/releases',

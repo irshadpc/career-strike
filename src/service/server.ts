@@ -352,7 +352,12 @@ export function buildServer({
 
   // Location normalisation backfill + default multi-country board pack (resume-studio audit).
   backfillJobLocations(db);
-  if (!process.env.VITEST && process.env.NODE_ENV !== 'test') {
+  const isTestEnv =
+    Boolean(process.env.VITEST) ||
+    process.env.NODE_ENV === 'test' ||
+    Boolean(process.env.CAREER_STRIKE_RELEASES_URL) ||
+    Boolean(process.env.PLAYWRIGHT_TEST);
+  if (!isTestEnv) {
     seedAndDiscoverBoards(db, discovery);
   }
 
