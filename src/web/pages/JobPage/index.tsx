@@ -10,6 +10,7 @@ import { useResource } from '../../hooks/useResource';
 import { ExternalLink, Link, useNavigateTo } from '../../router';
 import { CompensationPanel } from './-components/CompensationPanel';
 import { Description } from './-components/Description';
+import { MatchInspector } from './-components/MatchInspector';
 
 export function JobPage({ id }: { id: string }) {
   const navigate = useNavigateTo();
@@ -141,6 +142,8 @@ export function JobPage({ id }: { id: string }) {
       )}
 
       {job.fitDetail && <FitPanel fit={job.fitDetail} />}
+
+      <MatchInspector jobId={job.id} />
 
       <CompensationPanel job={job} />
 

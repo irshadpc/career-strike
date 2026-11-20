@@ -850,4 +850,105 @@ export const MIGRATIONS: readonly Migration[] = [
         CREATE INDEX assistant_activity_ledger_date ON assistant_activity_ledger (created_at DESC);
     `,
   },
+  {
+    version: 23,
+    name: 'career_os_phase2_phase3',
+    sql: `
+        -- Warm-Path Referral CRM (Pillar 3).
+        CREATE TABLE contacts (
+          id              TEXT PRIMARY KEY,
+          name            TEXT NOT NULL,
+          company         TEXT,
+          title           TEXT,
+          email           TEXT,
+          linkedin_url    TEXT,
+          source          TEXT NOT NULL DEFAULT 'manual',
+          last_contact_at TEXT,
+          notes           TEXT,
+          created_at      TEXT NOT NULL,
+          updated_at      TEXT NOT NULL
+        );
+        CREATE INDEX contacts_company ON contacts (company);
+        CREATE TABLE contact_interactions (
+          id         TEXT PRIMARY KEY,
+          contact_id TEXT NOT NULL REFERENCES contacts (id) ON DELETE CASCADE,
+          kind       TEXT NOT NULL,
+          note       TEXT,
+          at         TEXT NOT NULL
+        );
+        CREATE INDEX contact_interactions_contact ON contact_interactions (contact_id, at DESC);
+
+        -- STAR Story Vault (Pillar 5).
+        CREATE TABLE star_stories (
+          id            TEXT PRIMARY KEY,
+          competency    TEXT NOT NULL,
+          title         TEXT NOT NULL,
+          situation     TEXT NOT NULL DEFAULT '',
+          task          TEXT NOT NULL DEFAULT '',
+          action        TEXT NOT NULL DEFAULT '',
+          result        TEXT NOT NULL DEFAULT '',
+          reuse_count   INTEGER NOT NULL DEFAULT 0,
+          created_at    TEXT NOT NULL,
+          updated_at    TEXT NOT NULL
+        );
+        CREATE INDEX star_stories_competency ON star_stories (competency);
+
+        -- Brag Vault / Promotion scope (Pillar 6).
+        CREATE TABLE brag_entries (
+          id            TEXT PRIMARY KEY,
+          scope_tier    TEXT NOT NULL CHECK (scope_tier IN ('individual','team','cross_team','org')),
+          competency    TEXT NOT NULL,
+          title         TEXT NOT NULL,
+          impact        TEXT NOT NULL DEFAULT '',
+          created_at    TEXT NOT NULL
+        );
+        CREATE INDEX brag_entries_scope ON brag_entries (scope_tier);
+
+        -- Onboarding plans for Hired Mode (Pillar 6).
+        CREATE TABLE onboarding_plans (
+          id              TEXT PRIMARY KEY,
+          application_id  TEXT,
+          job_title       TEXT,
+          company         TEXT,
+          plan_json       TEXT NOT NULL,
+          created_at      TEXT NOT NULL
+        );
+
+        -- Resume variants for CV A/B (Pillar 4).
+        CREATE TABLE resume_variants (
+          id         TEXT PRIMARY KEY,
+          name       TEXT NOT NULL,
+          content    TEXT NOT NULL DEFAULT '',
+          created_at TEXT NOT NULL
+        );
+
+        -- Offer Lab scenarios (Pillar 6), stored server-side for cross-device reuse.
+        CREATE TABLE offer_scenarios (
+          id         TEXT PRIMARY KEY,
+          name       TEXT NOT NULL,
+          data_json  TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        );
+
+        -- Optional read-only IMAP sync settings (Pillar 6).
+        CREATE TABLE imap_settings (
+          id              INTEGER PRIMARY KEY CHECK (id = 1),
+          host            TEXT NOT NULL,
+          port            INTEGER NOT NULL DEFAULT 993,
+          username        TEXT NOT NULL,
+          password        TEXT,
+          allowlist_json  TEXT NOT NULL DEFAULT '[]',
+          enabled         INTEGER NOT NULL DEFAULT 0,
+          last_sync_at    TEXT
+        );
+        CREATE TABLE imap_candidates (
+          id          TEXT PRIMARY KEY,
+          message_id  TEXT NOT NULL UNIQUE,
+          from_addr   TEXT,
+          subject     TEXT,
+          detected_at TEXT NOT NULL,
+          status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','accepted','dismissed'))
+        );
+    `,
+  },
 ];

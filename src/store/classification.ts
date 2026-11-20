@@ -404,6 +404,45 @@ export const CLASSIFICATION: Readonly<Record<string, Readonly<Record<string, Col
     ...all('INTERNAL', ['id', 'category', 'entity_type', 'entity_id', 'provenance', 'created_at']),
     ...all('PERSONAL', ['title', 'detail']),
   },
+
+  // Career OS (Pillars 2-6)
+  contacts: {
+    ...all('INTERNAL', ['id', 'source', 'created_at', 'updated_at']),
+    ...all('SENSITIVE', ['name', 'company', 'title', 'email', 'linkedin_url', 'last_contact_at', 'notes']),
+  },
+  contact_interactions: {
+    ...all('INTERNAL', ['id', 'contact_id', 'kind', 'at']),
+    ...all('SENSITIVE', ['note']),
+  },
+  star_stories: {
+    ...all('INTERNAL', ['id', 'competency', 'reuse_count', 'created_at', 'updated_at']),
+    ...all('SENSITIVE', ['title', 'situation', 'task', 'action', 'result']),
+  },
+  brag_entries: {
+    ...all('INTERNAL', ['id', 'scope_tier', 'created_at']),
+    ...all('PERSONAL', ['competency', 'title', 'impact']),
+  },
+  onboarding_plans: {
+    ...all('INTERNAL', ['id', 'application_id', 'created_at']),
+    ...all('PERSONAL', ['job_title', 'company']),
+    plan_json: c('SENSITIVE'),
+  },
+  resume_variants: {
+    ...all('INTERNAL', ['id', 'created_at']),
+    ...all('SENSITIVE', ['name', 'content']),
+  },
+  offer_scenarios: {
+    ...all('INTERNAL', ['id', 'created_at']),
+    ...all('SENSITIVE', ['name', 'data_json']),
+  },
+  imap_settings: {
+    ...all('INTERNAL', ['id', 'port', 'allowlist_json', 'enabled', 'last_sync_at']),
+    ...all('SECRET', ['host', 'username', 'password']),
+  },
+  imap_candidates: {
+    ...all('INTERNAL', ['id', 'message_id', 'detected_at', 'status']),
+    ...all('PERSONAL', ['from_addr', 'subject']),
+  },
 };
 
 const rank = (cls: DataClass): number => DATA_CLASSES.indexOf(cls);

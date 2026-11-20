@@ -28,6 +28,7 @@ import type { SecretStore } from '../vault/secrets.js';
 import { runDoctorChecks } from './diagnostics.js';
 import { registerApplicationRoutes } from './routes/applications.js';
 import { registerAssistantRoutes } from './routes/assistant.js';
+import { registerCareerOsRoutes } from './routes/career-os.js';
 import { registerDocumentRoutes } from './routes/documents.js';
 import { registerInterviewRoutes } from './routes/interviews.js';
 import { registerMcpRoutes } from './routes/mcp.js';
@@ -349,6 +350,7 @@ export function buildServer({
   registerDocumentRoutes(app, { db });
 
   registerApplicationRoutes(app, { applications, vault, submissions, personalization, db });
+  registerCareerOsRoutes(app, { db });
   registerInterviewRoutes(app, { interviews });
   registerOutreachRoutes(app, { outreach });
   registerAssistantRoutes(app, { db });

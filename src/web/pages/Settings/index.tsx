@@ -50,6 +50,20 @@ export function Settings() {
       {settings.state === 'ready' && <AiAssistants />}
       {settings.state === 'ready' && <UpdatesPanel />}
       {settings.state === 'ready' && <DataAndPrivacy />}
+      {settings.state === 'ready' && (
+        <section className="rounded-xl border border-border bg-card p-6 shadow-xs mb-6">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground mb-2">Read-only inbox sync (IMAP)</h2>
+          <p className="text-xs text-muted-foreground mb-3">
+            Optional, local-only inbox sync lives on its own page so it never mixes with declared settings.
+          </p>
+          <a
+            href="/imap-sync"
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
+          >
+            Open inbox sync
+          </a>
+        </section>
+      )}
     </>
   );
 }

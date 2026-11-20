@@ -15,6 +15,17 @@ export function Insights() {
   const [data, setData] = useState<Strategy | null>(null);
   const [error, setError] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [funnel, setFunnel] = useState<{
+    total: number;
+    byState: Record<string, number>;
+    applied: number;
+    screened: number;
+    offered: number;
+    screenRate: number;
+    offerRate: number;
+    leaks: string[];
+    benchmarks: { appliedToScreen: number; screenToOffer: number };
+  } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -23,6 +34,9 @@ export function Insights() {
     } catch {
       setError(true);
     }
+    api<typeof funnel>('/api/funnel')
+      .then(setFunnel)
+      .catch(() => {});
   }, []);
 
   useEffect(() => void load(), [load]);
@@ -58,6 +72,53 @@ export function Insights() {
       />
 
       <MarketPulseSection />
+
+      {funnel && (
+        <section
+          aria-labelledby="funnel-title"
+          className="mb-8 p-5 bg-card rounded-lg border border-border shadow-xs space-y-3"
+        >
+          <h2 id="funnel-title" className="text-base font-bold text-foreground m-0">
+            Funnel diagnostics (Pillar 4)
+          </h2>
+          <p className="text-xs text-muted-foreground m-0">
+            {funnel.total} tracked applications · {funnel.applied} applied · {funnel.screened} screened ·{' '}
+            {funnel.offered} offered.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div className="p-3 rounded-md bg-muted/20 border border-border/40">
+              <span className="block text-muted-foreground">Applied → Screen</span>
+              <span className="text-lg font-bold text-foreground">{Math.round(funnel.screenRate * 100)}%</span>
+              <span className="block text-[10px] text-muted-foreground">
+                benchmark {Math.round(funnel.benchmarks.appliedToScreen * 100)}%
+              </span>
+            </div>
+            <div className="p-3 rounded-md bg-muted/20 border border-border/40">
+              <span className="block text-muted-foreground">Screen → Offer</span>
+              <span className="text-lg font-bold text-foreground">{Math.round(funnel.offerRate * 100)}%</span>
+              <span className="block text-[10px] text-muted-foreground">
+                benchmark {Math.round(funnel.benchmarks.screenToOffer * 100)}%
+              </span>
+            </div>
+          </div>
+          {funnel.leaks.length > 0 && (
+            <ul className="space-y-1 p-0 m-0 list-none text-xs">
+              {funnel.leaks.map((l, i) => (
+                <li
+                  key={i}
+                  className="p-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200"
+                >
+                  {l}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="text-[10px] text-muted-foreground m-0">
+            Doubling submission volume does not fix a 6% screening rate — fix the leak instead. Tag each application
+            with its resume variant to run CV A/B tests.
+          </p>
+        </section>
+      )}
 
       <section
         className="mb-8 p-5 bg-card rounded-lg border border-border shadow-xs space-y-4"

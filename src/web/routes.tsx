@@ -5,11 +5,15 @@ import { AddJob } from './pages/AddJob';
 import { ApplicationPage } from './pages/ApplicationPage';
 import { Applications } from './pages/Applications';
 import { Compare } from './pages/Compare';
+import { Contacts } from './pages/Contacts';
+import { HiredMode } from './pages/HiredMode';
 import { Home } from './pages/Home';
+import { ImapSync } from './pages/ImapSync';
 import { Insights } from './pages/Insights';
 import { JobPage } from './pages/JobPage';
 import { Markets } from './pages/Markets';
 import { NotFound } from './pages/NotFound';
+import { Offers } from './pages/Offers';
 import { Opportunities } from './pages/Opportunities';
 import { Outreach } from './pages/Outreach';
 import { Prep } from './pages/Prep';
@@ -17,6 +21,7 @@ import { Profile } from './pages/Profile';
 import { ResumeStudio } from './pages/ResumeStudio';
 import { Settings } from './pages/Settings';
 import { Sources } from './pages/Sources';
+import { StarVault } from './pages/StarVault';
 import { Shell } from './Shell';
 
 // The dashboard route tree. Record ids are opaque slugs; anything else is "not found" rather
@@ -66,9 +71,14 @@ const routeTree = rootRoute.addChildren([
   page('/settings', Settings),
   page('/profile', Profile),
   page('/outreach', Outreach),
+  page('/contacts', Contacts),
   page('/markets', Markets),
+  page('/offers', Offers),
   page('/activity', Activity),
   page('/insights', Insights),
+  page('/imap-sync', ImapSync),
+  page('/hired', HiredMode),
+  page('/star-vault', StarVault),
   page('/opportunities', Opportunities),
   page('/opportunities/sources', Sources),
   page('/opportunities/new', AddJob),
