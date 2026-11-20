@@ -21,9 +21,10 @@ import {
   deleteFact,
   listFacts,
   NewFact,
-  suggestSkills,
   updateFact,
 } from '../../career/profile.js';
+import { extractResumeProfile } from '../../career/resume-profile.js';
+import { suggestResumeFacts } from '../../career/resume-suggest.js';
 import { evaluateDecisionReadyOpportunity } from '../../matching/shortlist.js';
 import { boardFromUrl } from '../../sources/board-url.js';
 import { SourceError } from '../../sources/types.js';
@@ -176,12 +177,14 @@ export function registerOpportunityRoutes(
         return reply.code(400).send({
           error: 'UNSUPPORTED_TYPE',
           message:
-            'Skills can be suggested from plain-text, PDF and Word documents only. This document has no readable text.',
+            'Skills can be suggested from plain-text, Markdown, PDF and Word documents only. This document has no readable text.',
         });
       }
       text = extracted;
     }
-    return reply.code(201).send({ suggested: suggestSkills(db, text, actorOf(req)) });
+    const suggested = suggestResumeFacts(db, text, actorOf(req));
+    const profile = extractResumeProfile(text);
+    return reply.code(201).send({ suggested, profile });
   });
 
   app.post<{ Params: { id: string } }>('/api/profile/facts/:id/approve', async (req, reply) => {

@@ -180,7 +180,14 @@ export function Opportunities() {
         }
       />
 
-      <CountryFocusViews countries={countries} />
+      <details className="my-4 rounded-lg border border-border bg-card shadow-xs">
+        <summary className="cursor-pointer px-4 py-2 text-sm font-medium text-foreground select-none">
+          Market focus &amp; official searches
+        </summary>
+        <div className="px-4 pb-4">
+          <CountryFocusViews countries={countries} />
+        </div>
+      </details>
 
       <div
         className="flex items-center gap-2 border-b border-border my-4 pb-2"

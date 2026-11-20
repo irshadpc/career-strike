@@ -4,7 +4,13 @@ import { Button } from '../../../components/ui/button';
 import { formatDate } from '../../../format';
 import { uploadDocument } from '../../../helpers/documents';
 
-export function DocumentsSection() {
+export function DocumentsSection({
+  onChange,
+  onProfileExtracted,
+}: {
+  onChange?: () => void;
+  onProfileExtracted?: (profile: { fullName?: string; headline?: string; summary?: string }) => void;
+} = {}) {
   const [docs, setDocs] = useState<StoredDocument[] | null>(null);
   const [kind, setKind] = useState<'resume' | 'cover_letter' | 'other'>('resume');
   const [status, setStatus] = useState<string | null>(null);
@@ -12,6 +18,29 @@ export function DocumentsSection() {
   const load = useCallback(async () => {
     setDocs((await api<{ documents: StoredDocument[] }>('/api/documents').catch(() => ({ documents: [] }))).documents);
   }, []);
+
+  const suggestFromLatestResume = useCallback(async () => {
+    try {
+      const fresh = await api<{ documents: StoredDocument[] }>('/api/documents').catch(() => ({ documents: [] }));
+      const latest = fresh.documents
+        .filter((d) => d.kind === 'resume')
+        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
+      if (!latest) return;
+      const res = await api<{
+        suggested: unknown[];
+        profile?: { fullName?: string; headline?: string; summary?: string };
+      }>('/api/profile/suggestions', {
+        method: 'POST',
+        body: { documentId: latest.id },
+      });
+      const n = Array.isArray(res.suggested) ? res.suggested.length : 0;
+      if (res.profile) onProfileExtracted?.(res.profile);
+      setStatus((prev) => `${prev ?? 'Uploaded.'} ${n} item${n === 1 ? '' : 's'} suggested for review.`);
+      onChange?.();
+    } catch {
+      // Suggestion is best-effort; the document is still stored.
+    }
+  }, [onChange]);
 
   useEffect(() => {
     void load();
@@ -91,13 +120,17 @@ export function DocumentsSection() {
             id="doc-file"
             type="file"
             className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+            accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
             onChange={async (e) => {
               const file = e.target.files?.[0];
               if (!file) return;
-              setStatus(await uploadDocument(file, kind));
+              const msg = await uploadDocument(file, kind);
+              setStatus(msg);
               e.target.value = '';
               void load();
+              if (kind === 'resume' && msg.startsWith('Uploaded')) {
+                await suggestFromLatestResume();
+              }
             }}
           />
         </div>

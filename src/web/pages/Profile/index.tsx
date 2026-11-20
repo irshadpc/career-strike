@@ -210,14 +210,63 @@ export function Profile() {
             <input
               type="file"
               ref={resumeFileRef}
-              accept=".pdf,.docx,.txt"
+              accept=".pdf,.docx,.txt,.md"
               className="hidden"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
-                setSaveStatus(await uploadDocument(file, 'resume'));
+                const msg = await uploadDocument(file, 'resume');
+                setSaveStatus(msg);
                 e.target.value = '';
                 void load();
+                if (msg.startsWith('Uploaded')) {
+                  // Auto-extract suggested facts from the uploaded résumé; manual entry remains the fallback.
+                  try {
+                    const docs = await api<{ documents: StoredDocument[] }>('/api/documents');
+                    const latest = docs.documents
+                      .filter((d) => d.kind === 'resume')
+                      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))[0];
+                    if (latest) {
+                      const res = await api<{
+                        suggested: unknown[];
+                        profile?: { fullName?: string; headline?: string; summary?: string };
+                      }>('/api/profile/suggestions', {
+                        method: 'POST',
+                        body: { documentId: latest.id },
+                      });
+                      const n = Array.isArray(res.suggested) ? res.suggested.length : 0;
+                      // Auto-fill identity fields from the résumé when they are currently empty.
+                      const p = res.profile;
+                      if (p) {
+                        if (p.fullName && !fullName.trim()) {
+                          setFullName(p.fullName);
+                          void api(`/api/settings/${encodeURIComponent('identity.fullName')}`, {
+                            method: 'PUT',
+                            body: { value: p.fullName },
+                          }).catch(() => {});
+                        }
+                        if (p.headline && !headline.trim()) {
+                          setHeadline(p.headline);
+                          void api(`/api/settings/${encodeURIComponent('identity.headline')}`, {
+                            method: 'PUT',
+                            body: { value: p.headline },
+                          }).catch(() => {});
+                        }
+                        if (p.summary && !summary.trim()) {
+                          setSummary(p.summary);
+                          void api(`/api/settings/${encodeURIComponent('identity.summary')}`, {
+                            method: 'PUT',
+                            body: { value: p.summary },
+                          }).catch(() => {});
+                        }
+                      }
+                      setSaveStatus(`${msg} ${n} item${n === 1 ? '' : 's'} suggested for review.`);
+                      void load();
+                    }
+                  } catch {
+                    // Suggestion is best-effort; the document is still stored.
+                  }
+                }
               }}
             />
             <Button type="button" variant="outline" size="sm" onClick={() => resumeFileRef.current?.click()}>
@@ -609,7 +658,32 @@ export function Profile() {
             ))}
 
             {/* 7. Supporting Documents */}
-            <DocumentsSection />
+            <DocumentsSection
+              onChange={() => void load()}
+              onProfileExtracted={(p) => {
+                if (p.fullName && !fullName.trim()) {
+                  setFullName(p.fullName);
+                  void api(`/api/settings/${encodeURIComponent('identity.fullName')}`, {
+                    method: 'PUT',
+                    body: { value: p.fullName },
+                  }).catch(() => {});
+                }
+                if (p.headline && !headline.trim()) {
+                  setHeadline(p.headline);
+                  void api(`/api/settings/${encodeURIComponent('identity.headline')}`, {
+                    method: 'PUT',
+                    body: { value: p.headline },
+                  }).catch(() => {});
+                }
+                if (p.summary && !summary.trim()) {
+                  setSummary(p.summary);
+                  void api(`/api/settings/${encodeURIComponent('identity.summary')}`, {
+                    method: 'PUT',
+                    body: { value: p.summary },
+                  }).catch(() => {});
+                }
+              }}
+            />
 
             {/* 8. LinkedIn Export Import */}
             <LinkedInImportSection onChange={() => void load()} />

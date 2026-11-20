@@ -4,7 +4,10 @@ import { strFromU8, unzipSync } from 'fflate';
 
 /** Best-effort text extraction from a stored document. Returns null when no readable text can be recovered. */
 export function extractDocumentText(mime: string, bytes: Buffer): string | null {
-  if (mime === 'text/plain') return bytes.toString('utf8');
+  if (mime === 'text/plain' || mime === 'text/markdown' || mime === 'text/x-markdown' || mime.startsWith('text/')) {
+    const text = bytes.toString('utf8');
+    return text.trim() ? text : null;
+  }
   if (mime === 'application/pdf') return extractPdfText(bytes);
   if (mime === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') return extractDocxText(bytes);
   return null;

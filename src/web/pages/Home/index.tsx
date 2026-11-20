@@ -1,9 +1,11 @@
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { api, type Overview, type ProfileReadinessReport } from '../../api';
 import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
 import { Badge } from '../../components/ui/badge';
 import { Button, buttonVariants } from '../../components/ui/button';
+import { useToast } from '../../components/ui/toast';
 import { ago } from '../../format';
 import { cn } from '../../helpers/cn';
 import { useResource } from '../../hooks/useResource';
@@ -16,33 +18,55 @@ const timeFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', tim
 export function Home() {
   const overview = useResource<Overview>('/api/overview');
   const readiness = useResource<{ readiness: ProfileReadinessReport }>('/api/profile/readiness');
+  interface DeskMission {
+    title: string;
+    weeklyEffortHours: number;
+  }
+  interface DeskRecommendation {
+    job: {
+      id: string;
+      employer: string;
+      title: string;
+      salary?: { currency: string; min?: number; max?: number; interval: string };
+    };
+    nextBestAction: string;
+    dimensions: { professionalRelevance: { tier: string }; applicationEffort: { level: string } };
+  }
   const desk = useResource<{
-    mission: any;
+    mission: DeskMission | null;
     briefing: {
       date: string;
       headline: string;
       summary: string;
       completedWork: string[];
-      deservesAttention: any[];
+      deservesAttention: unknown[];
       answers: Record<string, string>;
-    };
-    plan: any;
-    topRecommendations: any[];
-    ledger: any[];
+    } | null;
+    plan: unknown;
+    topRecommendations: DeskRecommendation[];
+    ledger: unknown[];
   }>('/api/assistant/desk');
 
   const [decisionPending, setDecisionPending] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const handleDecision = async (jobId: string, decision: 'APPLY' | 'INVESTIGATE' | 'WATCH' | 'SKIP') => {
     setDecisionPending(jobId);
+    const label = decision.charAt(0) + decision.slice(1).toLowerCase();
     try {
       await api(`/api/assistant/decision/${jobId}`, {
         method: 'POST',
         body: { decision },
       });
       if ('reload' in desk) desk.reload();
+      toast({ variant: 'success', title: `${label} recorded`, description: 'Your decision has been saved.' });
     } catch {
-      // Keep UI responsive
+      toast({
+        variant: 'destructive',
+        title: `${label} failed`,
+        description: 'Could not save your decision. Try again.',
+        action: { label: 'Retry', onClick: () => void handleDecision(jobId, decision) },
+      });
     } finally {
       setDecisionPending(null);
     }
@@ -191,7 +215,7 @@ export function Home() {
                             disabled={decisionPending === rec.job.id}
                             onClick={() => void handleDecision(rec.job.id, 'APPLY')}
                           >
-                            Apply
+                            {decisionPending === rec.job.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Apply'}
                           </Button>
                           <Button
                             size="sm"
@@ -200,7 +224,7 @@ export function Home() {
                             disabled={decisionPending === rec.job.id}
                             onClick={() => void handleDecision(rec.job.id, 'WATCH')}
                           >
-                            Watch
+                            {decisionPending === rec.job.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Watch'}
                           </Button>
                           <Button
                             size="sm"
@@ -209,7 +233,7 @@ export function Home() {
                             disabled={decisionPending === rec.job.id}
                             onClick={() => void handleDecision(rec.job.id, 'SKIP')}
                           >
-                            Skip
+                            {decisionPending === rec.job.id ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Skip'}
                           </Button>
                         </div>
                       </div>
