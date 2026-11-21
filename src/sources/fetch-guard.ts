@@ -1,14 +1,17 @@
 import { SourceError } from './types.js';
 
-// Career Strike only ever contacts these hosts on its own. Each is a documented public job-board API.
+// Career Strike only ever contacts these hosts on its own. Each is a documented public job-board
+// or keyless structured feed API (resume-studio audit Step 2: Greenhouse, Lever, Ashby, Remotive, Arbeitnow).
 export const ALLOWED_HOSTS: ReadonlySet<string> = new Set([
   'boards-api.greenhouse.io',
   'api.lever.co',
   'api.ashbyhq.com',
+  'remotive.com',
+  'www.arbeitnow.com',
 ]);
 
 const MAX_BYTES = 20 * 1024 * 1024;
-const TIMEOUT_MS = 20_000;
+const TIMEOUT_MS = 10_000;
 const MIN_INTERVAL_MS = 1_000;
 const USER_AGENT = 'CareerStrike/0.1 (local job-search assistant)';
 

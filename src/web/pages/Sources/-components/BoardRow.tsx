@@ -102,7 +102,9 @@ export function BoardRow({
             {board.lastError}
           </p>
         )}
-        {board.lastError && board.health !== 'OK' && <p className="text-xs text-destructive">{board.lastError}</p>}
+        {board.lastError && board.health !== 'OK' && board.lastStatus !== 'error' && (
+          <p className="text-xs text-destructive">{board.lastError}</p>
+        )}
         <p role="status" aria-live="polite" className="text-xs text-muted-foreground">
           {running && (
             <>

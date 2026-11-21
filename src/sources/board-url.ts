@@ -28,8 +28,12 @@ export function boardFromUrl(
   }
   if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
   const match = HOSTS.find(([re]) => re.test(url.hostname));
+  if (!match) return null;
+  // Global keyless feeds expose a single board; accept the site root or any page on it.
+  if (match[1] === 'remotive') return { source: 'remotive', board: 'remotive' };
+  if (match[1] === 'arbeitnow') return { source: 'arbeitnow', board: 'arbeitnow' };
   const board = url.pathname.split('/').filter(Boolean)[0];
-  if (!match || !board) return null;
+  if (!board) return null;
   // Greenhouse also serves embedded boards as /embed/job_board?for=<board>.
   if (match[1] === 'greenhouse' && board === 'embed') {
     const forBoard = url.searchParams.get('for');

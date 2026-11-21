@@ -92,16 +92,19 @@ export class Scheduler {
     }
     // Polite concurrency: at most a few boards are fetched at once, so no single wave of requests
     // starves the network and every failure remains attributable to one source (audit Step 2).
-    let launchedCount = 0;
     const pendingBoardIds = [...pending];
+    const runningCount = (): number =>
+      started.filter((id) => {
+        const state = this.discovery.taskState(id);
+        return state === 'RUNNING' || state === 'QUEUED';
+      }).length;
     const topUp = (): number => {
       let launched = 0;
-      while (launchedCount < DISCOVERY_CONCURRENCY && pendingBoardIds.length > 0) {
+      while (runningCount() < DISCOVERY_CONCURRENCY && pendingBoardIds.length > 0) {
         const boardId = pendingBoardIds.shift()!;
         const run = this.discovery.discover(boardId, 'schedule', 'scheduler');
         if (run?.created) {
           started.push(run.task.id);
-          launchedCount += 1;
           launched += 1;
         }
       }
@@ -111,12 +114,8 @@ export class Scheduler {
     if (pendingBoardIds.length > 0) {
       const refill = setInterval(() => {
         try {
-          const stillRunning = started.filter((id) => {
-            const state = this.discovery.taskState(id);
-            return state === 'RUNNING' || state === 'QUEUED';
-          }).length;
-          if (stillRunning < DISCOVERY_CONCURRENCY) topUp();
-          if (pendingBoardIds.length === 0 && stillRunning === 0) {
+          topUp();
+          if (pendingBoardIds.length === 0 && runningCount() === 0) {
             clearInterval(refill);
             this.db
               .prepare('UPDATE schedule_slots SET result = ? WHERE schedule = ? AND slot = ?')

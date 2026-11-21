@@ -30,7 +30,7 @@ const RemotiveResponse = z.object({
   jobs: z
     .array(
       z.object({
-        id: z.string(),
+        id: z.union([z.string(), z.number()]).transform((v) => String(v)),
         url: nullableString,
         title: nullableString,
         company_name: nullableString,
