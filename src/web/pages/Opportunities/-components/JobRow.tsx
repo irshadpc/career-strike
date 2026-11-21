@@ -1,3 +1,4 @@
+import { Eye } from 'lucide-react';
 import type { Disposition, JobSummary } from '../../../api';
 import { TierChip } from '../../../components/FitPanel';
 import { DispositionControls, StatusChip } from '../../../components/jobBits';
@@ -16,6 +17,7 @@ export function JobRow({
   filterSkillCount,
   onCompare,
   onDisposition,
+  onPeek,
 }: {
   job: JobSummary;
   selected: boolean;
@@ -23,6 +25,7 @@ export function JobRow({
   filterSkillCount?: number;
   onCompare: () => void;
   onDisposition: (d: Disposition) => void;
+  onPeek?: (job: JobSummary) => void;
 }) {
   const salary = formatSalary(job.salary);
   return (
@@ -138,8 +141,20 @@ export function JobRow({
           )}
         </div>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
         <DispositionControls jobId={job.id} title={job.title} disposition={job.disposition} onChange={onDisposition} />
+        {onPeek && (
+          <button
+            type="button"
+            onClick={() => onPeek(job)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors"
+            title={`Quick peek ${job.title}`}
+            aria-label={`Quick peek ${job.title}`}
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span>Peek</span>
+          </button>
+        )}
         {job.status !== 'CLOSED' && (
           <Link
             href={`/jobs/${job.id}`}

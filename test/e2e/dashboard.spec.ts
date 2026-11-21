@@ -164,6 +164,8 @@ test.describe('settings', () => {
       'identity.email': null,
       'identity.phone': null,
       'identity.profileLinks': [],
+      'integrations.adzunaAppId': null,
+      'integrations.adzunaAppKey': null,
       'monitoring.discoveryIntervalHours': '0',
       'monitoring.updateChecks': 'off',
     };

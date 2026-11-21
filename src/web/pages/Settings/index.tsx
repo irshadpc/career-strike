@@ -45,9 +45,9 @@ export function Settings() {
                 Adzuna status:{' '}
                 {String(settings.data.settings['integrations.adzunaAppId'] ?? '').trim() &&
                 String(settings.data.settings['integrations.adzunaAppKey'] ?? '').trim() ? (
-                  <span className="text-green-600 dark:text-green-400 font-medium">Configured (BYOK)</span>
+                  <span className="text-emerald-700 dark:text-emerald-300 font-medium">Configured (BYOK)</span>
                 ) : (
-                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                  <span className="text-amber-800 dark:text-amber-300 font-medium">
                     Unconfigured — add both keys to enable Adzuna search
                   </span>
                 )}

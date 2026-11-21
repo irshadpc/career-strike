@@ -9,7 +9,7 @@ import { JAPAN_SOURCE_ASSESSMENTS, officialJapanSearchUrl } from '../../../marke
 import { officialSingaporeSearchUrl, SINGAPORE_SOURCE_ASSESSMENTS } from '../../../markets/singapore-sources';
 import { officialUaeSearchUrl, UAE_SOURCE_ASSESSMENTS } from '../../../markets/uae-sources';
 import { officialUkSearchUrl, UK_SOURCE_ASSESSMENTS } from '../../../markets/uk-sources';
-import { api, type Disposition, type JobList, type SettingsResponse } from '../../api';
+import { api, type Disposition, type JobList, type JobSummary, type SettingsResponse } from '../../api';
 import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
 import { Button, buttonVariants } from '../../components/ui/button';
@@ -21,6 +21,7 @@ import { CollectionsHub } from './-components/CollectionsHub';
 import { CountryFocusViews, OfficialSearches } from './-components/CountryFocusViews';
 import { DecisionShortlistHub } from './-components/DecisionShortlistHub';
 import { JobRow } from './-components/JobRow';
+import { OpportunityPeekDrawer } from './-components/OpportunityPeekDrawer';
 import { SkillFilterBar } from './-components/SkillFilterBar';
 import { TopMatchSpotlight } from './-components/TopMatchSpotlight';
 
@@ -134,6 +135,7 @@ export function Opportunities() {
   );
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [peekJob, setPeekJob] = useState<JobSummary | null>(null);
 
   const handleSyncTargets = async () => {
     setSyncing(true);
@@ -314,59 +316,57 @@ export function Opportunities() {
         </div>
       </details>
 
-      <div
-        className="flex items-center gap-2 border-b border-border my-4 pb-2"
-        role="tablist"
-        aria-label="Opportunity discovery modes"
-      >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewTab === 'all'}
-          onClick={() => setViewTab('all')}
-          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            viewTab === 'all'
-              ? 'bg-primary text-primary-foreground font-semibold'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-        >
-          All Opportunities {list.state === 'ready' ? `(${list.data.total})` : ''}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewTab === 'collections'}
-          onClick={() => setViewTab('collections')}
-          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            viewTab === 'collections'
-              ? 'bg-primary text-primary-foreground font-semibold'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-        >
-          Curated Collections
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={viewTab === 'shortlist'}
-          onClick={() => setViewTab('shortlist')}
-          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-            viewTab === 'shortlist'
-              ? 'bg-primary text-primary-foreground font-semibold'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-          }`}
-        >
-          Decision Shortlists (6D)
-        </button>
+      <div className="flex items-center justify-between border-b border-border my-4 pb-2 flex-wrap gap-2">
+        <div className="flex items-center gap-2 flex-wrap" role="tablist" aria-label="Opportunity discovery modes">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={viewTab === 'all'}
+            onClick={() => setViewTab('all')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              viewTab === 'all'
+                ? 'bg-primary text-primary-foreground font-semibold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            All Opportunities {list.state === 'ready' ? `(${list.data.total})` : ''}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={viewTab === 'collections'}
+            onClick={() => setViewTab('collections')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              viewTab === 'collections'
+                ? 'bg-primary text-primary-foreground font-semibold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            Curated Collections
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={viewTab === 'shortlist'}
+            onClick={() => setViewTab('shortlist')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
+              viewTab === 'shortlist'
+                ? 'bg-primary text-primary-foreground font-semibold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            }`}
+          >
+            Decision Shortlists (6D)
+          </button>
+        </div>
         <div className="ml-auto">
           <button
             type="button"
             onClick={() => void saveCurrentFilterAsLoop()}
             disabled={savingLoop}
             className="px-3 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
-            title="Save the current filters as a search loop for Today's Shortlist"
+            title="Save the current filters as a loop for Today's Shortlist"
           >
-            {savingLoop ? 'Saving…' : 'Save current filter as search loop'}
+            {savingLoop ? 'Saving…' : 'Save filter as loop'}
           </button>
         </div>
       </div>
@@ -533,6 +533,7 @@ export function Opportunities() {
                         filterSkillCount={selectedSkills.length}
                         onCompare={() => toggleCompare(job.id)}
                         onDisposition={(d) => void handleDisposition(job.id, d)}
+                        onPeek={(j) => setPeekJob(j)}
                       />
                     ))}
                   </ul>
@@ -648,6 +649,12 @@ export function Opportunities() {
           )}
         </>
       )}
+
+      <OpportunityPeekDrawer
+        job={peekJob}
+        onClose={() => setPeekJob(null)}
+        onDisposition={(id, d) => void handleDisposition(id, d)}
+      />
     </div>
   );
 }
