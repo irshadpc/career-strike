@@ -189,7 +189,28 @@ export interface JobSummary {
   countryCodes?: string[];
   workMode?: 'remote' | 'hybrid' | 'onsite' | 'unknown';
   normalizedLocation?: string | null;
+  allSkills?: string[];
+  matchedSkills?: string[];
   fit?: FitSummary;
+}
+
+export interface SkillFacet {
+  slug: string;
+  label: string;
+  count: number;
+}
+
+export async function getSkillFacets(filters?: {
+  country?: string;
+  remote?: string;
+  q?: string;
+}): Promise<{ skills: SkillFacet[] }> {
+  const params = new URLSearchParams();
+  if (filters?.country) params.set('country', filters.country);
+  if (filters?.remote) params.set('remote', filters.remote);
+  if (filters?.q) params.set('q', filters.q);
+  const qStr = params.toString();
+  return api<{ skills: SkillFacet[] }>(`/api/opportunities/skills${qStr ? `?${qStr}` : ''}`);
 }
 
 export interface TextBlock {
@@ -236,7 +257,7 @@ export interface Task {
 
 export interface SourceBoard {
   id: string;
-  source: 'greenhouse' | 'lever' | 'ashby' | 'remotive' | 'arbeitnow' | 'practice';
+  source: 'greenhouse' | 'lever' | 'ashby' | 'smartrecruiters' | 'adzuna' | 'remotive' | 'arbeitnow' | 'practice';
   board: string;
   boardUrl: string;
   addedAt: string;

@@ -13,11 +13,11 @@ export function remotePolicyFrom(label: string | null | undefined): RemotePolicy
 /** Map an employment label only when it says so explicitly ("Permanent" is not "full-time"). */
 export function employmentTypeFrom(label: string | null | undefined): EmploymentType {
   const v = (label ?? '').toLowerCase();
-  if (/full[\s-]?time/.test(v)) return 'full_time';
-  if (/part[\s-]?time/.test(v)) return 'part_time';
+  if (/full[\s_-]?time/.test(v)) return 'full_time';
+  if (/part[\s_-]?time/.test(v)) return 'part_time';
   if (/intern/.test(v)) return 'internship';
   if (/contract|freelance/.test(v)) return 'contract';
-  if (/temp|short[\s-]?term|fixed[\s-]?term|seasonal/.test(v)) return 'temporary';
+  if (/temp|short[\s_-]?term|fixed[\s_-]?term|seasonal/.test(v)) return 'temporary';
   return 'unknown';
 }
 

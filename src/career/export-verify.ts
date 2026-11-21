@@ -192,7 +192,11 @@ export async function verifyExport(opts: {
       if (struct && typeof struct === 'object') {
         treeFound = true;
       }
-      await (doc as unknown as { destroy: () => Promise<void> }).destroy();
+      if (typeof (doc as unknown as { cleanup?: () => Promise<void> }).cleanup === 'function') {
+        await (doc as unknown as { cleanup: () => Promise<void> }).cleanup();
+      } else if (typeof (doc as unknown as { destroy?: () => Promise<void> }).destroy === 'function') {
+        await (doc as unknown as { destroy: () => Promise<void> }).destroy();
+      }
 
       if (treeFound) {
         checks.push({
@@ -252,7 +256,11 @@ export async function verifyExport(opts: {
           pagesCounted++;
         }
       }
-      await (doc as unknown as { destroy: () => Promise<void> }).destroy();
+      if (typeof (doc as unknown as { cleanup?: () => Promise<void> }).cleanup === 'function') {
+        await (doc as unknown as { cleanup: () => Promise<void> }).cleanup();
+      } else if (typeof (doc as unknown as { destroy?: () => Promise<void> }).destroy === 'function') {
+        await (doc as unknown as { destroy: () => Promise<void> }).destroy();
+      }
 
       const avgParity = pagesCounted > 0 ? (totalParity - 1.0) / pagesCounted : 1.0;
       if (avgParity >= 0.98) {

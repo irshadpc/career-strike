@@ -37,6 +37,8 @@ export const SOURCE_LABEL: Record<string, string> = {
   greenhouse: 'Greenhouse',
   lever: 'Lever',
   ashby: 'Ashby',
+  smartrecruiters: 'SmartRecruiters',
+  adzuna: 'Adzuna',
   remotive: 'Remotive',
   arbeitnow: 'Arbeitnow',
   manual: 'Added by you',

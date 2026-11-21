@@ -6,6 +6,8 @@ export const ALLOWED_HOSTS: ReadonlySet<string> = new Set([
   'boards-api.greenhouse.io',
   'api.lever.co',
   'api.ashbyhq.com',
+  'api.smartrecruiters.com',
+  'api.adzuna.com',
   'remotive.com',
   'www.arbeitnow.com',
 ]);

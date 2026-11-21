@@ -10,6 +10,7 @@ import { type Logger, nullLogger } from '../core/log.js';
 import { type AppPaths, appPaths } from '../core/paths.js';
 import { backfillJobLocations } from '../ingestion/locationNormalizer.js';
 import { seedAndDiscoverBoards } from '../ingestion/seedPack.js';
+import { backfillJobSkills } from '../ingestion/skillExtractor.js';
 import { InterviewService } from '../interview/service.js';
 import { computeMetrics, MIN_SAMPLE, observations } from '../learning/metrics.js';
 import { ProposalAction, type ProposalDecisionKind, ProposalError, StrategyProposals } from '../learning/proposals.js';
@@ -38,6 +39,7 @@ import { registerMcpRoutes } from './routes/mcp.js';
 import { registerOpportunityRoutes } from './routes/opportunities.js';
 import { registerOutreachRoutes } from './routes/outreach.js';
 import { registerReadinessRoutes } from './routes/readiness.js';
+import { registerSavedSearchRoutes } from './routes/saved-searches.js';
 import { registerUpdateRoutes } from './routes/updates.js';
 import { isAllowedHost, isAllowedOrigin, SECURITY_HEADERS, tokensEqual } from './security.js';
 import { clearedSessionCookie, readCookie, SESSION_COOKIE, SessionStore, sessionCookie } from './sessions.js';
@@ -93,7 +95,17 @@ export function buildServer({
   const mcpClients = new McpClientStore(db);
   const practiceOrigin = (): string | null =>
     (db.prepare('SELECT origin FROM practice_endpoint WHERE id = 1').pluck().get() as string | undefined) ?? null;
-  const sources = adapters ?? createAdapters(undefined, { practiceOrigin });
+  const sources =
+    adapters ??
+    createAdapters(undefined, {
+      practiceOrigin,
+      adzunaCredentials: () => {
+        const current = getSettings(db);
+        const appId = String(current['integrations.adzunaAppId'] ?? process.env.ADZUNA_APP_ID ?? '').trim();
+        const appKey = String(current['integrations.adzunaAppKey'] ?? process.env.ADZUNA_APP_KEY ?? '').trim();
+        return appId && appKey ? { appId, appKey } : null;
+      },
+    });
   const tasks = new TaskSupervisor(db, logger);
   const interrupted = tasks.recoverInterrupted();
   if (interrupted.length > 0) logger.warn('tasks.interrupted', { count: interrupted.length });
@@ -348,10 +360,12 @@ export function buildServer({
   });
 
   registerOpportunityRoutes(app, { db, discovery, tasks, vault });
+  registerSavedSearchRoutes(app, { db });
   registerExportRoutes(app, { db });
 
   // Location normalisation backfill + default multi-country board pack (resume-studio audit).
   backfillJobLocations(db);
+  backfillJobSkills(db);
   const isTestEnv =
     Boolean(process.env.VITEST) ||
     process.env.NODE_ENV === 'test' ||

@@ -18,7 +18,7 @@ import type { Db } from '../store/db.js';
  */
 
 export interface SeedBoard {
-  source: Extract<SourceId, 'greenhouse' | 'lever' | 'ashby' | 'remotive' | 'arbeitnow'>;
+  source: Extract<SourceId, 'greenhouse' | 'lever' | 'ashby' | 'smartrecruiters' | 'remotive' | 'arbeitnow'>;
   board: string;
   label: string;
   countries: string[];
@@ -45,6 +45,10 @@ export const SEED_PACK: readonly SeedBoard[] = [
   { source: 'ashby', board: 'harvey', label: 'Harvey', countries: ['US', 'IN', 'GB'] },
   { source: 'ashby', board: 'elevenlabs', label: 'ElevenLabs', countries: ['GB', 'US', 'PL'] },
   { source: 'ashby', board: 'ziina', label: 'Ziina', countries: ['AE'] },
+  { source: 'smartrecruiters', board: 'BoschGroup', label: 'Bosch Group', countries: ['DE', 'IN', 'US', 'GB'] },
+  { source: 'smartrecruiters', board: 'ServiceNow', label: 'ServiceNow', countries: ['US', 'IN', 'GB', 'IE', 'NL'] },
+  { source: 'smartrecruiters', board: 'Eurofins', label: 'Eurofins', countries: ['US', 'IN', 'GB', 'DE', 'FR'] },
+  { source: 'smartrecruiters', board: 'Experian', label: 'Experian', countries: ['US', 'IN', 'GB'] },
   { source: 'remotive', board: 'remotive', label: 'Remotive (global remote)', countries: ['GLOBAL'] },
   { source: 'arbeitnow', board: 'arbeitnow', label: 'Arbeitnow (DE/EU)', countries: ['DE', 'GLOBAL'] },
 ];

@@ -21,6 +21,7 @@ import { CollectionsHub } from './-components/CollectionsHub';
 import { CountryFocusViews, OfficialSearches } from './-components/CountryFocusViews';
 import { DecisionShortlistHub } from './-components/DecisionShortlistHub';
 import { JobRow } from './-components/JobRow';
+import { SkillFilterBar } from './-components/SkillFilterBar';
 import { TopMatchSpotlight } from './-components/TopMatchSpotlight';
 
 const PAGE = 50;
@@ -95,6 +96,39 @@ export function Opportunities() {
   const [compare, setCompare] = useState<string[]>([]);
   const [reload, setReload] = useState(0);
   const [viewTab, setViewTab] = useState<'all' | 'collections' | 'shortlist'>('all');
+  const [savingLoop, setSavingLoop] = useState(false);
+  const saveCurrentFilterAsLoop = async (): Promise<void> => {
+    const name = window.prompt('Name this search loop', params.get('q')?.trim() || 'My search loop');
+    if (!name) return;
+    setSavingLoop(true);
+    try {
+      const skills = (params.get('skills') ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const q = params.get('q')?.trim();
+      if (q && !skills.includes(q)) skills.unshift(q);
+      const country = params.get('country')?.trim().toUpperCase();
+      const remote = params.get('remote');
+      const workMode = remote === 'remote' || remote === 'hybrid' || remote === 'onsite' ? remote : null;
+      await api('/api/saved-searches', {
+        method: 'POST',
+        body: {
+          name: name.trim(),
+          skills,
+          countryCodes: country ? [country] : [],
+          cities: params.get('city') ? [params.get('city')!.trim()] : [],
+          workMode,
+          minMatchScore: null,
+        },
+      });
+      window.alert("Search loop saved. Net-new matches will appear in Today's Shortlist on Home.");
+    } catch {
+      window.alert('Could not save search loop.');
+    } finally {
+      setSavingLoop(false);
+    }
+  };
   const [filtersOpen, setFiltersOpen] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 761px)').matches : true,
   );
@@ -132,9 +166,31 @@ export function Opportunities() {
     ];
   }, [list]);
 
+  const selectedSkills = useMemo(
+    () =>
+      params
+        .get('skills')
+        ?.split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean) ?? [],
+    [search],
+  );
+  const skillMode = (params.get('skillMode') as 'any' | 'all') || 'any';
+  const excludedSkills = useMemo(
+    () =>
+      params
+        .get('excludeSkills')
+        ?.split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean) ?? [],
+    [search],
+  );
+
   const activeFilters =
     (Object.keys(FILTERS) as FilterKey[]).filter((k) => params.get(k)).length +
     (params.get('city') ? 1 : 0) +
+    (params.get('skills') ? 1 : 0) +
+    (params.get('excludeSkills') ? 1 : 0) +
     (params.get('includeExcludedEmployers') ? 1 : 0) +
     (params.get('immediateStart') ? 1 : 0);
 
@@ -160,6 +216,21 @@ export function Opportunities() {
     if (key === 'country') p.delete('city');
     if (value) p.set(key, value);
     else p.delete(key);
+    setLimit(PAGE);
+    navigate(`/opportunities${p.toString() ? `?${p.toString()}` : ''}`, { replace: true });
+  };
+
+  const handleSkillsChange = (skills: string[], mode?: 'any' | 'all', excluded?: string[]) => {
+    const p = new URLSearchParams(search);
+    if (skills.length > 0) p.set('skills', skills.join(','));
+    else p.delete('skills');
+
+    if (mode && mode !== 'any') p.set('skillMode', mode);
+    else p.delete('skillMode');
+
+    if (excluded && excluded.length > 0) p.set('excludeSkills', excluded.join(','));
+    else p.delete('excludeSkills');
+
     setLimit(PAGE);
     navigate(`/opportunities${p.toString() ? `?${p.toString()}` : ''}`, { replace: true });
   };
@@ -287,6 +358,17 @@ export function Opportunities() {
         >
           Decision Shortlists (6D)
         </button>
+        <div className="ml-auto">
+          <button
+            type="button"
+            onClick={() => void saveCurrentFilterAsLoop()}
+            disabled={savingLoop}
+            className="px-3 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+            title="Save the current filters as a search loop for Today's Shortlist"
+          >
+            {savingLoop ? 'Saving…' : 'Save current filter as search loop'}
+          </button>
+        </div>
       </div>
 
       {viewTab === 'collections' && <CollectionsHub />}
@@ -314,6 +396,16 @@ export function Opportunities() {
               Search
             </Button>
           </form>
+
+          <SkillFilterBar
+            selectedSkills={selectedSkills}
+            skillMode={skillMode}
+            excludedSkills={excludedSkills}
+            onSkillsChange={handleSkillsChange}
+            countryFilter={params.get('country') ?? undefined}
+            remoteFilter={params.get('remote') ?? undefined}
+            queryFilter={params.get('q') ?? undefined}
+          />
 
           <div className="my-4 p-4 rounded-lg border border-border bg-card shadow-xs space-y-3">
             <div className="flex items-center justify-between">
@@ -438,6 +530,7 @@ export function Opportunities() {
                         job={job}
                         selected={compare.includes(job.id)}
                         compareFull={compare.length >= MAX_COMPARE}
+                        filterSkillCount={selectedSkills.length}
                         onCompare={() => toggleCompare(job.id)}
                         onDisposition={(d) => void handleDisposition(job.id, d)}
                       />

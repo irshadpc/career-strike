@@ -45,6 +45,22 @@ const RECORDS: Readonly<Record<SourceId, SourceCapabilityRecord>> = {
     applicationRetrieval: false,
     note: 'Public listed-posting feed; unlisted postings are excluded.',
   },
+  smartrecruiters: {
+    source: 'smartrecruiters',
+    capability: 'AUTHORIZED_PUBLIC_API',
+    label: 'SmartRecruiters public API',
+    automatedRetrieval: true,
+    applicationRetrieval: false,
+    note: 'Official public posting API; a user-selected company board is verified by a successful fetch. Applications happen on the employer site.',
+  },
+  adzuna: {
+    source: 'adzuna',
+    capability: 'AUTHORIZED_PARTNER_API',
+    label: 'Adzuna (BYOK)',
+    automatedRetrieval: true,
+    applicationRetrieval: false,
+    note: 'Official Adzuna developer API. Requires your own API credentials; when unconfigured the source stays visible but inactive.',
+  },
   remotive: {
     source: 'remotive',
     capability: 'PERMITTED_STRUCTURED_FEED',

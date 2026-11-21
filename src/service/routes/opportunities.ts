@@ -30,6 +30,7 @@ import {
 } from '../../career/profile.js';
 import { extractResumeProfile } from '../../career/resume-profile.js';
 import { suggestResumeFacts } from '../../career/resume-suggest.js';
+import { listSkillFacets } from '../../ingestion/skillExtractor.js';
 import { EMPLOYER_TARGETS } from '../../markets/employers.js';
 import { evaluateDecisionReadyOpportunity } from '../../matching/shortlist.js';
 import { boardFromUrl } from '../../sources/board-url.js';
@@ -41,7 +42,12 @@ import type { DocumentVault } from '../../vault/documents.js';
 import { extractDocumentText } from '../../vault/text-extraction.js';
 
 const AddBoard = z.union([
-  z.object({ source: z.enum(['greenhouse', 'lever', 'ashby']), board: z.string().trim().min(1).max(100) }).strict(),
+  z
+    .object({
+      source: z.enum(['greenhouse', 'lever', 'ashby', 'smartrecruiters', 'adzuna', 'remotive', 'arbeitnow']),
+      board: z.string().trim().min(1).max(100),
+    })
+    .strict(),
   z.object({ url: z.string().trim().min(1).max(2000) }).strict(),
 ]);
 const SuggestFrom = z.union([
@@ -79,7 +85,7 @@ export function registerOpportunityRoutes(
       return reply.code(400).send({
         error: 'UNRECOGNISED_BOARD_URL',
         message:
-          'Paste a Greenhouse, Lever or Ashby careers page link, e.g. https://jobs.lever.co/company (or a practice board link from career-strike practice)',
+          'Paste a Greenhouse, Lever, Ashby, Remotive or Arbeitnow careers/feed link, e.g. https://jobs.lever.co/company or https://remotive.com (or a practice board link from career-strike practice)',
       });
     }
     try {
@@ -149,12 +155,23 @@ export function registerOpportunityRoutes(
     return reply.code(202).send({ ok: true });
   });
 
-  // ---- jobs ----
+  // ---- jobs & opportunities ----
 
   app.get('/api/jobs', async (req, reply) => {
     const parsed = JobQuery.safeParse(req.query);
     if (!parsed.success) return invalid(reply, parsed.error.issues);
     return listJobs(db, parsed.data, ctx());
+  });
+
+  app.get('/api/opportunities', async (req, reply) => {
+    const parsed = JobQuery.safeParse(req.query);
+    if (!parsed.success) return invalid(reply, parsed.error.issues);
+    return listJobs(db, parsed.data, ctx());
+  });
+
+  app.get('/api/opportunities/skills', async (req) => {
+    const q = req.query as { country?: string; remote?: string; q?: string } | undefined;
+    return { skills: listSkillFacets(db, q) };
   });
 
   app.get('/api/opportunities/shortlist', async () => {

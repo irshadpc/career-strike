@@ -59,7 +59,7 @@ export const COUNTRY_REGISTRY: Readonly<Record<CountryCode, CountryConfig>> = {
     currencies: ['INR'],
     locales: ['en', 'hi'],
     defaultCities: ['Bengaluru', 'Hyderabad', 'Pune', 'Chennai', 'Delhi NCR', 'Mumbai', 'Kochi', 'Coimbatore'],
-    cityAliases: { Bangalore: 'Bengaluru', Gurgaon: 'Gurugram' },
+    cityAliases: { Bangalore: 'Bengaluru', BLR: 'Bengaluru', Gurgaon: 'Gurugram' },
     status: 'CONFIGURED',
   },
   SG: {

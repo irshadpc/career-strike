@@ -18,6 +18,10 @@ import {
   syncMasterFromProfile,
 } from '../../career/master-vault.js';
 import { htmlToAtsPdf } from '../../career/pdf-export.js';
+import { verifyResumeBuffer } from '../../resume/atsVerifier.js';
+import { exportVariantDocx } from '../../resume/docxExporter.js';
+import { exportVariantPdf } from '../../resume/pdfExporter.js';
+import type { ResolvedVariantPayload } from '../../resume/types.js';
 import type { Db } from '../../store/db.js';
 
 export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
@@ -192,4 +196,129 @@ export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
     const snapshot = recordResumeSnapshot(db, parsed.data);
     return reply.code(201).send({ snapshot });
   });
+
+  // Dedicated ATS Resume Studio Verification & Export APIs
+  function toPayload(variantId: string): ResolvedVariantPayload {
+    const master = buildMasterResume(db);
+    if (variantId === 'master') {
+      const entries = listMasterEntries(db);
+      return {
+        id: 'master',
+        name: 'Master Resume',
+        templateId: 'classic-single-col',
+        pageFormat: 'LETTER',
+        fullName: master.identity.fullName || 'Candidate',
+        email: master.identity.email,
+        phone: master.identity.phone,
+        location: null,
+        links: [master.identity.linkedin].filter(Boolean) as string[],
+        summary: null,
+        entries: entries.map((e) => ({
+          id: e.id,
+          entryType: e.entryType as ResolvedVariantPayload['entries'][0]['entryType'],
+          organization: e.organization,
+          title: e.title,
+          location: e.location,
+          startDate: e.startDate,
+          endDate: e.endDate,
+          isCurrent: e.isCurrent,
+          bullets: e.bullets.map((b) => ({ id: b.id, text: b.rawText })),
+        })),
+      };
+    }
+
+    const resolved = resolveResumeVariant(db, variantId);
+    if (!resolved) {
+      throw new Error('VARIANT_NOT_FOUND');
+    }
+
+    return {
+      id: resolved.variantId,
+      name: resolved.name,
+      templateId: resolved.templateId,
+      pageFormat: resolved.pageFormat,
+      fullName: master.identity.fullName || 'Candidate',
+      email: master.identity.email,
+      phone: master.identity.phone,
+      location: null,
+      links: [master.identity.linkedin].filter(Boolean) as string[],
+      summary: resolved.summary,
+      entries: resolved.entries.map((e) => ({
+        id: e.id,
+        entryType: e.entryType as ResolvedVariantPayload['entries'][0]['entryType'],
+        organization: e.organization,
+        title: e.title,
+        location: e.location,
+        startDate: e.startDate,
+        endDate: e.endDate,
+        isCurrent: e.isCurrent,
+        bullets: e.bullets.map((b) => ({ id: b.id, text: b.text })),
+      })),
+    };
+  }
+
+  app.post<{ Params: { variantId: string }; Querystring: { format?: string } }>(
+    '/api/resume/:variantId/verify',
+    async (req, reply) => {
+      const format = (req.query.format === 'docx' ? 'docx' : 'pdf') as 'pdf' | 'docx';
+      let payload: ResolvedVariantPayload;
+      try {
+        payload = toPayload(req.params.variantId);
+      } catch {
+        return reply.code(404).send({ error: 'VARIANT_NOT_FOUND' });
+      }
+
+      const bytes = format === 'pdf' ? await exportVariantPdf(payload) : await exportVariantDocx(payload);
+      const report = await verifyResumeBuffer(bytes, format, payload);
+      return { report, format, extractedText: report.extractedText, verification: report };
+    },
+  );
+
+  app.post<{ Params: { variantId: string; format: string } }>(
+    '/api/resume/:variantId/export/:format',
+    async (req, reply) => {
+      const format = req.params.format === 'docx' ? 'docx' : 'pdf';
+      let payload: ResolvedVariantPayload;
+      try {
+        payload = toPayload(req.params.variantId);
+      } catch {
+        return reply.code(404).send({ error: 'VARIANT_NOT_FOUND' });
+      }
+
+      const bytes = format === 'pdf' ? await exportVariantPdf(payload) : await exportVariantDocx(payload);
+      const report = await verifyResumeBuffer(bytes, format, payload);
+
+      let snapshotId: string | null = null;
+      if (report.passed && payload.id !== 'master') {
+        const row = db.prepare('SELECT job_application_id FROM resume_variants WHERE id = ?').get(payload.id) as
+          | { job_application_id: string | null }
+          | undefined;
+        const resolved = resolveResumeVariant(db, payload.id);
+        if (resolved) {
+          const snapshot = recordResumeSnapshot(db, {
+            variantId: payload.id,
+            jobApplicationId: row?.job_application_id ?? null,
+            format,
+            filePath: `snapshots/${payload.id}-${Date.now()}.${format}`,
+            fileSizeBytes: bytes.length,
+            sha256: report.sha256,
+            resolvedPayload: resolved,
+            atsAuditReport: report as unknown as Record<string, unknown>,
+          });
+          snapshotId = snapshot.id;
+        }
+      }
+
+      const safeName = payload.name.toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+      const filename = `${safeName}-${new Date().toISOString().slice(0, 10)}.${format}`;
+      return reply.send({
+        filename,
+        [format]: bytes.toString('base64'),
+        report,
+        verification: report,
+        snapshotId,
+        passed: report.passed,
+      });
+    },
+  );
 }

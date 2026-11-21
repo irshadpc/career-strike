@@ -57,7 +57,11 @@ async function extractPdfText(bytes: Buffer, options: PdfOptions = {}): Promise<
       }
     } finally {
       try {
-        await (doc as unknown as { destroy: () => Promise<void> }).destroy();
+        if (typeof (doc as unknown as { cleanup?: () => Promise<void> }).cleanup === 'function') {
+          await (doc as unknown as { cleanup: () => Promise<void> }).cleanup();
+        } else if (typeof (doc as unknown as { destroy?: () => Promise<void> }).destroy === 'function') {
+          await (doc as unknown as { destroy: () => Promise<void> }).destroy();
+        }
       } catch {
         /* ignore */
       }

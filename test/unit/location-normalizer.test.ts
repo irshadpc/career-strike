@@ -18,6 +18,13 @@ describe('normalizeIngestedLocation', () => {
     expect(normalizeIngestedLocation('Pune, India').countryCode).toBe('IN');
   });
 
+  it('normalizes Bangalore/BLR aliases to Bengaluru, IN', () => {
+    expect(normalizeIngestedLocation('BLR, India').countryCode).toBe('IN');
+    expect(normalizeIngestedLocation('Bangalore').countryCode).toBe('IN');
+    const blr = normalizeIngestedLocation('BLR');
+    expect(blr.countryCode).toBe('IN');
+  });
+
   it('detects UK and EU cities', () => {
     expect(normalizeIngestedLocation('London, UK').countryCode).toBe('GB');
     expect(normalizeIngestedLocation('London, United Kingdom').countryCode).toBe('GB');

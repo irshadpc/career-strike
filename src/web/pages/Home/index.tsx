@@ -47,6 +47,26 @@ export function Home() {
     ledger: unknown[];
   }>('/api/assistant/desk');
 
+  interface ShortlistHit {
+    searchId: string;
+    searchName: string;
+    matchedSkills: string[];
+    job: {
+      id: string;
+      employer: string;
+      title: string;
+      locationText: string | null;
+      normalizedLocation: string | null;
+      countryCode: string | null;
+      workMode: 'remote' | 'hybrid' | 'onsite' | 'unknown';
+      firstSeenAt: string;
+    };
+  }
+  const shortlist = useResource<{ searches: { id: string; name: string }[]; hits: ShortlistHit[] }>(
+    '/api/home/todays-shortlist',
+  );
+  const [markingSeen, setMarkingSeen] = useState(false);
+
   const [decisionPending, setDecisionPending] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -176,6 +196,89 @@ export function Home() {
                   {readiness.data.readiness.actionLabel}
                 </Link>
               </div>
+            </section>
+          )}
+
+          {shortlist.state === 'ready' && shortlist.data.searches.length > 0 && (
+            <section
+              aria-labelledby="todays-shortlist-title"
+              className="mb-6 p-5 bg-card border border-border rounded-xl shadow-xs space-y-3"
+            >
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div>
+                  <h2 id="todays-shortlist-title" className="text-base font-semibold text-foreground m-0">
+                    Today's Shortlist
+                  </h2>
+                  <p className="text-xs text-muted-foreground m-0 mt-0.5">
+                    Net-new roles matching your saved search loops since your last visit.
+                  </p>
+                </div>
+                {shortlist.data.hits.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={markingSeen}
+                    onClick={async () => {
+                      setMarkingSeen(true);
+                      try {
+                        await api('/api/home/todays-shortlist/mark-seen', { method: 'POST' });
+                        shortlist.reload();
+                        toast({ variant: 'success', title: 'Shortlist marked as seen' });
+                      } catch {
+                        toast({ variant: 'destructive', title: 'Could not mark shortlist as seen' });
+                      } finally {
+                        setMarkingSeen(false);
+                      }
+                    }}
+                  >
+                    {markingSeen ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Mark all seen'}
+                  </Button>
+                )}
+              </div>
+              {shortlist.data.hits.length === 0 ? (
+                <p className="text-sm text-muted-foreground m-0">No new matching roles since your last visit.</p>
+              ) : (
+                <ul className="list-none p-0 m-0 space-y-2">
+                  {shortlist.data.hits.map((hit) => (
+                    <li
+                      key={`${hit.searchId}:${hit.job.id}`}
+                      className="p-3 rounded-lg border border-border/60 bg-muted/20"
+                    >
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div className="min-w-0">
+                          <Link
+                            href={`/jobs/${encodeURIComponent(hit.job.id)}`}
+                            className="text-sm font-medium text-foreground hover:underline"
+                          >
+                            {hit.job.title}
+                          </Link>
+                          <div className="text-xs text-muted-foreground">
+                            {hit.job.employer}
+                            {hit.job.normalizedLocation
+                              ? ` · ${hit.job.normalizedLocation}`
+                              : hit.job.locationText
+                                ? ` · ${hit.job.locationText}`
+                                : ''}
+                          </div>
+                          <div className="flex gap-1.5 flex-wrap mt-1">
+                            <Badge variant="secondary" className="text-[10px]">
+                              {hit.searchName}
+                            </Badge>
+                            {hit.matchedSkills.slice(0, 4).map((sk) => (
+                              <Badge key={sk} variant="outline" className="text-[10px]">
+                                {sk}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                          {ago(hit.job.firstSeenAt)}
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           )}
 

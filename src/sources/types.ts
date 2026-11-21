@@ -1,4 +1,12 @@
-export type SourceId = 'greenhouse' | 'lever' | 'ashby' | 'remotive' | 'arbeitnow' | 'practice';
+export type SourceId =
+  | 'greenhouse'
+  | 'lever'
+  | 'ashby'
+  | 'smartrecruiters'
+  | 'adzuna'
+  | 'remotive'
+  | 'arbeitnow'
+  | 'practice';
 export type RemotePolicy = 'remote' | 'hybrid' | 'onsite' | 'unknown';
 export type EmploymentType = 'full_time' | 'part_time' | 'contract' | 'temporary' | 'internship' | 'unknown';
 export type RemoteEligibility = 'global' | 'country_restricted' | 'region_restricted' | 'unknown' | 'not_remote';

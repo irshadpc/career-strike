@@ -13,12 +13,14 @@ export function JobRow({
   job,
   selected,
   compareFull,
+  filterSkillCount,
   onCompare,
   onDisposition,
 }: {
   job: JobSummary;
   selected: boolean;
   compareFull: boolean;
+  filterSkillCount?: number;
   onCompare: () => void;
   onDisposition: (d: Disposition) => void;
 }) {
@@ -75,6 +77,43 @@ export function JobRow({
               <Badge variant="warning" className="text-[10px]">
                 Asks for an early start
               </Badge>
+            )}
+          </div>
+        )}
+        {job.allSkills && job.allSkills.length > 0 && (
+          <div className="flex flex-wrap items-center gap-1.5 pt-1" aria-label="Extracted skills">
+            {filterSkillCount && filterSkillCount > 0 ? (
+              <Badge
+                variant="outline"
+                className="bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 text-[10px] font-semibold"
+              >
+                {job.matchedSkills?.length || 0}/{filterSkillCount} skills matched
+              </Badge>
+            ) : job.matchedSkills && job.matchedSkills.length > 0 ? (
+              <Badge
+                variant="outline"
+                className="bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 text-[10px] font-semibold"
+              >
+                {job.matchedSkills.length} matched
+              </Badge>
+            ) : null}
+            {job.allSkills.slice(0, 7).map((skill) => {
+              const isMatched = job.matchedSkills?.includes(skill);
+              return (
+                <span
+                  key={skill}
+                  className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border transition-colors ${
+                    isMatched
+                      ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-500/40 font-semibold'
+                      : 'bg-muted/40 text-muted-foreground border-border/60'
+                  }`}
+                >
+                  {skill}
+                </span>
+              );
+            })}
+            {job.allSkills.length > 7 && (
+              <span className="text-[10px] text-muted-foreground">+{job.allSkills.length - 7} more</span>
             )}
           </div>
         )}

@@ -1106,4 +1106,69 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_job_skills_job_id ON job_skills (job_id);
     `,
   },
+  {
+    version: 28,
+    name: 'expand_source_types_for_smartrecruiters_adzuna',
+    sql: `
+      -- SmartRecruiters (official public API) and Adzuna (official BYOK API) extend allowed sources.
+      -- SQLite cannot alter CHECK constraints, so both tables are rebuilt.
+
+      CREATE TABLE job_sources_v28 (
+        job_id        TEXT NOT NULL REFERENCES jobs (id) ON DELETE CASCADE,
+        source        TEXT NOT NULL CHECK (source IN ('greenhouse', 'lever', 'ashby', 'smartrecruiters', 'adzuna', 'remotive', 'arbeitnow', 'manual', 'practice')),
+        board         TEXT NOT NULL,
+        source_job_id TEXT NOT NULL,
+        source_url    TEXT,
+        fetched_at    TEXT NOT NULL,
+        content_hash  TEXT NOT NULL,
+        PRIMARY KEY (source, board, source_job_id)
+      );
+      INSERT INTO job_sources_v28 (job_id, source, board, source_job_id, source_url, fetched_at, content_hash)
+        SELECT job_id, source, board, source_job_id, source_url, fetched_at, content_hash FROM job_sources;
+      DROP TABLE job_sources;
+      ALTER TABLE job_sources_v28 RENAME TO job_sources;
+      CREATE INDEX job_sources_job ON job_sources (job_id);
+
+      CREATE TABLE source_boards_v28 (
+        id                   TEXT PRIMARY KEY,
+        source               TEXT NOT NULL CHECK (source IN ('greenhouse', 'lever', 'ashby', 'smartrecruiters', 'adzuna', 'remotive', 'arbeitnow', 'practice')),
+        board                TEXT NOT NULL,
+        added_at             TEXT NOT NULL,
+        health               TEXT NOT NULL DEFAULT 'NEVER_RUN' CHECK (health IN ('NEVER_RUN', 'OK', 'DEGRADED', 'NOT_FOUND')),
+        last_success_at      TEXT,
+        last_error           TEXT,
+        consecutive_failures INTEGER NOT NULL DEFAULT 0,
+        next_attempt_at      TEXT,
+        last_synced_at       TEXT,
+        last_status          TEXT CHECK (last_status IN ('ok', 'error', 'skipped')),
+        jobs_fetched_count   INTEGER,
+        UNIQUE (source, board)
+      );
+      INSERT INTO source_boards_v28
+        (id, source, board, added_at, health, last_success_at, last_error, consecutive_failures, next_attempt_at, last_synced_at, last_status, jobs_fetched_count)
+        SELECT id, source, board, added_at, health, last_success_at, last_error, consecutive_failures, next_attempt_at, last_synced_at, last_status, jobs_fetched_count
+        FROM source_boards;
+      DROP TABLE source_boards;
+      ALTER TABLE source_boards_v28 RENAME TO source_boards;
+    `,
+  },
+  {
+    version: 29,
+    name: 'saved_search_loops',
+    sql: `
+      CREATE TABLE IF NOT EXISTS saved_searches (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        skills_json TEXT NOT NULL DEFAULT '[]',
+        country_codes_json TEXT NOT NULL DEFAULT '[]',
+        cities_json TEXT NOT NULL DEFAULT '[]',
+        work_mode TEXT,
+        min_match_score REAL,
+        last_run_at TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_saved_searches_updated ON saved_searches (updated_at DESC);
+    `,
+  },
 ];

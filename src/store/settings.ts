@@ -159,6 +159,20 @@ export const SETTING_DEFS: Readonly<Record<string, SettingDef>> = {
     classification: 'PUBLIC',
     defaultValue: 'off',
   },
+  'integrations.adzunaAppId': {
+    label: 'Adzuna App ID',
+    help: 'Your Adzuna developer app_id (BYOK). Stored locally. Leave blank to keep Adzuna unconfigured.',
+    schema: z.string().trim().max(200).nullable(),
+    classification: 'SENSITIVE',
+    defaultValue: null,
+  },
+  'integrations.adzunaAppKey': {
+    label: 'Adzuna App Key',
+    help: 'Your Adzuna developer app_key (BYOK). Stored locally. Leave blank to keep Adzuna unconfigured.',
+    schema: z.string().trim().max(200).nullable(),
+    classification: 'SENSITIVE',
+    defaultValue: null,
+  },
   'identity.fullName': {
     label: 'Full name',
     help: 'As you want it to appear on applications.',

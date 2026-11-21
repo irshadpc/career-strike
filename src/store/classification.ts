@@ -483,6 +483,13 @@ export const CLASSIFICATION: Readonly<Record<string, Readonly<Record<string, Col
   skills_taxonomy: {
     ...all('PUBLIC', ['canonical_id', 'preferred_label', 'source', 'category', 'aliases_text', 'embedding_blob']),
   },
+  job_skills: {
+    ...all('PUBLIC', ['job_id', 'skill_slug', 'skill_label']),
+  },
+  saved_searches: {
+    ...all('INTERNAL', ['id', 'last_run_at', 'created_at', 'updated_at']),
+    ...all('PERSONAL', ['name', 'skills_json', 'country_codes_json', 'cities_json', 'work_mode', 'min_match_score']),
+  },
 };
 
 const rank = (cls: DataClass): number => DATA_CLASSES.indexOf(cls);

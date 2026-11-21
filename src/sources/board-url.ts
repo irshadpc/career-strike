@@ -6,6 +6,9 @@ const HOSTS: readonly [RegExp, SourceId][] = [
   [/^(?:job-)?boards\.eu\.greenhouse\.io$/, 'greenhouse'],
   [/^jobs\.(?:eu\.)?lever\.co$/, 'lever'],
   [/^jobs\.ashbyhq\.com$/, 'ashby'],
+  [/^(?:careers|jobs)\.smartrecruiters\.com$/, 'smartrecruiters'],
+  [/^www\.adzuna\.(?:com|co\.uk|de|in|sg|ca\.com\.au|nl)$/, 'adzuna'],
+  [/^api\.adzuna\.com$/, 'adzuna'],
   [/^remotive\.com$/, 'remotive'],
   [/^www\.arbeitnow\.com$/, 'arbeitnow'],
 ];
@@ -32,6 +35,11 @@ export function boardFromUrl(
   // Global keyless feeds expose a single board; accept the site root or any page on it.
   if (match[1] === 'remotive') return { source: 'remotive', board: 'remotive' };
   if (match[1] === 'arbeitnow') return { source: 'arbeitnow', board: 'arbeitnow' };
+  if (match[1] === 'adzuna') {
+    // https://www.adzuna.com/search?q=... or just accept host; board encoded as country code later
+    const seg = url.pathname.split('/').filter(Boolean);
+    return { source: 'adzuna', board: seg[0] ?? 'search' };
+  }
   const board = url.pathname.split('/').filter(Boolean)[0];
   if (!board) return null;
   // Greenhouse also serves embedded boards as /embed/job_board?for=<board>.

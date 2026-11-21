@@ -97,7 +97,7 @@ const US_STATE_PATTERN = new RegExp(`(?:^|[\\s,(])(?:${US_STATES.join('|')})(?=[
 /** Cities and spellings this normalizer must recognise even when the registry lacks the alias. */
 const CITY_COUNTRY_HINTS: readonly [RegExp, CountryCode][] = [
   [
-    /\b(?:bengaluru|bangalore|mumbai|hyderabad|pune|delhi|n(?:cr|oida)|gurugram|gurgaon|chennai|kochi|coimbatore|india)\b/i,
+    /\b(?:bengaluru|bangalore|\bblr\b|mumbai|hyderabad|pune|delhi|n(?:cr|oida)|gurugram|gurgaon|chennai|kochi|coimbatore|india)\b/i,
     'IN',
   ],
   [

@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { normalizeIngestedLocation } from '../ingestion/locationNormalizer.js';
+import { syncJobSkills } from '../ingestion/skillExtractor.js';
 import { recordCompanyEvent } from '../markets/company-intelligence.js';
 import { indexEmployer } from '../markets/company-registry.js';
 import { isCountryCode } from '../markets/countries.js';
@@ -9,7 +10,14 @@ import { extractRequirements, type PostingRequirements, REQUIREMENTS_VERSION } f
 import { capabilityForName, type SourceCapability } from '../sources/capabilities.js';
 import { blocksToText, textToBlocks } from '../sources/html.js';
 import { marketFacts, safeHttpUrl, unresolvedFacts } from '../sources/normalize.js';
-import type { MarketFacts, NormalizedPosting, PublishedSalary, RemotePolicy, TextBlock } from '../sources/types.js';
+import type {
+  MarketFacts,
+  NormalizedPosting,
+  PublishedSalary,
+  RemotePolicy,
+  SourceId,
+  TextBlock,
+} from '../sources/types.js';
 import type { Db } from '../store/db.js';
 import type { CandidateProfile } from './profile.js';
 
@@ -44,6 +52,10 @@ export interface JobSummary {
   countryCodes: string[];
   workMode: 'remote' | 'hybrid' | 'onsite' | 'unknown';
   normalizedLocation: string | null;
+  /** Extracted canonical skills from title and description. */
+  allSkills?: string[];
+  /** Subset of allSkills matching active filter query. */
+  matchedSkills?: string[];
   /** Present when a candidate context was supplied. SENSITIVE: derived from the profile. */
   fit?: FitSummary;
   fitDetail?: Fit;
@@ -122,11 +134,18 @@ export interface SyncResult {
  */
 export function syncBoard(
   db: Db,
-  source: string,
-  board: string,
-  postings: NormalizedPosting[],
-  now = new Date(),
+  refOrSource: { source: SourceId; board: string } | SourceId,
+  boardOrPostings: string | NormalizedPosting[],
+  postingsOrNow?: NormalizedPosting[] | Date,
+  maybeNow = new Date(),
 ): SyncResult {
+  const ref: { source: SourceId; board: string } =
+    typeof refOrSource === 'string' ? { source: refOrSource, board: boardOrPostings as string } : refOrSource;
+  const postings: NormalizedPosting[] = Array.isArray(boardOrPostings)
+    ? boardOrPostings
+    : (postingsOrNow as NormalizedPosting[]);
+  const now: Date = Array.isArray(boardOrPostings) ? ((postingsOrNow as Date | undefined) ?? maybeNow) : maybeNow;
+  const { source, board } = ref;
   const at = now.toISOString();
   const result: SyncResult = { fetched: postings.length, added: 0, updated: 0, closed: 0 };
 
@@ -196,12 +215,16 @@ export function syncBoard(
         | undefined;
       if (existing) {
         if (existing.content_hash === hash) touchJob.run(at, at, existing.job_id);
-        else updateJob.run({ ...params, id: existing.job_id });
+        else {
+          updateJob.run({ ...params, id: existing.job_id });
+          syncJobSkills(db, existing.job_id, p.title, params.descText);
+        }
         updateSource.run(p.postingUrl, at, hash, source, board, p.sourceJobId);
         result.updated += 1;
       } else {
         const id = newId('job');
         insertJob.run({ ...params, id });
+        syncJobSkills(db, id, p.title, params.descText);
         insertSource.run(id, source, board, p.sourceJobId, p.postingUrl, at, hash);
         result.added += 1;
       }
@@ -358,6 +381,7 @@ export function addManualJob(db: Db, input: z.infer<typeof ManualJobInput>, now 
     db.prepare(
       'INSERT INTO job_sources (job_id, source, board, source_job_id, source_url, fetched_at, content_hash) VALUES (?, ?, ?, ?, ?, ?, ?)',
     ).run(id, 'manual', 'manual', id, url, at, sha256(JSON.stringify(input)));
+    syncJobSkills(db, id, input.title, blocksToText(description));
     indexEmployer(db, input.employer, at, { source: 'manual', board: 'manual' });
     linkDuplicates(db);
   })();
@@ -377,6 +401,9 @@ export const JobQuery = z
     remote: z.enum(['remote', 'hybrid', 'onsite', 'unknown']).optional(),
     country: z.string().trim().toUpperCase().refine(isCountryCode, 'Use a configured country code').optional(),
     city: z.string().trim().min(1).max(100).optional(),
+    skills: z.string().trim().max(500).optional(),
+    skillMode: z.enum(['any', 'all']).default('any'),
+    excludeSkills: z.string().trim().max(500).optional(),
     // 'any' ignores the candidate's decisions entirely (used where those decisions must not be inferable).
     disposition: z.enum(['none', 'shortlisted', 'excluded', 'not_excluded', 'any']).default('not_excluded'),
     source: z.enum(['greenhouse', 'lever', 'ashby', 'remotive', 'arbeitnow', 'manual', 'practice']).optional(),
@@ -569,8 +596,47 @@ export function listJobs(
   }
   if (!query.includeDuplicates) where.push('j.duplicate_of IS NULL');
 
+  const skillSlugs = query.skills
+    ? query.skills
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+  const excludeSkillSlugs = query.excludeSkills
+    ? query.excludeSkills
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+
+  if (excludeSkillSlugs.length > 0) {
+    const placeholders = excludeSkillSlugs.map((_, i) => `@ex_skill_${i}`).join(', ');
+    where.push(
+      `NOT EXISTS (SELECT 1 FROM job_skills js_ex WHERE js_ex.job_id = j.id AND js_ex.skill_slug IN (${placeholders}))`,
+    );
+    excludeSkillSlugs.forEach((slug, i) => {
+      params[`ex_skill_${i}`] = slug;
+    });
+  }
+
+  if (skillSlugs.length > 0) {
+    const placeholders = skillSlugs.map((_, i) => `@in_skill_${i}`).join(', ');
+    if (query.skillMode === 'all') {
+      where.push(
+        `(SELECT COUNT(DISTINCT js_in.skill_slug) FROM job_skills js_in WHERE js_in.job_id = j.id AND js_in.skill_slug IN (${placeholders})) = ${skillSlugs.length}`,
+      );
+    } else {
+      where.push(
+        `EXISTS (SELECT 1 FROM job_skills js_in WHERE js_in.job_id = j.id AND js_in.skill_slug IN (${placeholders}))`,
+      );
+    }
+    skillSlugs.forEach((slug, i) => {
+      params[`in_skill_${i}`] = slug;
+    });
+  }
+
   const excluded = new Set(excludedEmployers.map(norm));
-  const order =
+  let order =
     {
       newest: 'COALESCE(j.published_at, j.first_seen_at) DESC, j.id',
       recently_verified: 'j.last_verified_at DESC, j.id',
@@ -579,8 +645,25 @@ export function listJobs(
       best_fit: 'COALESCE(j.published_at, j.first_seen_at) DESC, j.id',
     }[query.sort] ?? 'COALESCE(j.published_at, j.first_seen_at) DESC, j.id';
 
+  let joinSkills = '';
+  if (skillSlugs.length > 0) {
+    const placeholders = skillSlugs.map((_, i) => `@ord_skill_${i}`).join(', ');
+    joinSkills = `LEFT JOIN (
+      SELECT job_id, COUNT(DISTINCT skill_slug) AS match_overlap
+      FROM job_skills
+      WHERE skill_slug IN (${placeholders})
+      GROUP BY job_id
+    ) js_ord ON js_ord.job_id = j.id`;
+    skillSlugs.forEach((slug, i) => {
+      params[`ord_skill_${i}`] = slug;
+    });
+    if (query.sort === 'newest') {
+      order = 'COALESCE(js_ord.match_overlap, 0) DESC, COALESCE(j.published_at, j.first_seen_at) DESC, j.id';
+    }
+  }
+
   const rows = db
-    .prepare(`${SUMMARY_SELECT} ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY ${order}`)
+    .prepare(`${SUMMARY_SELECT} ${joinSkills} ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY ${order}`)
     .all(params) as JobRow[];
   const fitAvailable = Boolean(ctx.profile && ctx.settings);
   // Employer exclusion, fit and urgency are computed per job, so they are applied here.
@@ -625,6 +708,33 @@ export function listJobs(
       (j) => j.market.location.city !== null && norm(j.market.location.city) === norm(query.city!),
     );
   const page = visible.slice(query.offset, query.offset + query.limit).map(({ fitDetail: _omit, ...j }) => j);
+
+  const jobIds = page.map((j) => j.id);
+  if (jobIds.length > 0) {
+    const placeholders = jobIds.map(() => '?').join(',');
+    const skillRows = db
+      .prepare(
+        `SELECT job_id, skill_slug, skill_label FROM job_skills WHERE job_id IN (${placeholders}) ORDER BY skill_label ASC`,
+      )
+      .all(...jobIds) as { job_id: string; skill_slug: string; skill_label: string }[];
+
+    const skillMap = new Map<string, { all: string[]; matched: string[] }>();
+    for (const s of skillRows) {
+      if (!skillMap.has(s.job_id)) skillMap.set(s.job_id, { all: [], matched: [] });
+      const entry = skillMap.get(s.job_id)!;
+      entry.all.push(s.skill_label);
+      if (skillSlugs.includes(s.skill_slug.toLowerCase())) {
+        entry.matched.push(s.skill_label);
+      }
+    }
+
+    for (const job of page) {
+      const entry = skillMap.get(job.id);
+      job.allSkills = entry?.all ?? [];
+      job.matchedSkills = entry?.matched ?? [];
+    }
+  }
+
   return { total: visible.length, jobs: page, fitAvailable, countryCounts };
 }
 
@@ -674,9 +784,16 @@ export function getJob(db: Db, id: string, ctx: CandidateContext, now = Date.now
       .all(extra.duplicate_key, id) as { id: string; title: string; employer: string; sources: string | null }[]
   ).map((d) => ({ id: d.id, title: d.title, employer: d.employer, sources: d.sources ? d.sources.split(',') : [] }));
 
+  const skillRows = db
+    .prepare('SELECT skill_slug, skill_label FROM job_skills WHERE job_id = ? ORDER BY skill_label ASC')
+    .all(id) as { skill_slug: string; skill_label: string }[];
+  const allSkills = skillRows.map((s) => s.skill_label);
+
   const { fitDetail, ...summary } = toSummary(row, new Set(excludedEmployers.map(norm)), now, ctx);
   return {
     ...summary,
+    allSkills,
+    matchedSkills: [],
     ...(fitDetail ? { fitDetail } : {}),
     requirements: requirementsOf(row),
     department: extra.department,

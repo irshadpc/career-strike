@@ -143,6 +143,74 @@ test.describe('opportunity explorer', () => {
     await page.getByLabel('Show excluded employers').check();
     await expect(rows.filter({ hasText: 'Unwanted' })).toContainText('Excluded employer');
   });
+
+  test('multi-skill role filtering, ANY/ALL toggle, and skill overlap badges on cards', async ({ page, cs }) => {
+    cs.seed('greenhouse', 'synthetic', [
+      {
+        title: 'Staff Frontend Engineer',
+        description: [{ type: 'paragraph', text: 'Proficient in TypeScript, React, and Tailwind CSS.' }],
+      },
+      {
+        title: 'Senior Systems Architect',
+        description: [{ type: 'paragraph', text: 'Building distributed systems using C++, Go, and Kubernetes.' }],
+      },
+      {
+        title: 'Data Platform Engineer',
+        description: [{ type: 'paragraph', text: 'Data pipelines using Python, SQL, and Docker.' }],
+      },
+    ]);
+    await signIn(page, cs);
+    await page.goto(`${cs.origin}/opportunities`);
+    const rows = page.getByTestId('job-list').getByRole('listitem');
+    await expect(rows).toHaveCount(3);
+
+    // Verify skill pills are rendered on cards
+    await expect(rows.filter({ hasText: 'Staff Frontend Engineer' })).toContainText('TypeScript');
+    await expect(rows.filter({ hasText: 'Staff Frontend Engineer' })).toContainText('React');
+    await expect(rows.filter({ hasText: 'Senior Systems Architect' })).toContainText('Kubernetes');
+
+    // Filter by skill using SkillFilterBar typeahead
+    const skillInput = page.getByPlaceholder(/Filter or exclude skills/);
+    await skillInput.fill('type');
+    await page.getByRole('button', { name: '+ Require' }).click();
+
+    // Verify TypeScript chip is active and URL has skills=typescript
+    await expect(page).toHaveURL(/skills=typescript/);
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toContainText('Staff Frontend Engineer');
+    await expect(rows.first()).toContainText('1/1 skills matched');
+
+    // Add another skill to test Match ANY
+    await skillInput.fill('kuber');
+    await page.getByRole('button', { name: '+ Require' }).click();
+    await expect(page).toHaveURL(/skills=typescript/);
+    await expect(rows).toHaveCount(2);
+
+    // Switch to Match ALL (AND)
+    await page.getByRole('button', { name: 'Match ALL (AND)' }).click();
+    await expect(page).toHaveURL(/skillMode=all/);
+    // No single job has both TypeScript AND Kubernetes in this seed
+    await expect(rows).toHaveCount(0);
+
+    // Switch back to Match ANY (OR)
+    await page.getByRole('button', { name: 'Match ANY (OR)' }).click();
+    await expect(rows).toHaveCount(2);
+
+    // Clear active skills
+    await page.getByRole('button', { name: 'Clear skills' }).click();
+    await expect(rows).toHaveCount(3);
+
+    // Exclude skill: exclude Kubernetes
+    await skillInput.fill('kuber');
+    await page.getByRole('button', { name: '- Exclude' }).click();
+    await expect(page).toHaveURL(/excludeSkills=kubernetes/);
+    await expect(rows).toHaveCount(2);
+    await expect(rows.filter({ hasText: 'Senior Systems Architect' })).toHaveCount(0);
+
+    // Clear all skills
+    await page.getByRole('button', { name: 'Clear skills' }).click();
+    await expect(rows).toHaveCount(3);
+  });
 });
 
 test.describe('manual intake', () => {
@@ -174,6 +242,6 @@ test.describe('job boards', () => {
     await expect(page.getByText('No job boards yet.')).toBeVisible();
     await page.getByLabel('Careers page link').fill('https://careers.example.com/jobs');
     await page.getByRole('button', { name: 'Monitor this board' }).click();
-    await expect(page.getByText('Paste a Greenhouse, Lever or Ashby careers page link')).toBeVisible();
+    await expect(page.getByText(/Paste a Greenhouse, Lever/)).toBeVisible();
   });
 });

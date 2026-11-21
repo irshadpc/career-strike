@@ -1,5 +1,7 @@
 import { decodeHTML } from 'entities';
 import { z } from 'zod';
+import { type AdzunaCredentialsProvider, adzuna } from '../ingestion/adapters/adzuna.js';
+import { smartrecruiters } from '../ingestion/adapters/smartrecruiters.js';
 import { type FetchImpl, guardedGetJson } from './fetch-guard.js';
 import { arbeitnow, remotive } from './global-feeds.js';
 import { htmlToBlocks } from './html.js';
@@ -432,16 +434,34 @@ function practice(practiceOrigin: () => string | null, fetchImpl: FetchImpl = (u
 
 export function createAdapters(
   fetchImpl?: FetchImpl,
-  opts: { practiceOrigin?: () => string | null } = {},
+  opts: { practiceOrigin?: () => string | null; adzunaCredentials?: AdzunaCredentialsProvider } = {},
 ): Readonly<Record<SourceId, SourceAdapter>> {
+  const adzunaCreds =
+    opts.adzunaCredentials ??
+    (() => {
+      const appId = process.env.ADZUNA_APP_ID?.trim();
+      const appKey = process.env.ADZUNA_APP_KEY?.trim();
+      return appId && appKey ? { appId, appKey } : null;
+    });
   return {
     greenhouse: greenhouse(fetchImpl),
     lever: lever(fetchImpl),
     ashby: ashby(fetchImpl),
+    smartrecruiters: smartrecruiters(fetchImpl),
+    adzuna: adzuna(adzunaCreds, fetchImpl),
     remotive: remotive(fetchImpl),
     arbeitnow: arbeitnow(fetchImpl),
     practice: practice(opts.practiceOrigin ?? (() => null)),
   };
 }
 
-export const SOURCE_IDS: readonly SourceId[] = ['greenhouse', 'lever', 'ashby', 'remotive', 'arbeitnow', 'practice'];
+export const SOURCE_IDS: readonly SourceId[] = [
+  'greenhouse',
+  'lever',
+  'ashby',
+  'smartrecruiters',
+  'adzuna',
+  'remotive',
+  'arbeitnow',
+  'practice',
+];
