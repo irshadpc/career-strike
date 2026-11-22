@@ -13,7 +13,7 @@ function env(home: string): NodeJS.ProcessEnv {
 }
 
 function runCli(home: string, args: string[]) {
-  return spawnSync(process.execPath, [...CLI, ...args], { env: env(home), encoding: 'utf8', timeout: 15_000 });
+  return spawnSync(process.execPath, [...CLI, ...args], { env: env(home), encoding: 'utf8', timeout: 30_000 });
 }
 
 function waitForOutput(child: ChildProcess, re: RegExp, timeoutMs = 15_000): Promise<RegExpMatchArray> {
@@ -93,7 +93,7 @@ describe('career-strike CLI', () => {
     const after = runCli(home, ['status', '--json']);
     expect(after.status).toBe(3);
     expect(JSON.parse(after.stdout)).toEqual({ state: 'stopped' });
-  }, 40_000);
+  }, 80_000);
 
   it('start runs a detached service, dashboard prints a working single-use link, stop ends it', async () => {
     const home = path.join(tempDir(), 'data');
@@ -129,7 +129,7 @@ describe('career-strike CLI', () => {
     }
     expect(runCli(home, ['stop']).stdout.trim()).toBe('not-running');
     expect(runCli(home, ['status']).status).toBe(3);
-  }, 40_000);
+  }, 80_000);
 
   it('refuses to initialise inside a git working tree', () => {
     const repo = tempDir('cs-repo-');

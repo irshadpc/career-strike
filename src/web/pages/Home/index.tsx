@@ -1,4 +1,4 @@
-import { Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { api, type Overview, type ProfileReadinessReport } from '../../api';
 import { PageHeader } from '../../components/PageHeader';
@@ -65,6 +65,27 @@ export function Home() {
   const shortlist = useResource<{ searches: { id: string; name: string }[]; hits: ShortlistHit[] }>(
     '/api/home/todays-shortlist',
   );
+
+  interface PrepPacket {
+    id: string;
+    jobId: string;
+    employer: string;
+    title: string;
+    locationText: string | null;
+    remotePolicy: string;
+    applyUrl: string | null;
+    status: 'ready' | 'draft' | 'approved' | 'dismissed';
+    variantId: string | null;
+    verifiedPdfPath: string | null;
+    atsAuditPassed: boolean;
+    screeningAnswers: Record<string, string>;
+    companyBriefMd: string;
+    createdAt: string;
+    reviewedAt: string | null;
+  }
+  const prepPackets = useResource<{ packets: PrepPacket[] }>('/api/prep-packets?status=ready');
+  const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
+  const [runningPrep, setRunningPrep] = useState(false);
   const [markingSeen, setMarkingSeen] = useState(false);
 
   const [decisionPending, setDecisionPending] = useState<string | null>(null);
@@ -198,6 +219,170 @@ export function Home() {
               </div>
             </section>
           )}
+
+          {/* Morning Review Queue (Top 3 Ready Packets) */}
+          <section
+            aria-labelledby="morning-review-queue-title"
+            className="mb-6 p-5 bg-card border-2 border-primary/20 rounded-xl shadow-xs space-y-4"
+          >
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 id="morning-review-queue-title" className="text-base font-semibold text-foreground m-0">
+                    Morning Review Queue (Top 3 Ready)
+                  </h2>
+                  <Badge
+                    variant="outline"
+                    className="border-emerald-600/30 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 text-[10px] gap-1 py-0.5"
+                  >
+                    <CheckCircle2 className="h-3 w-3" /> ATS Verified
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground m-0 mt-0.5">
+                  Autonomous nightly research packets: ATS-proof resume variant and pre-drafted screening answers ready
+                  for supervised 1-click fill.
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={runningPrep}
+                onClick={async () => {
+                  setRunningPrep(true);
+                  try {
+                    await api('/api/prep-packets/run', { method: 'POST', body: { limit: 3 } });
+                    if ('reload' in prepPackets) prepPackets.reload();
+                    toast({
+                      variant: 'success',
+                      title: 'Morning prep loop executed',
+                      description: 'Fresh review packets generated.',
+                    });
+                  } catch {
+                    toast({ variant: 'destructive', title: 'Prep runner failed' });
+                  } finally {
+                    setRunningPrep(false);
+                  }
+                }}
+              >
+                {runningPrep ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="h-3.5 w-3.5 mr-1" /> Run Morning Prep
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {prepPackets.state === 'loading' ? (
+              <Loading />
+            ) : prepPackets.state === 'ready' && prepPackets.data?.packets?.length ? (
+              <div className="grid grid-cols-1 gap-3">
+                {prepPackets.data.packets.slice(0, 3).map((pkt) => (
+                  <div key={pkt.id} className="p-4 rounded-lg border border-border/80 bg-muted/10 space-y-3">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Link
+                            href={`/jobs/${encodeURIComponent(pkt.jobId)}`}
+                            className="text-sm font-semibold text-foreground hover:underline"
+                          >
+                            {pkt.title}
+                          </Link>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {pkt.employer}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                          >
+                            {pkt.atsAuditPassed ? 'ATS Audit 100%' : 'Draft'}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {pkt.remotePolicy} · {pkt.locationText || 'Remote / Unspecified'}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          disabled={applyingJobId === pkt.jobId}
+                          onClick={async () => {
+                            setApplyingJobId(pkt.jobId);
+                            try {
+                              await api(`/api/applications/${pkt.jobId}/supervised-fill`, {
+                                method: 'POST',
+                                body: { headless: false },
+                              });
+                              toast({
+                                variant: 'success',
+                                title: 'Supervised autofill launched',
+                                description: 'Playwright headed window launched & paused before submit for review.',
+                              });
+                            } catch (err) {
+                              toast({
+                                variant: 'destructive',
+                                title: 'Autofill error',
+                                description: err instanceof Error ? err.message : 'Could not launch supervised apply.',
+                              });
+                            } finally {
+                              setApplyingJobId(null);
+                            }
+                          }}
+                        >
+                          {applyingJobId === pkt.jobId ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <>Review & Apply</>
+                          )}
+                        </Button>
+                        <Link
+                          href={
+                            pkt.variantId
+                              ? `/resume-studio?variantId=${encodeURIComponent(pkt.variantId)}`
+                              : '/resume-studio'
+                          }
+                          className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-xs')}
+                        >
+                          Edit Draft
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={async () => {
+                            try {
+                              await api(`/api/prep-packets/${pkt.id}/status`, {
+                                method: 'POST',
+                                body: { status: 'dismissed' },
+                              });
+                              if ('reload' in prepPackets) prepPackets.reload();
+                              toast({ variant: 'success', title: 'Packet dismissed' });
+                            } catch {
+                              toast({ variant: 'destructive', title: 'Could not dismiss packet' });
+                            }
+                          }}
+                        >
+                          Dismiss
+                        </Button>
+                      </div>
+                    </div>
+                    {pkt.screeningAnswers && (
+                      <div className="text-xs text-muted-foreground bg-background/50 p-2.5 rounded border border-border/50">
+                        <span className="font-medium text-foreground block mb-1">Pre-Drafted Answers:</span>
+                        <div className="line-clamp-2 italic">
+                          "{pkt.screeningAnswers.why_this_role || pkt.screeningAnswers.work_authorization}"
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground m-0">
+                No ready packets in queue. Click "Run Morning Prep" or await the nightly local cron run.
+              </p>
+            )}
+          </section>
 
           {shortlist.state === 'ready' && shortlist.data.searches.length > 0 && (
             <section

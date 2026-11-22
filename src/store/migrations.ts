@@ -1171,4 +1171,24 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_saved_searches_updated ON saved_searches (updated_at DESC);
     `,
   },
+  {
+    version: 30,
+    name: 'prep_packets',
+    sql: `
+      CREATE TABLE IF NOT EXISTS prep_packets (
+        id                     TEXT PRIMARY KEY,
+        job_id                 TEXT NOT NULL REFERENCES jobs (id) ON DELETE CASCADE,
+        status                 TEXT NOT NULL CHECK (status IN ('draft', 'ready', 'approved', 'dismissed')),
+        variant_id             TEXT,
+        verified_pdf_path      TEXT,
+        ats_audit_passed       INTEGER NOT NULL CHECK (ats_audit_passed IN (0, 1)),
+        screening_answers_json TEXT NOT NULL DEFAULT '{}',
+        company_brief_md       TEXT NOT NULL DEFAULT '',
+        created_at             TEXT NOT NULL,
+        reviewed_at            TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_prep_packets_job ON prep_packets (job_id);
+      CREATE INDEX IF NOT EXISTS idx_prep_packets_status ON prep_packets (status);
+    `,
+  },
 ];

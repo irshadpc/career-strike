@@ -5,6 +5,8 @@ import { seedHiredModeFromWonJob } from '../../career/hired-seed.js';
 import { calculateSemanticScore } from '../../matching/embeddings-worker.js';
 import { advanceApplicationFromCandidate, pollImapTransport } from '../../sources/imap-transport.js';
 import type { Db } from '../../store/db.js';
+import { runPrepPipeline } from '../prep-runner.js';
+import { launchSupervisedApply } from '../supervised-apply.js';
 
 function id(prefix: string): string {
   return `${prefix}_${randomBytes(9).toString('base64url')}`;
@@ -566,6 +568,91 @@ export function registerCareerOsRoutes(app: FastifyInstance, { db }: { db: Db })
       zeroHallucination: true,
     };
   });
+
+  // ===== Prep Packets (Nightly Research & Prep Loop) =====
+  app.get('/api/prep-packets', async (req) => {
+    const status = (req.query as { status?: string })?.status;
+    let sql = `
+      SELECT p.id, p.job_id, p.status, p.variant_id, p.verified_pdf_path, p.ats_audit_passed,
+             p.screening_answers_json, p.company_brief_md, p.created_at, p.reviewed_at,
+             j.employer, j.title, j.location_text, j.remote_policy, j.apply_url
+      FROM prep_packets p
+      JOIN jobs j ON p.job_id = j.id
+    `;
+    if (status) {
+      sql += ' WHERE p.status = ? ORDER BY p.created_at DESC';
+      const rows = db.prepare(sql).all(status) as Record<string, unknown>[];
+      return { packets: rows.map(rowToPrepPacket) };
+    }
+    sql += ' ORDER BY p.created_at DESC';
+    const rows = db.prepare(sql).all() as Record<string, unknown>[];
+    return { packets: rows.map(rowToPrepPacket) };
+  });
+
+  app.post('/api/prep-packets/run', async (req) => {
+    const limit = (req.body as { limit?: number })?.limit ?? 3;
+    return runPrepPipeline(db, { limit });
+  });
+
+  app.post<{ Params: { id: string } }>('/api/prep-packets/:id/status', async (req, reply) => {
+    const body = z.object({ status: z.enum(['ready', 'approved', 'dismissed', 'draft']) }).safeParse(req.body);
+    if (!body.success) return invalid(reply, body.error.issues);
+    const at = now();
+    const res = db
+      .prepare('UPDATE prep_packets SET status = ?, reviewed_at = ? WHERE id = ?')
+      .run(body.data.status, at, req.params.id);
+    if (res.changes === 0) return reply.code(404).send({ error: 'NOT_FOUND' });
+    return { ok: true, id: req.params.id, status: body.data.status };
+  });
+
+  // ===== Supervised Apply Runner (Pause-Before-Submit) =====
+  app.post<{ Params: { jobId: string } }>('/api/applications/:jobId/supervised-fill', async (req, reply) => {
+    const body = (req.body ?? {}) as { headless?: boolean };
+    try {
+      return await launchSupervisedApply(db, req.params.jobId, { headless: body.headless });
+    } catch (err) {
+      return reply.code(500).send({
+        error: 'SUPERVISED_APPLY_FAILED',
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
+
+  app.post<{ Params: { jobId: string } }>('/api/applications/:jobId/mark-submitted', async (req) => {
+    const at = now();
+    const jobId = req.params.jobId;
+
+    let appRow = db.prepare('SELECT id, state FROM applications WHERE job_id = ?').get(jobId) as
+      | { id: string; state: string }
+      | undefined;
+
+    if (!appRow) {
+      const appId = id('app');
+      db.prepare(`
+        INSERT INTO applications (id, job_id, state, mode, current_version, created_at, updated_at)
+        VALUES (?, ?, 'SUBMITTED_CONFIRMED', 'manual', 1, ?, ?)
+      `).run(appId, jobId, at, at);
+      appRow = { id: appId, state: 'SUBMITTED_CONFIRMED' };
+    } else {
+      db.prepare('UPDATE applications SET state = ?, updated_at = ? WHERE id = ?').run(
+        'SUBMITTED_CONFIRMED',
+        at,
+        appRow.id,
+      );
+    }
+
+    db.prepare("UPDATE prep_packets SET status = 'approved', reviewed_at = ? WHERE job_id = ?").run(at, jobId);
+
+    db.prepare('INSERT INTO audit_events (at, actor, action, subject, detail_json) VALUES (?, ?, ?, ?, ?)').run(
+      at,
+      'supervised-runner',
+      'application.marked_submitted',
+      appRow.id,
+      JSON.stringify({ jobId, state: 'SUBMITTED_CONFIRMED', confirmedBy: 'candidate' }),
+    );
+
+    return { ok: true, applicationId: appRow.id, state: 'SUBMITTED_CONFIRMED' };
+  });
 }
 
 // ---- helpers ----
@@ -649,6 +736,25 @@ function rowToImapCandidate(r: Record<string, unknown>) {
     subject: r.subject,
     detectedAt: r.detected_at,
     status: r.status,
+  };
+}
+function rowToPrepPacket(r: Record<string, unknown>) {
+  return {
+    id: r.id,
+    jobId: r.job_id,
+    employer: r.employer,
+    title: r.title,
+    locationText: r.location_text,
+    remotePolicy: r.remote_policy,
+    applyUrl: r.apply_url,
+    status: r.status,
+    variantId: r.variant_id,
+    verifiedPdfPath: r.verified_pdf_path,
+    atsAuditPassed: r.ats_audit_passed === 1,
+    screeningAnswers: safeJson(String(r.screening_answers_json ?? '{}')),
+    companyBriefMd: r.company_brief_md,
+    createdAt: r.created_at,
+    reviewedAt: r.reviewed_at,
   };
 }
 

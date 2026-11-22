@@ -490,6 +490,13 @@ export const CLASSIFICATION: Readonly<Record<string, Readonly<Record<string, Col
     ...all('INTERNAL', ['id', 'last_run_at', 'created_at', 'updated_at']),
     ...all('PERSONAL', ['name', 'skills_json', 'country_codes_json', 'cities_json', 'work_mode', 'min_match_score']),
   },
+  prep_packets: {
+    ...all('INTERNAL', ['id', 'ats_audit_passed', 'created_at', 'reviewed_at']),
+    job_id: c('PUBLIC'),
+    ...all('PERSONAL', ['status', 'variant_id']),
+    ...all('SENSITIVE', ['verified_pdf_path', 'screening_answers_json']),
+    company_brief_md: c('PUBLIC'),
+  },
 };
 
 const rank = (cls: DataClass): number => DATA_CLASSES.indexOf(cls);

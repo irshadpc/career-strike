@@ -361,6 +361,75 @@ export function createMcpServer(paths: AppPaths, client: string, cliEntry: strin
     () => call('GET', '/api/mcp/watchlist'),
   );
 
+  server.registerTool(
+    'get_career_context',
+    {
+      title: 'Get career context',
+      description:
+        'Returns Master Vault roles, verified skills, and Brag Doc highlights, automatically redacting any column classified above the requested tier.',
+      inputSchema: {
+        tier: z
+          .enum(['PUBLIC', 'INTERNAL', 'PERSONAL'])
+          .default('PUBLIC')
+          .describe('Classification tier to scope data'),
+        includeSensitive: z.boolean().optional().describe('Request sensitive details if approved/scoped'),
+      },
+      annotations: readOnly,
+    },
+    ({ tier, includeSensitive }) => {
+      const p = new URLSearchParams();
+      if (tier) p.set('tier', tier);
+      if (includeSensitive) p.set('includeSensitive', 'true');
+      return call('GET', `/api/mcp/career-context?${p.toString()}`);
+    },
+  );
+
+  server.registerTool(
+    'get_star_stories',
+    {
+      title: 'Get STAR stories',
+      description: 'Returns matching STAR behavioral stories from the local STAR Vault.',
+      inputSchema: {
+        competency: z.string().optional().describe('Competency to filter STAR stories (e.g. leadership, delivery)'),
+      },
+      annotations: readOnly,
+    },
+    ({ competency }) => {
+      const p = new URLSearchParams();
+      if (competency) p.set('competency', competency);
+      return call('GET', `/api/mcp/star-stories?${p.toString()}`);
+    },
+  );
+
+  server.registerTool(
+    'get_pipeline_brief',
+    {
+      title: 'Get pipeline brief',
+      description: 'Returns active applications, funnel leak diagnostics, and upcoming interviews.',
+      annotations: readOnly,
+    },
+    () => call('GET', '/api/mcp/pipeline-brief'),
+  );
+
+  server.registerTool(
+    'stage_prep_packet',
+    {
+      title: 'Stage prep packet',
+      description: 'Writes a draft review packet to SQLite without mutating the Master Vault directly.',
+      inputSchema: {
+        jobId: z.string().min(1).describe('Target job identifier'),
+        tailoredSummary: z.string().optional().describe('Tailored positioning or role brief summary in markdown'),
+        bulletOverrides: z
+          .record(z.string(), z.string())
+          .optional()
+          .describe('Map of master bullet IDs to customized text overrides'),
+        screeningDrafts: z.record(z.string(), z.string()).optional().describe('Draft screening answers'),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    (args) => call('POST', '/api/mcp/prep-packets/stage', args),
+  );
+
   return server;
 }
 

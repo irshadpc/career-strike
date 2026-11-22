@@ -16,6 +16,7 @@ import { runMcpStdio, tokenFile } from '../mcp/server.js';
 import { dashboardUrl, openInBrowser, processAlive, startDetached, stopService } from '../service/control.js';
 import { runDoctorChecks } from '../service/diagnostics.js';
 import { localRequest } from '../service/http-client.js';
+import { runPrepPipeline } from '../service/prep-runner.js';
 import { probeHealth, readRuntime } from '../service/runtime.js';
 import { AlreadyRunningError, DEFAULT_PORT, startService } from '../service/service.js';
 import { createAdapters } from '../sources/adapters.js';
@@ -145,6 +146,27 @@ program
     const file = buildMcpbBundle(opts.out);
     console.log(`Created Claude Desktop bundle: ${file}`);
     console.log('Drag and drop this .mcpb file into Claude Desktop to install without editing JSON configs.');
+  });
+
+program
+  .command('prep')
+  .description('Run deterministic nightly research & prep loop to create ready-to-review decision packets')
+  .option('-l, --limit <number>', 'Number of packets to prepare', (v) => Number.parseInt(v, 10), 3)
+  .action(async (opts: { limit: number }) => {
+    const paths = appPaths();
+    const db = openDb(paths.db);
+    try {
+      console.log(`Running Career Strike prep pipeline (limit: ${opts.limit})...`);
+      const res = await runPrepPipeline(db, { limit: opts.limit });
+      console.log(`Created ${res.packetsCreated} prep packet(s).`);
+      for (const p of res.packets) {
+        console.log(
+          `  - [${p.status.toUpperCase()}] ${p.employer}: ${p.title} (${p.atsAuditPassed ? 'ATS Verified' : 'Draft'})`,
+        );
+      }
+    } finally {
+      db.close();
+    }
   });
 
 program

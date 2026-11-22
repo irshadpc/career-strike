@@ -154,6 +154,10 @@ describe('MCP server', () => {
       'cs_search_jobs',
       'cs_set_job_decision',
       'cs_status',
+      'get_career_context',
+      'get_pipeline_brief',
+      'get_star_stories',
+      'stage_prep_packet',
     ]);
     for (const t of tools) {
       expect(t.inputSchema.type).toBe('object');

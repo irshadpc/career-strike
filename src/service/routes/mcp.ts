@@ -1,6 +1,8 @@
+import { randomBytes } from 'node:crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { ApplicationService } from '../../applications/service.js';
+import { type ContextTier, getCareerContext } from '../../career/career-context.js';
 import { listCompensationBenchmarks } from '../../career/compensation.js';
 import { candidateContext } from '../../career/context.js';
 import { type Discovery, DuplicateBoardError } from '../../career/discovery.js';
@@ -502,5 +504,151 @@ export function registerMcpRoutes(
     if (!clients.revoke(req.params.id, req.principal?.kind === 'dashboard' ? 'dashboard' : 'local-client'))
       return reply.code(404).send({ error: 'NOT_FOUND' });
     return { ok: true };
+  });
+
+  // ---- Sovereign Frontier Agentic Runtime APIs ----
+
+  app.get('/api/mcp/career-context', async (req, reply) => {
+    if (!require(req, reply, 'public:read')) return reply;
+    const query = (req.query ?? {}) as { tier?: string; includeSensitive?: string };
+    const tier: ContextTier =
+      query.tier === 'INTERNAL' ? 'INTERNAL' : query.tier === 'PERSONAL' ? 'PERSONAL' : 'PUBLIC';
+    const p = req.principal as Extract<FastifyRequest['principal'], { kind: 'mcp-client' }>;
+    const wantsSensitive = query.includeSensitive === 'true' || query.includeSensitive === '1';
+    const allowSensitive = wantsSensitive && p.scopes.includes('sensitive:read');
+    return getCareerContext(db, tier, { allowSensitive });
+  });
+
+  app.get('/api/mcp/star-stories', async (req, reply) => {
+    if (!require(req, reply, 'personal:read')) return reply;
+    const query = (req.query ?? {}) as { competency?: string };
+    const p = req.principal as Extract<FastifyRequest['principal'], { kind: 'mcp-client' }>;
+    const allowSensitive = p.scopes.includes('sensitive:read');
+
+    const stmt = query.competency
+      ? db.prepare('SELECT * FROM star_stories WHERE competency = ? ORDER BY reuse_count DESC, updated_at DESC')
+      : db.prepare('SELECT * FROM star_stories ORDER BY reuse_count DESC, updated_at DESC');
+    const rows = (query.competency ? stmt.all(query.competency) : stmt.all()) as Record<string, unknown>[];
+
+    const stories = rows.map((r) => {
+      const base = {
+        id: r.id,
+        competency: r.competency,
+        reuseCount: r.reuse_count,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at,
+      };
+      if (allowSensitive) {
+        return {
+          ...base,
+          title: r.title,
+          situation: r.situation,
+          task: r.task,
+          action: r.action,
+          result: r.result,
+        };
+      }
+      return base;
+    });
+
+    return { stories };
+  });
+
+  app.get('/api/mcp/pipeline-brief', async (req, reply) => {
+    if (!require(req, reply, 'personal:read')) return reply;
+    const apps = applications.list();
+    const countsByState: Record<string, number> = {};
+    for (const a of apps) {
+      countsByState[a.state] = (countsByState[a.state] ?? 0) + 1;
+    }
+
+    const totalApplied =
+      (countsByState.SUBMITTED_CONFIRMED ?? 0) +
+      (countsByState.RESPONSE_RECEIVED ?? 0) +
+      (countsByState.INTERVIEW ?? 0) +
+      (countsByState.OFFER ?? 0);
+    const screenedCount =
+      (countsByState.RESPONSE_RECEIVED ?? 0) + (countsByState.INTERVIEW ?? 0) + (countsByState.OFFER ?? 0);
+    const interviewCount = (countsByState.INTERVIEW ?? 0) + (countsByState.OFFER ?? 0);
+    const offerCount = countsByState.OFFER ?? 0;
+
+    const upcomingInterviews = db
+      .prepare(
+        `SELECT i.id, i.application_id, i.stage, i.format, i.scheduled_at, i.outcome, j.employer, j.title
+         FROM interviews i
+         JOIN applications a ON i.application_id = a.id
+         JOIN jobs j ON a.job_id = j.id
+         WHERE i.scheduled_at >= datetime('now')
+         ORDER BY i.scheduled_at ASC
+         LIMIT 10`,
+      )
+      .all() as Record<string, unknown>[];
+
+    return {
+      activeApplications: {
+        total: apps.length,
+        byState: countsByState,
+      },
+      funnelDiagnostics: {
+        totalApplied,
+        responseRate: totalApplied > 0 ? screenedCount / totalApplied : 0,
+        interviewRate: totalApplied > 0 ? interviewCount / totalApplied : 0,
+        offerRate: interviewCount > 0 ? offerCount / interviewCount : 0,
+        leakStage:
+          totalApplied > 0 && screenedCount === 0
+            ? 'top_of_funnel_response'
+            : interviewCount > 0 && offerCount === 0
+              ? 'interview_conversion'
+              : 'healthy',
+      },
+      upcomingInterviews: upcomingInterviews.map((iv) => ({
+        id: iv.id,
+        applicationId: iv.application_id,
+        employer: iv.employer,
+        title: iv.title,
+        stage: iv.stage,
+        format: iv.format,
+        scheduledAt: iv.scheduled_at,
+        outcome: iv.outcome,
+      })),
+    };
+  });
+
+  app.post('/api/mcp/prep-packets/stage', async (req, reply) => {
+    if (!require(req, reply, 'public:write')) return reply;
+    const body = z
+      .object({
+        jobId: z.string().min(1),
+        tailoredSummary: z.string().optional(),
+        bulletOverrides: z.record(z.string(), z.string()).optional(),
+        screeningDrafts: z.record(z.string(), z.string()).optional(),
+      })
+      .strict()
+      .safeParse(req.body);
+    if (!body.success) return reply.code(400).send({ error: 'INVALID_INPUT', issues: body.error.issues });
+
+    const job = db.prepare('SELECT id FROM jobs WHERE id = ?').get(body.data.jobId);
+    if (!job) return reply.code(404).send({ error: 'NOT_FOUND', message: `Job ${body.data.jobId} not found.` });
+
+    const packetId = `pkt_${randomBytes(8).toString('hex')}`;
+    const now = new Date().toISOString();
+
+    db.prepare(`
+      INSERT INTO prep_packets (id, job_id, status, variant_id, verified_pdf_path, ats_audit_passed, screening_answers_json, company_brief_md, created_at, reviewed_at)
+      VALUES (?, ?, 'draft', null, null, 0, ?, ?, ?, null)
+    `).run(
+      packetId,
+      body.data.jobId,
+      JSON.stringify(body.data.screeningDrafts ?? {}),
+      body.data.tailoredSummary ?? '',
+      now,
+    );
+
+    return reply.code(201).send({
+      success: true,
+      packetId,
+      status: 'draft',
+      message: 'Draft prep packet staged in SQLite for candidate review in Career Strike.',
+    });
   });
 }

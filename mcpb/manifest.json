@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/mcpb/main/schemas/mcpb-manifest-latest.schema.json",
+  "manifest_version": "0.3",
+  "name": "career-strike",
+  "display_name": "Career Strike Vault",
+  "version": "0.8.0",
+  "description": "Local-first Career Vault and Private Job Hunting Operating System. Candidate data never leaves this machine.",
+  "author": {
+    "name": "Career Strike",
+    "url": "https://github.com/irshadpc/career-strike"
+  },
+  "server": {
+    "type": "node",
+    "entry_point": "dist/cli/index.js",
+    "mcp_config": {
+      "command": "career-strike",
+      "args": [
+        "mcp",
+        "--client",
+        "claude"
+      ]
+    }
+  }
+}
