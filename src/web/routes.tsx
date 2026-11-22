@@ -4,6 +4,7 @@ import { Activity } from './pages/Activity';
 import { AddJob } from './pages/AddJob';
 import { ApplicationPage } from './pages/ApplicationPage';
 import { Applications } from './pages/Applications';
+import { Autopilot } from './pages/Autopilot';
 import { Compare } from './pages/Compare';
 import { Contacts } from './pages/Contacts';
 import { HiredMode } from './pages/HiredMode';
@@ -84,6 +85,7 @@ const routeTree = rootRoute.addChildren([
   page('/opportunities/new', AddJob),
   page('/opportunities/compare', Compare),
   page('/resume', ResumeStudio),
+  page('/autopilot', Autopilot),
   page('/applications', Applications),
   applicationRoute,
   prepRoute,

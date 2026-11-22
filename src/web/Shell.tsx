@@ -45,6 +45,7 @@ const PRIMARY_NAV: NavItem[] = [
   { href: '/opportunities', label: 'Opportunities', icon: Briefcase },
   { href: '/markets', label: 'Markets', icon: Compass },
   { href: '/resume', label: 'Resume Studio', icon: FileText },
+  { href: '/autopilot', label: 'Autopilot', icon: Sparkles },
   { href: '/applications', label: 'Applications', icon: Send },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/outreach', label: 'Outreach', icon: Mail },

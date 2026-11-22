@@ -10,6 +10,39 @@ function listSome(items: string[]): string {
   return items.length <= 3 ? items.join(', ') : `${items.slice(0, 3).join(', ')} +${items.length - 3}`;
 }
 
+export function getAtsProviderPill(job: JobSummary): { name: string; color: string } {
+  const url = (job.applyUrl || '').toLowerCase();
+  const sources = job.sources || [];
+  if (url.includes('greenhouse.io') || url.includes('gh_src=') || sources.includes('greenhouse')) {
+    return {
+      name: 'on Greenhouse',
+      color: 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+    };
+  }
+  if (url.includes('lever.co') || sources.includes('lever')) {
+    return {
+      name: 'on Lever',
+      color: 'bg-blue-500/10 text-blue-800 dark:text-blue-300 border-blue-500/30',
+    };
+  }
+  if (url.includes('ashbyhq.com') || sources.includes('ashby')) {
+    return {
+      name: 'on Ashby',
+      color: 'bg-purple-500/10 text-purple-800 dark:text-purple-300 border-purple-500/30',
+    };
+  }
+  if (url.includes('myworkdayjobs.com') || url.includes('workday.com') || url.includes('myworkday.com')) {
+    return {
+      name: 'on Workday',
+      color: 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30',
+    };
+  }
+  return {
+    name: 'Direct Portal',
+    color: 'bg-muted/40 text-muted-foreground border-border/60',
+  };
+}
+
 export function JobRow({
   job,
   selected,
@@ -18,6 +51,8 @@ export function JobRow({
   onCompare,
   onDisposition,
   onPeek,
+  autopilotSelected,
+  onAutopilotToggle,
 }: {
   job: JobSummary;
   selected: boolean;
@@ -26,8 +61,11 @@ export function JobRow({
   onCompare: () => void;
   onDisposition: (d: Disposition) => void;
   onPeek?: (job: JobSummary) => void;
+  autopilotSelected?: boolean;
+  onAutopilotToggle?: () => void;
 }) {
   const salary = formatSalary(job.salary);
+  const atsPill = getAtsProviderPill(job);
   return (
     <li className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-lg border border-border bg-card shadow-xs hover:border-border/80 transition-colors">
       <div className="space-y-1.5 flex-1 min-w-0">
@@ -38,6 +76,11 @@ export function JobRow({
         </h2>
         <p className="flex flex-wrap items-center gap-x-2.5 text-xs text-muted-foreground m-0">
           <span className="font-medium text-foreground">{job.employer}</span>
+          <span
+            className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium border ${atsPill.color}`}
+          >
+            {atsPill.name}
+          </span>
           {(job.normalizedLocation || job.locationText) && (
             <>
               <span>•</span>
@@ -162,6 +205,19 @@ export function JobRow({
           >
             Apply →
           </Link>
+        )}
+        {onAutopilotToggle && (
+          <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={autopilotSelected}
+              onChange={onAutopilotToggle}
+              className="accent-primary h-3.5 w-3.5 rounded"
+            />
+            <span className={autopilotSelected ? 'font-medium text-foreground' : ''}>
+              Autopilot<span className="sr-only"> queue {job.title}</span>
+            </span>
+          </label>
         )}
         <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
           <input

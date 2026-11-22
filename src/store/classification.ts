@@ -497,6 +497,25 @@ export const CLASSIFICATION: Readonly<Record<string, Readonly<Record<string, Col
     ...all('SENSITIVE', ['verified_pdf_path', 'screening_answers_json']),
     company_brief_md: c('PUBLIC'),
   },
+  answer_vault: {
+    ...all('INTERNAL', ['id', 'question_key', 'question_label', 'answer_type', 'is_default', 'updated_at']),
+    answer_value: c('SENSITIVE'),
+  },
+  autopilot_queue: {
+    ...all('INTERNAL', [
+      'id',
+      'status',
+      'fields_filled_count',
+      'fields_total_count',
+      'resume_snapshot_id',
+      'sent_at',
+      'created_at',
+    ]),
+    job_id: c('PUBLIC'),
+    company_name: c('PUBLIC'),
+    ats_provider: c('PUBLIC'),
+    ...all('SENSITIVE', ['pending_question_json', 'receipt_json']),
+  },
 };
 
 const rank = (cls: DataClass): number => DATA_CLASSES.indexOf(cls);

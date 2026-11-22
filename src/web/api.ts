@@ -189,6 +189,7 @@ export interface JobSummary {
   countryCodes?: string[];
   workMode?: 'remote' | 'hybrid' | 'onsite' | 'unknown';
   normalizedLocation?: string | null;
+  applyUrl?: string | null;
   allSkills?: string[];
   matchedSkills?: string[];
   fit?: FitSummary;

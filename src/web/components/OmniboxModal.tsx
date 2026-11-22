@@ -119,6 +119,17 @@ export function OmniboxModal({ open, onOpenChange, onToggleTheme, currentTheme =
         },
       },
       {
+        id: 'nav-autopilot',
+        category: 'Navigation',
+        title: 'Autopilot Queue & Answer Vault',
+        subtitle: 'Pick → Ask → Write → Track runtime, screening vault, and receipt history',
+        icon: Sparkles,
+        onSelect: () => {
+          navigate('/autopilot');
+          onOpenChange(false);
+        },
+      },
+      {
         id: 'nav-applications',
         category: 'Navigation',
         title: 'Applications Tracker',

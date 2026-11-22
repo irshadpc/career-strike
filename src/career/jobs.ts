@@ -52,6 +52,7 @@ export interface JobSummary {
   countryCodes: string[];
   workMode: 'remote' | 'hybrid' | 'onsite' | 'unknown';
   normalizedLocation: string | null;
+  applyUrl?: string | null;
   /** Extracted canonical skills from title and description. */
   allSkills?: string[];
   /** Subset of allSkills matching active filter query. */
@@ -439,12 +440,13 @@ interface JobRow {
   country_codes_json: string;
   work_mode: string;
   normalized_location: string | null;
+  apply_url: string | null;
 }
 
 const SUMMARY_SELECT = `
   SELECT j.id, j.employer, j.title, j.location_text, j.remote_policy, j.employment_type, j.salary_json, j.status,
     j.first_seen_at, j.last_verified_at, j.published_at, j.duplicate_of, u.disposition, j.requirements_json, j.description_text, j.market_json,
-    j.country_code, j.country_codes_json, j.work_mode, j.normalized_location,
+    j.country_code, j.country_codes_json, j.work_mode, j.normalized_location, j.apply_url,
     (SELECT group_concat(DISTINCT s.source) FROM job_sources s WHERE s.job_id = j.id) AS sources
   FROM jobs j LEFT JOIN job_user_state u ON u.job_id = j.id`;
 
@@ -537,6 +539,7 @@ function toSummary(
     countryCodes: safeStringArray(row.country_codes_json),
     workMode: (row.work_mode as JobSummary['workMode']) ?? 'unknown',
     normalizedLocation: row.normalized_location,
+    applyUrl: row.apply_url ?? undefined,
     ...(fit ? { fit: summariseFit(fit), fitDetail: fit } : {}),
   };
 }

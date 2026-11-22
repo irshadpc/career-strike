@@ -1,3 +1,4 @@
+import { Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { AUSTRALIA_SOURCE_ASSESSMENTS, officialAustraliaSearchUrl } from '../../../markets/australia-sources';
@@ -95,7 +96,37 @@ export function Opportunities() {
   const searchForm = useForm<{ q: string }>({ defaultValues: { q: params.get('q') ?? '' } });
   const activeQuery = searchForm.watch('q');
   const [compare, setCompare] = useState<string[]>([]);
+  const [autopilotQueue, setAutopilotQueue] = useState<string[]>([]);
+  const [focusCapRemaining, setFocusCapRemaining] = useState<number>(5);
+  const [batchQueueing, setBatchQueueing] = useState(false);
   const [reload, setReload] = useState(0);
+
+  useEffect(() => {
+    api<{ remainingFocusCap: number }>('/api/autopilot/queue')
+      .then((r) => setFocusCapRemaining(r.remainingFocusCap))
+      .catch(() => {});
+  }, [reload]);
+
+  const toggleAutopilot = (id: string) => {
+    setAutopilotQueue((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const handleQueueAutopilot = async () => {
+    if (autopilotQueue.length === 0) return;
+    setBatchQueueing(true);
+    try {
+      await api('/api/autopilot/batch', {
+        method: 'POST',
+        body: { jobIds: autopilotQueue },
+      });
+      setAutopilotQueue([]);
+      navigate('/autopilot');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to queue jobs for Autopilot.');
+    } finally {
+      setBatchQueueing(false);
+    }
+  };
   const [viewTab, setViewTab] = useState<'all' | 'collections' | 'shortlist'>('all');
   const [savingLoop, setSavingLoop] = useState(false);
   const saveCurrentFilterAsLoop = async (): Promise<void> => {
@@ -534,6 +565,8 @@ export function Opportunities() {
                         onCompare={() => toggleCompare(job.id)}
                         onDisposition={(d) => void handleDisposition(job.id, d)}
                         onPeek={(j) => setPeekJob(j)}
+                        autopilotSelected={autopilotQueue.includes(job.id)}
+                        onAutopilotToggle={() => toggleAutopilot(job.id)}
                       />
                     ))}
                   </ul>
@@ -573,6 +606,57 @@ export function Opportunities() {
                   </div>
                 </div>
               )}
+              {autopilotQueue.length > 0 &&
+                (() => {
+                  const selectedJobs =
+                    list.state === 'ready' ? list.data.jobs.filter((j) => autopilotQueue.includes(j.id)) : [];
+                  const companyCounts = new Map<string, number>();
+                  for (const j of selectedJobs) {
+                    companyCounts.set(j.employer, (companyCounts.get(j.employer) ?? 0) + 1);
+                  }
+                  const duplicateCompanies = Array.from(companyCounts.entries()).filter(([_, count]) => count > 1);
+
+                  return (
+                    <div
+                      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 p-4 bg-card/95 backdrop-blur-md border border-border rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 max-w-2xl w-[calc(100%-2rem)] mx-auto animate-in slide-in-from-bottom-3 duration-200"
+                      role="region"
+                      aria-label="Autopilot Queue Selection"
+                    >
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                          <span className="text-xs font-semibold text-foreground">
+                            Queue {autopilotQueue.length} selected · {focusCapRemaining} focus slots left
+                          </span>
+                        </div>
+                        {duplicateCompanies.length > 0 && (
+                          <p className="text-[11px] text-amber-600 dark:text-amber-400 m-0 leading-tight">
+                            ⚠️ Note: Multiple roles selected at {duplicateCompanies.map(([c]) => c).join(', ')}. Career
+                            Strike suggests 1 per company.
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          size="sm"
+                          disabled={batchQueueing || autopilotQueue.length > focusCapRemaining}
+                          onClick={() => void handleQueueAutopilot()}
+                          className="text-xs gap-1.5 shadow-xs"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Queue for Autopilot →</span>
+                        </Button>
+                        <button
+                          type="button"
+                          className="text-xs text-muted-foreground hover:text-foreground font-medium cursor-pointer"
+                          onClick={() => setAutopilotQueue([])}
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               {selectedCountry === 'JP' && (
                 <OfficialSearches
                   id="jp-official"

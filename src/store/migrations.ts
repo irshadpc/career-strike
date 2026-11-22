@@ -1191,4 +1191,38 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_prep_packets_status ON prep_packets (status);
     `,
   },
+  {
+    version: 31,
+    name: 'autopilot_and_answer_vault',
+    sql: `
+      CREATE TABLE IF NOT EXISTS answer_vault (
+        id             TEXT PRIMARY KEY,
+        question_key   TEXT NOT NULL UNIQUE,
+        question_label TEXT NOT NULL,
+        answer_value   TEXT NOT NULL,
+        answer_type    TEXT NOT NULL CHECK (answer_type IN ('boolean', 'text', 'select')),
+        is_default     INTEGER NOT NULL DEFAULT 1 CHECK (is_default IN (0, 1)),
+        updated_at     TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_answer_vault_key ON answer_vault (question_key);
+
+      CREATE TABLE IF NOT EXISTS autopilot_queue (
+        id                    TEXT PRIMARY KEY,
+        job_id                TEXT NOT NULL REFERENCES jobs (id) ON DELETE CASCADE,
+        company_name          TEXT NOT NULL,
+        ats_provider          TEXT NOT NULL CHECK (ats_provider IN ('greenhouse', 'lever', 'ashby', 'workday', 'other')),
+        status                TEXT NOT NULL CHECK (status IN ('queued', 'needs_answer', 'filling', 'ready_to_submit', 'blocked_fallback', 'sent')),
+        fields_filled_count   INTEGER NOT NULL DEFAULT 0,
+        fields_total_count    INTEGER NOT NULL DEFAULT 0,
+        pending_question_json TEXT,
+        resume_snapshot_id    TEXT,
+        receipt_json          TEXT,
+        sent_at               TEXT,
+        created_at            TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_autopilot_queue_job ON autopilot_queue (job_id);
+      CREATE INDEX IF NOT EXISTS idx_autopilot_queue_status ON autopilot_queue (status);
+      CREATE INDEX IF NOT EXISTS idx_autopilot_queue_created ON autopilot_queue (created_at DESC);
+    `,
+  },
 ];
