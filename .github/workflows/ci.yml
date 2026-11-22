@@ -44,6 +44,8 @@ jobs:
         run: npm install --global --prefix "$RUNNER_TEMP/warm-cache" --no-fund --no-audit $(node -p "Object.entries(require('./package.json').dependencies).map(([n, v]) => n + '@' + v).join(' ')")
       - run: npm run typecheck
       - run: npm test
+        env:
+          RUN_NETWORK_TESTS: '1'
 
   e2e:
     name: Browser tests

@@ -213,21 +213,66 @@ export function approveFact(db: Db, id: string, actor: string): ProfileFact | nu
   return row ? toFact(row) : null;
 }
 
-export function approveAllFacts(db: Db, actor: string, kind?: FactKind): number {
+export function approveAllFactsWithIds(
+  db: Db,
+  actor: string,
+  kind?: FactKind,
+  ids?: string[],
+): { count: number; approvedIds: string[] } {
   const at = new Date().toISOString();
   let count = 0;
+  const approvedIds: string[] = [];
   db.transaction(() => {
-    const query = kind
-      ? 'UPDATE profile_facts SET approved = 1, updated_at = ? WHERE approved = 0 AND kind = ?'
-      : 'UPDATE profile_facts SET approved = 1, updated_at = ? WHERE approved = 0';
-    const params = kind ? [at, kind] : [at];
-    count = db.prepare(query).run(...params).changes;
+    let rows: { id: string }[] = [];
+    if (ids && ids.length > 0) {
+      const placeholders = ids.map(() => '?').join(',');
+      rows = db.prepare(`SELECT id FROM profile_facts WHERE approved = 0 AND id IN (${placeholders})`).all(...ids) as {
+        id: string;
+      }[];
+    } else if (kind) {
+      rows = db.prepare('SELECT id FROM profile_facts WHERE approved = 0 AND kind = ?').all(kind) as {
+        id: string;
+      }[];
+    } else {
+      rows = db.prepare('SELECT id FROM profile_facts WHERE approved = 0').all() as { id: string }[];
+    }
+    const stmt = db.prepare('UPDATE profile_facts SET approved = 1, updated_at = ? WHERE id = ?');
+    for (const r of rows) {
+      stmt.run(at, r.id);
+      approvedIds.push(r.id);
+    }
+    count = approvedIds.length;
     if (count > 0) {
       db.prepare('INSERT INTO audit_events (at, actor, action, subject) VALUES (?, ?, ?, ?)').run(
         at,
         actor,
         'profile.facts.approved_all',
         `${count} approved`,
+      );
+    }
+  })();
+  return { count, approvedIds };
+}
+
+export function approveAllFacts(db: Db, actor: string, kind?: FactKind, ids?: string[]): number {
+  return approveAllFactsWithIds(db, actor, kind, ids).count;
+}
+
+export function unapproveFacts(db: Db, ids: string[], actor: string): number {
+  if (ids.length === 0) return 0;
+  const at = new Date().toISOString();
+  let count = 0;
+  db.transaction(() => {
+    const stmt = db.prepare('UPDATE profile_facts SET approved = 0, updated_at = ? WHERE id = ? AND approved = 1');
+    for (const id of ids) {
+      count += stmt.run(at, id).changes;
+    }
+    if (count > 0) {
+      db.prepare('INSERT INTO audit_events (at, actor, action, subject) VALUES (?, ?, ?, ?)').run(
+        at,
+        actor,
+        'profile.facts.unapproved',
+        `${count} unapproved`,
       );
     }
   })();

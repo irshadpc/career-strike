@@ -21,11 +21,12 @@ import {
 } from '../../career/linkedin-export.js';
 import {
   addFact,
-  approveAllFacts,
+  approveAllFactsWithIds,
   approveFact,
   deleteFact,
   listFacts,
   NewFact,
+  unapproveFacts,
   updateFact,
 } from '../../career/profile.js';
 import { extractResumeProfile } from '../../career/resume-profile.js';
@@ -246,10 +247,21 @@ export function registerOpportunityRoutes(
   });
 
   app.post('/api/profile/facts/approve-all', async (req) => {
-    const kind =
-      typeof (req.body as { kind?: unknown })?.kind === 'string' ? (req.body as { kind: string }).kind : undefined;
-    const count = approveAllFacts(db, actorOf(req), kind as any);
-    return { count };
+    const body = (req.body ?? {}) as { kind?: unknown; ids?: unknown };
+    const kind = typeof body.kind === 'string' ? body.kind : undefined;
+    const ids = Array.isArray(body.ids) ? body.ids.filter((i): i is string => typeof i === 'string') : undefined;
+    const result = approveAllFactsWithIds(db, actorOf(req), kind as any, ids);
+    return { count: result.count, approvedIds: result.approvedIds };
+  });
+
+  app.post('/api/profile/facts/unapprove', async (req, reply) => {
+    const body = (req.body ?? {}) as { ids?: unknown };
+    if (!Array.isArray(body.ids)) {
+      return reply.code(400).send({ error: 'INVALID_BODY', message: 'ids array required' });
+    }
+    const ids = body.ids.filter((i): i is string => typeof i === 'string');
+    const count = unapproveFacts(db, ids, actorOf(req));
+    return { ok: true, count };
   });
 
   app.put<{ Params: { id: string } }>('/api/profile/facts/:id', async (req, reply) => {

@@ -72,7 +72,9 @@ esac
   return { bin, state, opencodeConfig };
 }
 
-describe('packaged install', () => {
+const runPackagedInstall = Boolean(process.env.RUN_NETWORK_TESTS || process.env.CI);
+
+describe.skipIf(!runPackagedInstall)('packaged install', () => {
   it('installs from the npm pack tarball into a clean prefix, runs, and uninstalls without touching data', async () => {
     const tgz = packFromCleanCopy();
     const listing = execFileSync('tar', ['tzf', tgz], { encoding: 'utf8' }).split('\n');

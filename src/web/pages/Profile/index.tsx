@@ -48,6 +48,7 @@ export function Profile() {
   const [authSituation, setAuthSituation] = useState<'unknown' | 'sponsor' | 'existing'>('unknown');
 
   // Status & saving
+  const [isBulkApproving, setIsBulkApproving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const resumeFileRef = useRef<HTMLInputElement | null>(null);
@@ -370,6 +371,66 @@ export function Profile() {
             Import Export
           </a>
         </nav>
+      )}
+
+      {facts && facts.some((f) => !f.approved) && (
+        <div
+          data-testid="batch-approve-banner"
+          className="rounded-xl border border-teal-500/30 bg-teal-500/5 p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+        >
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {facts.filter((f) => !f.approved).length} document-extracted facts pending review
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Confirm your extracted skills, roles, and education in bulk to immediately unlock verified matching.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            disabled={isBulkApproving}
+            onClick={async () => {
+              setIsBulkApproving(true);
+              const unapproved = facts.filter((f) => !f.approved);
+              try {
+                const res = await api<{ count: number; approvedIds?: string[] }>('/api/profile/facts/approve-all', {
+                  method: 'POST',
+                  body: { ids: unapproved.map((f) => f.id) },
+                });
+                const count = res.count ?? unapproved.length;
+                const approvedIds = res.approvedIds ?? unapproved.map((f) => f.id);
+                toast({
+                  variant: 'success',
+                  title: `${count} facts approved`,
+                  description: 'All suggested skills and roles now count toward matching.',
+                  duration: 8000,
+                  action: {
+                    label: 'Undo',
+                    onClick: async () => {
+                      try {
+                        await api('/api/profile/facts/unapprove', {
+                          method: 'POST',
+                          body: { ids: approvedIds },
+                        });
+                        toast({ title: 'Approval undone', description: 'Facts returned to unapproved suggestions.' });
+                        void load();
+                      } catch {
+                        toast({ variant: 'destructive', title: 'Could not undo approval' });
+                      }
+                    },
+                  },
+                });
+                void load();
+              } catch {
+                toast({ variant: 'destructive', title: 'Could not approve facts' });
+              } finally {
+                setIsBulkApproving(false);
+              }
+            }}
+          >
+            {isBulkApproving ? 'Approving…' : 'Approve all high-confidence facts'}
+          </Button>
+        </div>
       )}
 
       {facts && (

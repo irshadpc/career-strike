@@ -28,6 +28,90 @@ export interface PdfOptions {
   sparseCharsPerPage?: number;
 }
 
+interface SpatialItem {
+  str: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Reconstructs column reading order using spatial X/Y coordinates to prevent
+ * column interleaving in multi-column resume PDFs.
+ */
+export function reconstructColumns(items: SpatialItem[]): string {
+  if (items.length === 0) return '';
+  const xs = items.map((it) => it.x);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const width = maxX - minX;
+
+  const midX = minX + width / 2;
+  const leftCol = items.filter((it) => it.x < midX);
+  const rightCol = items.filter((it) => it.x >= midX);
+
+  const isTwoColumn = leftCol.length >= 5 && rightCol.length >= 5 && width > 200;
+
+  const sortByReadingOrder = (colItems: SpatialItem[]) => {
+    const lineTolerance = 4.0;
+    return [...colItems].sort((a, b) => {
+      const dy = Math.abs(a.y - b.y);
+      if (dy > lineTolerance) {
+        return b.y - a.y; // Higher y first (PDF origin bottom-left)
+      }
+      return a.x - b.x; // Left to right
+    });
+  };
+
+  if (isTwoColumn) {
+    const sortedLeft = sortByReadingOrder(leftCol);
+    const sortedRight = sortByReadingOrder(rightCol);
+    const leftText = sortedLeft
+      .map((it) => it.str)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const rightText = sortedRight
+      .map((it) => it.str)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    return `${leftText}\n${rightText}`;
+  }
+
+  const sorted = sortByReadingOrder(items);
+  return sorted
+    .map((it) => it.str)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * OCR Fallback for scanned PDFs or sparse image-only pages.
+ */
+async function ocrPdfFallback(bytes: Buffer): Promise<string | null> {
+  // Only attempt image OCR if the buffer contains an image signature
+  if (bytes.length < 4) return null;
+  const isImage =
+    (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) || // PNG
+    (bytes[0] === 0xff && bytes[1] === 0xd8) || // JPEG
+    (bytes[0] === 0x49 && bytes[1] === 0x49) || // TIFF
+    (bytes[0] === 0x4d && bytes[1] === 0x4d); // TIFF
+  if (!isImage) return null;
+
+  try {
+    const { createWorker } = await import('tesseract.js');
+    const worker = await createWorker('eng');
+    const res = await worker.recognize(bytes).catch(() => ({ data: { text: '' } }));
+    await worker.terminate().catch(() => {});
+    return res.data?.text?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 async function extractPdfText(bytes: Buffer, options: PdfOptions = {}): Promise<ExtractResult> {
   const loaded = await loadPdf();
   const { getDocument, InvalidPDFException } = loaded;
@@ -45,12 +129,19 @@ async function extractPdfText(bytes: Buffer, options: PdfOptions = {}): Promise<
       for (let i = 1; i <= doc.numPages; i++) {
         const page = await doc.getPage(i);
         const content = await page.getTextContent();
-        const pageText: string[] = [];
+        const spatialItems: SpatialItem[] = [];
         for (const textItem of content.items) {
           if (!('str' in textItem)) continue;
-          pageText.push(String(textItem.str));
+          const transform = (textItem as { transform?: number[] }).transform ?? [1, 0, 0, 1, 0, 0];
+          spatialItems.push({
+            str: String(textItem.str),
+            x: transform[4] ?? 0,
+            y: transform[5] ?? 0,
+            width: (textItem as { width?: number }).width ?? 0,
+            height: (textItem as { height?: number }).height ?? 0,
+          });
         }
-        const joined = pageText.join(' ').replace(/\s+/g, ' ').trim();
+        const joined = reconstructColumns(spatialItems);
         items.push(joined);
         totalChars += joined.length;
         pageCount++;
@@ -66,11 +157,23 @@ async function extractPdfText(bytes: Buffer, options: PdfOptions = {}): Promise<
         /* ignore */
       }
     }
-    const avg = pageCount > 0 ? totalChars / pageCount : null;
-    const text = items.join('\n').trim();
+    let avg = pageCount > 0 ? totalChars / pageCount : null;
+    let text = items.join('\n').trim() || null;
+    let sparse = avg !== null && avg < (options.sparseCharsPerPage ?? 50);
+
+    // Scanned PDF OCR fallback
+    if ((!text || sparse) && bytes.length > 0) {
+      const ocrResult = await ocrPdfFallback(bytes);
+      if (ocrResult && ocrResult.length >= 20) {
+        text = ocrResult;
+        sparse = false;
+        avg = ocrResult.length / (pageCount || 1);
+      }
+    }
+
     return {
-      text: text || null,
-      sparse: avg !== null && avg < (options.sparseCharsPerPage ?? 50),
+      text,
+      sparse,
       ligatureCorruption: hasLigatureCorruption(text),
       avgCharsPerPage: avg,
     };

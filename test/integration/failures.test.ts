@@ -44,7 +44,7 @@ describe('database busy', () => {
       error: 'DATABASE_BUSY',
       message: expect.stringContaining('Nothing was changed'),
     });
-    expect(Date.now() - started).toBeLessThan(5000);
+    expect(Date.now() - started).toBeLessThan(10000);
     // Reads still work while the write lock is held (WAL).
     expect((await call('GET', '/api/settings')).status).toBe(200);
     other.exec('ROLLBACK');

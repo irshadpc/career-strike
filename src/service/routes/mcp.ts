@@ -1,12 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import type { ApplicationService } from '../../applications/service.js';
-import {
-  evaluateCompensation,
-  findMatchingBenchmark,
-  listCompensationBenchmarks,
-  type SeniorityLevel,
-} from '../../career/compensation.js';
+import { listCompensationBenchmarks } from '../../career/compensation.js';
 import { candidateContext } from '../../career/context.js';
 import { type Discovery, DuplicateBoardError } from '../../career/discovery.js';
 import {

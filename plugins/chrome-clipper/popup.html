@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Career Strike Clipper</title>
+  <style>
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #0f172a;
+      color: #f8fafc;
+    }
+    h1 {
+      font-size: 14px;
+      margin: 0 0 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #14b8a6;
+    }
+    .field {
+      margin-bottom: 8px;
+    }
+    label {
+      display: block;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      margin-bottom: 2px;
+    }
+    input, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    button {
+      width: 100%;
+      background: #0d9488;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #14b8a6;
+    }
+    button:disabled {
+      background: #475569;
+      cursor: not-allowed;
+    }
+    #status {
+      margin-top: 8px;
+      font-size: 11px;
+      text-align: center;
+    }
+    .success { color: #34d399; }
+    .error { color: #f87171; }
+  </style>
+</head>
+<body>
+  <h1>⚡ Career Strike Clipper</h1>
+  <div class="field">
+    <label for="title">Role Title</label>
+    <input id="title" type="text" placeholder="e.g. Senior Backend Engineer" />
+  </div>
+  <div class="field">
+    <label for="employer">Employer / Company</label>
+    <input id="employer" type="text" placeholder="e.g. Stripe" />
+  </div>
+  <div class="field">
+    <label for="location">Location</label>
+    <input id="location" type="text" placeholder="e.g. Remote, US" />
+  </div>
+  <div class="field">
+    <label for="url">Job URL</label>
+    <input id="url" type="text" placeholder="https://..." />
+  </div>
+  <button id="clip-btn">Clip Role to Career Strike</button>
+  <div id="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

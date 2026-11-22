@@ -130,17 +130,32 @@ export function FactSection({
 
   const approveAll = async (): Promise<void> => {
     setApprovingAll(true);
+    const unapproved = facts.filter((f) => !f.approved);
     try {
-      const res = await api<{ count: number }>('/api/profile/facts/approve-all', {
+      const res = await api<{ count: number; approvedIds?: string[] }>('/api/profile/facts/approve-all', {
         method: 'POST',
         body: { kind: section.kind },
       });
-      const count = res?.count ?? facts.filter((f) => !f.approved).length;
+      const count = res?.count ?? unapproved.length;
+      const approvedIds = res?.approvedIds ?? unapproved.map((f) => f.id);
       setStatus(`Approved all suggested ${section.title.toLowerCase()}.`);
       toast({
         variant: 'success',
         title: `${count} ${singular.toLowerCase()}${count === 1 ? '' : 's'} approved`,
         description: 'They now count toward matching.',
+        duration: 8000,
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            try {
+              await api('/api/profile/facts/unapprove', { method: 'POST', body: { ids: approvedIds } });
+              toast({ title: 'Approval undone', description: `${section.title} suggestions restored.` });
+              onChange();
+            } catch {
+              toast({ variant: 'destructive', title: 'Could not undo approval' });
+            }
+          },
+        },
       });
       onChange();
     } catch {

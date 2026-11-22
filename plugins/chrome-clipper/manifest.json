@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Career Strike Job Clipper",
+  "version": "0.8.0",
+  "description": "1-click private job clipper for Career Strike (LinkedIn, Workday, Naukri). 100% local, zero telemetry.",
+  "permissions": ["nativeMessaging", "activeTab", "scripting"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Clip to Career Strike"
+  }
+}

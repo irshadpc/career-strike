@@ -189,14 +189,54 @@ export function HiredMode() {
               <h3 className="text-xs font-semibold text-foreground m-0">Saved plans</h3>
               {plans.length === 0 && <p className="text-xs text-muted-foreground italic">No plans yet.</p>}
               {plans.map((p) => (
-                <div key={p.id} className="p-3 rounded-md bg-muted/20 border border-border/40 text-xs space-y-1">
-                  <p className="m-0 font-medium text-foreground">
-                    {p.jobTitle ?? 'Untitled'}
-                    {p.company ? ` @ ${p.company}` : ''}
-                  </p>
-                  <p className="m-0 text-muted-foreground line-clamp-2">
-                    {p.plan.days30 || p.plan.days60 || p.plan.days90 || '—'}
-                  </p>
+                <div key={p.id} className="p-3 rounded-md bg-muted/20 border border-border/40 text-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="m-0 font-semibold text-foreground text-sm">
+                      {p.jobTitle ?? 'Untitled'}
+                      {p.company ? ` @ ${p.company}` : ''}
+                    </p>
+                    <span className="text-[10px] text-muted-foreground">{p.createdAt.slice(0, 10)}</span>
+                  </div>
+                  {p.plan.days30 && (
+                    <div className="p-2 rounded bg-background/50 border border-border/30">
+                      <p className="font-semibold text-foreground text-[11px] mb-1">Days 1–30: Orient & Learn</p>
+                      <pre className="text-muted-foreground whitespace-pre-wrap font-sans text-xs leading-relaxed m-0">
+                        {p.plan.days30}
+                      </pre>
+                    </div>
+                  )}
+                  {p.plan.days60 && (
+                    <div className="p-2 rounded bg-background/50 border border-border/30">
+                      <p className="font-semibold text-foreground text-[11px] mb-1">Days 31–60: Apply & Contribute</p>
+                      <pre className="text-muted-foreground whitespace-pre-wrap font-sans text-xs leading-relaxed m-0">
+                        {p.plan.days60}
+                      </pre>
+                    </div>
+                  )}
+                  {p.plan.days90 && (
+                    <div className="p-2 rounded bg-background/50 border border-border/30">
+                      <p className="font-semibold text-foreground text-[11px] mb-1">Days 61–90: Own & Elevate</p>
+                      <pre className="text-muted-foreground whitespace-pre-wrap font-sans text-xs leading-relaxed m-0">
+                        {p.plan.days90}
+                      </pre>
+                    </div>
+                  )}
+                  {p.plan.stakeholders && (
+                    <div className="p-2 rounded bg-background/50 border border-border/30">
+                      <p className="font-semibold text-foreground text-[11px] mb-1">Stakeholder Map & Checklist</p>
+                      <pre className="text-muted-foreground whitespace-pre-wrap font-sans text-xs leading-relaxed m-0">
+                        {p.plan.stakeholders}
+                      </pre>
+                    </div>
+                  )}
+                  {p.plan.questions && (
+                    <div className="p-2 rounded bg-background/50 border border-border/30">
+                      <p className="font-semibold text-foreground text-[11px] mb-1">Key Week-1 Questions</p>
+                      <pre className="text-muted-foreground whitespace-pre-wrap font-sans text-xs leading-relaxed m-0">
+                        {p.plan.questions}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

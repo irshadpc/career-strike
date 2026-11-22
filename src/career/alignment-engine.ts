@@ -1,3 +1,4 @@
+import { calculateSemanticScore } from '../matching/embeddings-worker.js';
 import type { Db } from '../store/db.js';
 
 /**
@@ -316,7 +317,21 @@ export function evaluateResumeAlignment(db: Db, resumeText: string, jdText: stri
         continue;
       }
 
-      // Tier 3: Partial Semantic Overlap (stemming/token intersection)
+      // Tier 3: Contextual Semantic Embeddings & Overlap
+      const semanticScore = calculateSemanticScore(item, resumeText);
+      if (semanticScore >= 0.8) {
+        rubric.push({
+          id,
+          term: item,
+          category,
+          status: 'PARTIAL_SEMANTIC',
+          matchedResumeText: `Semantic match (${Math.round(semanticScore * 100)}%)`,
+          canonicalSkill: item,
+          aliasUsed: null,
+        });
+        continue;
+      }
+
       const itemTokens = itemLower.match(/[a-z0-9+#.-]{3,}/g) ?? [];
       const matchedToken = itemTokens.find((t) => resumeLower.includes(t));
       if (matchedToken) {

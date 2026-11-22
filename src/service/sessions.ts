@@ -4,7 +4,7 @@ import { newToken } from './security.js';
 
 export const SESSION_COOKIE = 'cs_session';
 const LAUNCH_TOKEN_TTL_MS = 60_000;
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
 const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex');
 
@@ -57,10 +57,19 @@ export class SessionStore {
   }
 
   lookup(id: string): Session | null {
+    const hash = sha256(id);
+    const nowMs = this.now();
+    const nowIso = new Date(nowMs).toISOString();
     const row = this.db
       .prepare('SELECT csrf_token FROM dashboard_sessions WHERE id_hash = ? AND expires_at > ?')
-      .get(sha256(id), new Date(this.now()).toISOString()) as { csrf_token: string } | undefined;
-    return row ? { csrf: row.csrf_token } : null;
+      .get(hash, nowIso) as { csrf_token: string } | undefined;
+    if (!row) return null;
+    // Sliding TTL: extend session lifetime on activity so open dashboards and tab restores stay logged in.
+    const newExpiresAt = new Date(nowMs + SESSION_TTL_MS).toISOString();
+    this.db
+      .prepare('UPDATE dashboard_sessions SET expires_at = ?, last_seen_at = ? WHERE id_hash = ?')
+      .run(newExpiresAt, nowIso, hash);
+    return { csrf: row.csrf_token };
   }
 
   revoke(id: string): void {

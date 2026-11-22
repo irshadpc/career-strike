@@ -9,6 +9,6 @@ export default defineConfig({
     setupFiles: ['test/setup/no-network.ts'],
     // Tests never touch the user's keychain; the keychain store has its own dedicated test.
     env: { CAREER_STRIKE_SECRET_STORE: 'file' },
-    testTimeout: 20_000,
+    testTimeout: 45_000,
   },
 });

@@ -26,6 +26,7 @@ export function ImapSyncPanel() {
   const [settings, setSettings] = useState<ImapSettings | null>(null);
   const [error, setError] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [polling, setPolling] = useState(false);
   const [draft, setDraft] = useState({ host: '', port: 993, username: '', password: '', allowlist: '' });
 
   const load = useCallback(async () => {
@@ -131,14 +132,48 @@ export function ImapSyncPanel() {
         placeholder="Allowed sender domains (comma-separated, e.g. greenhouse.io,lever.co)"
         className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm mb-3"
       />
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center flex-wrap">
         <Button size="sm" onClick={() => void save()}>
           Save
         </Button>
         {settings && (
-          <Button size="sm" variant="secondary" onClick={() => void toggle(!settings.enabled)}>
-            {settings.enabled ? 'Disable sync' : 'Enable sync'}
-          </Button>
+          <>
+            <Button size="sm" variant="secondary" onClick={() => void toggle(!settings.enabled)}>
+              {settings.enabled ? 'Disable sync' : 'Enable sync'}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={polling || !settings.enabled}
+              onClick={async () => {
+                setPolling(true);
+                try {
+                  const res = await api<{ ok: boolean; result?: { newCandidates: number; error?: string } }>(
+                    '/api/imap/poll',
+                    { method: 'POST' },
+                  );
+                  if (res.result?.error) {
+                    toast({ variant: 'destructive', title: 'IMAP Sync Error', description: res.result.error });
+                  } else {
+                    const count = res.result?.newCandidates ?? 0;
+                    toast({
+                      variant: 'success',
+                      title: 'IMAP Sync Completed',
+                      description:
+                        count > 0 ? `Found ${count} recruiter notification(s)` : 'No new recruiter notifications',
+                    });
+                  }
+                  void load();
+                } catch {
+                  toast({ variant: 'destructive', title: 'Could not poll IMAP server' });
+                } finally {
+                  setPolling(false);
+                }
+              }}
+            >
+              {polling ? 'Polling…' : 'Poll now'}
+            </Button>
+          </>
         )}
       </div>
 
@@ -159,7 +194,19 @@ export function ImapSyncPanel() {
                   size="sm"
                   className="text-xs"
                   onClick={async () => {
-                    await api(`/api/imap/candidates/${c.id}/accept`, { method: 'POST' });
+                    const res = await api<{
+                      ok: boolean;
+                      advanced?: { applicationId: string; toState: string } | null;
+                    }>(`/api/imap/candidates/${c.id}/accept`, { method: 'POST' });
+                    if (res.advanced) {
+                      toast({
+                        variant: 'success',
+                        title: 'Application Advanced',
+                        description: `Advanced application to ${res.advanced.toState} stage.`,
+                      });
+                    } else {
+                      toast({ variant: 'success', title: 'Confirmation accepted' });
+                    }
                     void load();
                   }}
                 >
@@ -171,6 +218,7 @@ export function ImapSyncPanel() {
                   className="text-xs"
                   onClick={async () => {
                     await api(`/api/imap/candidates/${c.id}/dismiss`, { method: 'POST' });
+                    toast({ title: 'Confirmation dismissed' });
                     void load();
                   }}
                 >

@@ -1,6 +1,9 @@
 import { randomBytes } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { seedHiredModeFromWonJob } from '../../career/hired-seed.js';
+import { calculateSemanticScore } from '../../matching/embeddings-worker.js';
+import { advanceApplicationFromCandidate, pollImapTransport } from '../../sources/imap-transport.js';
 import type { Db } from '../../store/db.js';
 
 function id(prefix: string): string {
@@ -445,6 +448,10 @@ export function registerCareerOsRoutes(app: FastifyInstance, { db }: { db: Db })
     const row = db.prepare('SELECT * FROM imap_settings WHERE id=1').get() as Record<string, unknown>;
     return { settings: rowToImap(row) };
   });
+  app.post('/api/imap/poll', async () => {
+    const result = await pollImapTransport(db);
+    return { ok: true, result };
+  });
   app.get('/api/imap/candidates', async () => {
     const rows = db
       .prepare("SELECT * FROM imap_candidates WHERE status='pending' ORDER BY detected_at DESC")
@@ -452,14 +459,31 @@ export function registerCareerOsRoutes(app: FastifyInstance, { db }: { db: Db })
     return { candidates: rows.map(rowToImapCandidate) };
   });
   app.post<{ Params: { id: string } }>('/api/imap/candidates/:id/accept', async (req, reply) => {
-    const r = db.prepare("UPDATE imap_candidates SET status='accepted' WHERE id=?").run(req.params.id);
-    if (r.changes === 0) return reply.code(404).send({ error: 'NOT_FOUND' });
-    return { ok: true };
+    const cand = db.prepare('SELECT from_addr, subject FROM imap_candidates WHERE id=?').get(req.params.id) as
+      | { from_addr: string | null; subject: string | null }
+      | undefined;
+    if (!cand) return reply.code(404).send({ error: 'NOT_FOUND' });
+
+    db.prepare("UPDATE imap_candidates SET status='accepted' WHERE id=?").run(req.params.id);
+    const advanced = advanceApplicationFromCandidate(db, cand);
+    return { ok: true, advanced };
   });
   app.post<{ Params: { id: string } }>('/api/imap/candidates/:id/dismiss', async (req, reply) => {
     const r = db.prepare("UPDATE imap_candidates SET status='dismissed' WHERE id=?").run(req.params.id);
     if (r.changes === 0) return reply.code(404).send({ error: 'NOT_FOUND' });
     return { ok: true };
+  });
+
+  // ===== Won Job & Hired Mode auto-seeding =====
+  app.post<{ Params: { id: string } }>('/api/applications/:id/accept-offer', async (req, reply) => {
+    try {
+      const plan = seedHiredModeFromWonJob(db, req.params.id);
+      const nowIso = new Date().toISOString();
+      db.prepare("UPDATE applications SET state = 'OFFER', updated_at = ? WHERE id = ?").run(nowIso, req.params.id);
+      return { ok: true, plan };
+    } catch (err) {
+      return reply.code(404).send({ error: 'NOT_FOUND', message: err instanceof Error ? err.message : String(err) });
+    }
   });
 
   // ===== Funnel diagnostics (Pillar 4) =====
@@ -490,27 +514,53 @@ export function registerCareerOsRoutes(app: FastifyInstance, { db }: { db: Db })
     const fit = (job.fit_json ? safeJson(String(job.fit_json)) : null) as Record<string, unknown> | null;
     const matched = Array.isArray(fit?.matchedSkills) ? (fit!.matchedSkills as string[]) : [];
     const missing = Array.isArray(fit?.missingRequiredSkills) ? (fit!.missingRequiredSkills as string[]) : [];
-    const total = matched.length + missing.length;
+
+    // Semantic matching: evaluate candidate skills for synonym / cluster matches (e.g. payment auth <-> 3DS / Passkey)
+    const approvedSkillRows = db
+      .prepare("SELECT value_json FROM profile_facts WHERE approved = 1 AND kind = 'skill'")
+      .all() as { value_json: string }[];
+    const candidateSkills = approvedSkillRows
+      .map((r) => {
+        try {
+          return String(JSON.parse(r.value_json).name ?? '');
+        } catch {
+          return '';
+        }
+      })
+      .filter(Boolean);
+
+    const synonymMatches: string[] = [];
+    const remainingMissing: string[] = [];
+    for (const reqSkill of missing) {
+      const match = candidateSkills.find((candSkill) => calculateSemanticScore(reqSkill, candSkill) >= 0.8);
+      if (match) {
+        synonymMatches.push(`${reqSkill} (matched by ${match})`);
+      } else {
+        remainingMissing.push(reqSkill);
+      }
+    }
+
+    const total = matched.length + synonymMatches.length + remainingMissing.length;
     return {
       jobId: req.params.id,
       gateCheck: {
         pass: [] as string[],
-        gap: missing.slice(0, 5),
+        gap: remainingMissing.slice(0, 5),
         workaround: [] as string[],
       },
       skillAlignment: {
         exact: matched,
-        synonym: [] as string[],
+        synonym: synonymMatches,
         ontology: [] as string[],
-        missing,
-        ratio: total ? matched.length / total : 0,
+        missing: remainingMissing,
+        ratio: total ? (matched.length + synonymMatches.length) / total : 0,
       },
       experienceAudit: {
         relevantYears: null,
         totalYears: null,
         note: 'Computed from approved roles relevant to this job family.',
       },
-      counterfactuals: missing
+      counterfactuals: remainingMissing
         .slice(0, 3)
         .map((s) => `Add evidence for "${s}" (with a quantified outcome) to move the needle.`),
       zeroHallucination: true,

@@ -33,8 +33,8 @@ export function openDb(file: string, migrations: readonly Migration[] = MIGRATIO
     db.pragma('foreign_keys = ON');
     // Synchronous NORMAL is safe under WAL and materially reduces write latency on consumer hardware.
     db.pragma('synchronous = NORMAL');
-    // better-sqlite3 waits synchronously; a short, explicit wait keeps the UI responsive under load.
-    db.pragma('busy_timeout = 2000');
+    // better-sqlite3 waits synchronously; 5000 ms accommodates concurrent background IMAP syncs and ONNX embedding workers.
+    db.pragma('busy_timeout = 5000');
     migrate(db, migrations, file === ':memory:' ? null : path.join(path.dirname(file), 'backups'));
     return db;
   } catch (err) {

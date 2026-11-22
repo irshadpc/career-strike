@@ -9,6 +9,7 @@ import { appPaths, ensureHome } from '../core/paths.js';
 import { VERSION } from '../core/version.js';
 import { type CountryCode, isCountryCode } from '../markets/countries.js';
 import { employerTargetsFor, verifyTargetDiscovery } from '../markets/employers.js';
+import { buildMcpbBundle } from '../mcp/bundle.js';
 import { isMcpClientName } from '../mcp/clients.js';
 import { HOSTS, type Host, hostVersion, isRegistered, register, settlesTo, unregister } from '../mcp/hosts.js';
 import { runMcpStdio, tokenFile } from '../mcp/server.js';
@@ -18,7 +19,7 @@ import { localRequest } from '../service/http-client.js';
 import { probeHealth, readRuntime } from '../service/runtime.js';
 import { AlreadyRunningError, DEFAULT_PORT, startService } from '../service/service.js';
 import { createAdapters } from '../sources/adapters.js';
-import { inspectDb, latestKnownVersion, openDb, schemaVersion } from '../store/db.js';
+import { openDb, schemaVersion } from '../store/db.js';
 import { backup, deleteAllData, exportData, OWNED, restore, rollback } from '../store/lifecycle.js';
 import { getSettings, setSetting } from '../store/settings.js';
 import { installSchedule, scheduleStatus, uninstallSchedule } from '../supervisor/os-schedule.js';
@@ -29,6 +30,7 @@ import { latestRelease, UpdateError } from '../updates/releases.js';
 import { Updater } from '../updates/updater.js';
 import { compareVersions } from '../updates/version.js';
 import { defaultSecretStore } from '../vault/secrets.js';
+import { installNativeManifest, runNativeMessagingHost } from './native-clipper.js';
 
 const CLI_ENTRY = fileURLToPath(import.meta.url);
 
@@ -133,6 +135,39 @@ program
   .requiredOption('--client <name>', 'a safe local MCP client label, e.g. codex or axym', parseMcpClientName)
   .action(async (opts: { client: string }) => {
     await runMcpStdio(appPaths(), opts.client, CLI_ENTRY);
+  });
+
+program
+  .command('mcp-bundle')
+  .description('Package the MCP server as a 1-click .mcpb desktop extension for Claude Desktop')
+  .option('-o, --out <path>', 'custom output path for the .mcpb bundle')
+  .action((opts: { out?: string }) => {
+    const file = buildMcpbBundle(opts.out);
+    console.log(`Created Claude Desktop bundle: ${file}`);
+    console.log('Drag and drop this .mcpb file into Claude Desktop to install without editing JSON configs.');
+  });
+
+program
+  .command('clipper')
+  .description('Manage Chrome / Chromium 1-click job clipper (install, host, path)')
+  .argument('[action]', 'Action to perform: host, install, or path', 'host')
+  .action(async (action: string) => {
+    if (action === 'host') {
+      await runNativeMessagingHost(CLI_ENTRY);
+    } else if (action === 'install') {
+      const installed = installNativeManifest(process.execPath, CLI_ENTRY);
+      if (installed.length === 0) {
+        console.log('No supported browser directories found.');
+      } else {
+        console.log('Installed Career Strike Native Messaging host into:');
+        for (const p of installed) console.log(`  ${p}`);
+        console.log(`Load the unpacked extension from: ${path.resolve(packageRoot(), 'plugins', 'chrome-clipper')}`);
+      }
+    } else if (action === 'path') {
+      console.log(path.resolve(packageRoot(), 'plugins', 'chrome-clipper'));
+    } else {
+      console.log(`Unknown clipper action: ${action}. Use host, install, or path.`);
+    }
   });
 
 function parseMcpClientName(value: string): string {

@@ -14,6 +14,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button, buttonVariants } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
+import { useToast } from '../../components/ui/toast';
 import { APP_STATE_LABEL, formatDateTime, shortHash } from '../../format';
 import { cn } from '../../helpers/cn';
 import { uploadDocument } from '../../helpers/documents';
@@ -992,6 +993,9 @@ function RecordOutcome({
   });
   const chosen = form.watch('outcome');
   const outcome = options.includes(chosen as (typeof OUTCOMES)[number]) ? chosen : (options[0] ?? '');
+  const { toast } = useToast();
+  const navigate = useNavigateTo();
+  const [acceptingOffer, setAcceptingOffer] = useState(false);
 
   return (
     <form
@@ -1040,9 +1044,37 @@ function RecordOutcome({
         Record
       </Button>
       {view.state === 'OFFER' && (
-        <span className="text-xs text-teal-600 dark:text-teal-400 font-semibold block text-center">
-          Congratulations.
-        </span>
+        <div className="pt-2 border-t border-border/40 space-y-2">
+          <span className="text-xs text-teal-600 dark:text-teal-400 font-semibold block text-center">
+            Congratulations on the offer!
+          </span>
+          <Button
+            type="button"
+            disabled={acceptingOffer}
+            className="w-full h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white"
+            onClick={async () => {
+              setAcceptingOffer(true);
+              try {
+                await api(`/api/applications/${view.id}/accept-offer`, { method: 'POST' });
+                toast({
+                  variant: 'success',
+                  title: 'Offer Accepted & Hired Mode Seeded!',
+                  description: 'Generated initial 30-60-90 plan and stakeholder checklist.',
+                  action: {
+                    label: 'Open Hired Mode',
+                    onClick: () => navigate('/hired'),
+                  },
+                });
+              } catch {
+                toast({ variant: 'destructive', title: 'Could not seed Hired Mode' });
+              } finally {
+                setAcceptingOffer(false);
+              }
+            }}
+          >
+            {acceptingOffer ? 'Seeding Hired Mode…' : 'Accept Offer & Seed Hired Mode'}
+          </Button>
+        </div>
       )}
     </form>
   );

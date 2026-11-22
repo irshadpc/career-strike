@@ -256,9 +256,13 @@ export function buildServer({
     return sessions.mintLaunchToken();
   });
 
-  app.get('/api/session', async (req) => {
+  app.get('/api/session', async (req, reply) => {
     const p = req.principal;
-    return p?.kind === 'dashboard' ? { kind: 'dashboard', csrf: p.csrf } : { kind: 'local-client' };
+    if (p?.kind === 'dashboard') {
+      reply.header('set-cookie', sessionCookie(p.sessionId));
+      return { kind: 'dashboard', csrf: p.csrf };
+    }
+    return { kind: 'local-client' };
   });
 
   app.post('/api/session/logout', async (req, reply) => {
