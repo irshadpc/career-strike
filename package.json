@@ -40,6 +40,7 @@
     "test:update": "node --import tsx scripts/update-rehearsal.ts",
     "release": "node --import tsx scripts/release.ts",
     "pack:mcpb": "mcpb pack mcpb dist/career-strike.mcpb",
+    "screenshots": "node --import tsx scripts/capture-screenshots.ts",
     "prepack": "npm run build"
   },
   "dependencies": {
