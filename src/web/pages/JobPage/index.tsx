@@ -125,7 +125,7 @@ export function JobPage({ id }: { id: string }) {
 
       {job.status === 'STALE' && (
         <div
-          className="p-3.5 rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 text-xs shadow-xs"
+          className="p-3.5 rounded-lg border border-status-warn-border bg-status-warn-bg text-status-warn-fg text-xs shadow-xs"
           role="note"
         >
           Career Strike has not been able to confirm this posting is still open recently. Check the employer’s site
@@ -134,7 +134,7 @@ export function JobPage({ id }: { id: string }) {
       )}
       {job.status === 'CLOSED' && (
         <div
-          className="p-3.5 rounded-lg border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 text-xs shadow-xs"
+          className="p-3.5 rounded-lg border border-status-warn-border bg-status-warn-bg text-status-warn-fg text-xs shadow-xs"
           role="note"
         >
           This posting was taken down by the employer{job.closedAt ? ` (noticed ${formatDateTime(job.closedAt)})` : ''}.

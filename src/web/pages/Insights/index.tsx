@@ -106,7 +106,7 @@ export function Insights() {
               {funnel.leaks.map((l, i) => (
                 <li
                   key={i}
-                  className="p-2 rounded-md bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200"
+                  className="p-2 rounded-md bg-status-warn-bg border border-status-warn-border text-status-warn-fg"
                 >
                   {l}
                 </li>
@@ -175,13 +175,13 @@ export function Insights() {
           </div>
           <div className="p-3.5 rounded-lg border border-border bg-card shadow-xs">
             <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Healthy</dt>
-            <dd className="text-xl font-bold font-serif text-teal-600 dark:text-teal-400 mt-1 m-0">
+            <dd className="text-xl font-bold font-serif text-status-success-fg mt-1 m-0">
               {m.discoveryHealth.healthy}
             </dd>
           </div>
           <div className="p-3.5 rounded-lg border border-border bg-card shadow-xs">
             <dt className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Needs attention</dt>
-            <dd className="text-xl font-bold font-serif text-amber-600 dark:text-amber-400 mt-1 m-0">
+            <dd className="text-xl font-bold font-serif text-status-warn-fg mt-1 m-0">
               {m.discoveryHealth.degraded + m.discoveryHealth.notFound}
             </dd>
           </div>

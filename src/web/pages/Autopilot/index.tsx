@@ -200,31 +200,31 @@ export function Autopilot() {
     switch (provider) {
       case 'greenhouse':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-status-success-bg text-status-success-fg border border-status-success-border">
             Greenhouse
           </span>
         );
       case 'lever':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-subtle text-ink border border-border">
             Lever
           </span>
         );
       case 'ashby':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-purple-500/10 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-subtle text-ink border border-border">
             Ashby
           </span>
         );
       case 'workday':
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-status-warn-bg text-status-warn-fg border border-status-warn-border">
             Workday
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-muted text-muted-foreground border border-border">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-subtle text-ink-secondary border border-border">
             Direct Portal
           </span>
         );
@@ -307,7 +307,7 @@ export function Autopilot() {
             <TabsTrigger value="receipts" className="text-xs gap-1.5">
               <span>Receipt History</span>
               {receiptsCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-mono">
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-status-success-bg text-status-success-fg border border-status-success-border font-mono">
                   {receiptsCount}
                 </span>
               )}
@@ -405,7 +405,9 @@ export function Autopilot() {
                         {item.status === 'blocked_fallback' ? 'Copy-Fill' : 'Review'}
                       </span>
                       <ChevronRight className="w-3 h-3 text-muted-foreground/60" />
-                      <span className={item.status === 'sent' ? 'text-emerald-600 font-semibold' : ''}>Track</span>
+                      <span className={item.status === 'sent' ? 'text-status-success-fg font-semibold' : ''}>
+                        Track
+                      </span>
                     </div>
                   </div>
 
@@ -413,13 +415,11 @@ export function Autopilot() {
 
                   {/* 1. NEEDS ANSWER: Quick Question Micro-Card */}
                   {item.status === 'needs_answer' && item.pendingQuestion && (
-                    <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-3">
+                    <div className="p-4 rounded-lg bg-status-warn-bg border border-status-warn-border space-y-3">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <HelpCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span className="text-xs font-semibold text-amber-900 dark:text-amber-300">
-                            Quick Screening Question
-                          </span>
+                          <HelpCircle className="w-4 h-4 text-status-warn-fg shrink-0" />
+                          <span className="text-xs font-semibold text-status-warn-fg">Quick Screening Question</span>
                         </div>
                         <span className="text-[11px] font-mono tabular-nums text-muted-foreground">
                           {item.fieldsFilledCount}/{item.fieldsTotalCount} fields ready
@@ -514,7 +514,7 @@ export function Autopilot() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg bg-muted/30 border border-border/60">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <FileCheck2 className="w-4 h-4 text-emerald-600" />
+                          <FileCheck2 className="w-4 h-4 text-status-success-fg" />
                           <span className="text-xs font-medium text-foreground">
                             {item.status === 'ready_to_submit'
                               ? 'Form pre-filled · Paused before Submit for human inspection'
@@ -551,11 +551,7 @@ export function Autopilot() {
                           </a>
                         )}
 
-                        <Button
-                          size="sm"
-                          onClick={() => void handleMarkSent(item)}
-                          className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-                        >
+                        <Button size="sm" onClick={() => void handleMarkSent(item)} className="text-xs gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Mark Sent & Track</span>
                         </Button>
@@ -565,12 +561,12 @@ export function Autopilot() {
 
                   {/* 3. BLOCKED FALLBACK: Honest Portal Helper (e.g. Workday) */}
                   {item.status === 'blocked_fallback' && (
-                    <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/20 space-y-4">
+                    <div className="p-4 rounded-lg bg-status-warn-bg border border-status-warn-border space-y-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+                          <ShieldAlert className="w-4 h-4 text-status-warn-fg shrink-0" />
                           <div>
-                            <h4 className="text-xs font-semibold text-amber-900 dark:text-amber-300 m-0">
+                            <h4 className="text-xs font-semibold text-status-warn-fg m-0">
                               Interactive Portal Protection ({item.atsProvider.toUpperCase()})
                             </h4>
                             <p className="text-[11px] text-muted-foreground m-0">
@@ -590,7 +586,7 @@ export function Autopilot() {
                         >
                           <span className="truncate">Full Name</span>
                           {copiedKey === `name_${item.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <Check className="w-3.5 h-3.5 text-status-success-fg" />
                           ) : (
                             <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />
                           )}
@@ -602,7 +598,7 @@ export function Autopilot() {
                         >
                           <span className="truncate">Email</span>
                           {copiedKey === `email_${item.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <Check className="w-3.5 h-3.5 text-status-success-fg" />
                           ) : (
                             <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />
                           )}
@@ -614,7 +610,7 @@ export function Autopilot() {
                         >
                           <span className="truncate">Phone</span>
                           {copiedKey === `phone_${item.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <Check className="w-3.5 h-3.5 text-status-success-fg" />
                           ) : (
                             <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />
                           )}
@@ -626,7 +622,7 @@ export function Autopilot() {
                         >
                           <span className="truncate">LinkedIn</span>
                           {copiedKey === `li_${item.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                            <Check className="w-3.5 h-3.5 text-status-success-fg" />
                           ) : (
                             <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />
                           )}
@@ -648,11 +644,7 @@ export function Autopilot() {
                           <span />
                         )}
 
-                        <Button
-                          size="sm"
-                          onClick={() => void handleMarkSent(item)}
-                          className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
-                        >
+                        <Button size="sm" onClick={() => void handleMarkSent(item)} className="text-xs gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>Mark Sent & Track as Applied</span>
                         </Button>
@@ -780,7 +772,7 @@ export function Autopilot() {
                     className="p-5 rounded-xl border border-dashed border-border bg-card/80 shadow-xs relative overflow-hidden space-y-3 font-mono text-xs"
                   >
                     <div className="flex items-center justify-between text-muted-foreground border-b border-border/60 pb-2">
-                      <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">
+                      <span className="flex items-center gap-1.5 text-status-success-fg font-semibold text-[11px]">
                         <Check className="w-3.5 h-3.5" /> SENT & TRACKED
                       </span>
                       <span className="tabular-nums text-[11px]">
@@ -809,7 +801,7 @@ export function Autopilot() {
                       </div>
                       <div className="flex justify-between">
                         <span>Verified Resume:</span>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Attached</span>
+                        <span className="text-status-success-fg font-semibold">Attached</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Tracker Status:</span>

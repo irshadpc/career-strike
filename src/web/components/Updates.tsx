@@ -54,7 +54,7 @@ export function UpdateBanner() {
   if (whatsNew) {
     return (
       <div
-        className="flex items-center justify-between gap-3 p-3 rounded-lg border border-teal-500/30 bg-teal-500/10 text-teal-800 dark:text-teal-200 text-xs mb-4"
+        className="flex items-center justify-between gap-3 p-3 rounded-lg border border-status-success-border bg-status-success-bg text-status-success-fg text-xs mb-4"
         role="status"
         data-testid="whats-new-banner"
       >
@@ -73,7 +73,7 @@ export function UpdateBanner() {
   if (updateAvailable && latest) {
     return (
       <div
-        className="p-3 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200 text-xs mb-4"
+        className="p-3 rounded-lg border border-status-warn-border bg-status-warn-bg text-status-warn-fg text-xs mb-4"
         role="status"
         data-testid="update-banner"
       >

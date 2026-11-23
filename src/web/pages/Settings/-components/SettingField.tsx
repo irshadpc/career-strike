@@ -99,9 +99,9 @@ export function SettingField({ def, value }: { def: SettingDefinition; value: un
           aria-live="polite"
           className={`text-xs font-medium ${
             save.status === 'saved'
-              ? 'text-teal-600 dark:text-teal-400'
+              ? 'text-status-success-fg'
               : save.status === 'error'
-                ? 'text-destructive'
+                ? 'text-status-danger-fg'
                 : 'text-muted-foreground'
           }`}
         >

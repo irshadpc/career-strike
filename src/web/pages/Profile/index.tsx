@@ -376,7 +376,7 @@ export function Profile() {
       {facts && facts.some((f) => !f.approved) && (
         <div
           data-testid="batch-approve-banner"
-          className="rounded-xl border border-teal-500/30 bg-teal-500/5 p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
+          className="rounded-xl border border-status-success-border bg-status-success-bg p-4 mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs"
         >
           <div>
             <p className="text-sm font-semibold text-foreground">
@@ -555,9 +555,7 @@ export function Profile() {
                   >
                     {isSaving ? 'Saving...' : 'Apply overview changes'}
                   </Button>
-                  {isDirty && (
-                    <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">● Unsaved changes</span>
-                  )}
+                  {isDirty && <span className="text-xs text-status-warn-fg font-medium">● Unsaved changes</span>}
                 </div>
               </div>
             </section>
@@ -806,7 +804,7 @@ export function Profile() {
                     Job Matching
                   </span>
                   <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <span className="text-teal-600 dark:text-teal-400 font-bold">✓</span>{' '}
+                    <span className="text-status-success-fg font-bold">✓</span>{' '}
                     {facts &&
                     facts.some((f) => f.kind === 'role' && f.approved) &&
                     facts.some((f) => f.kind === 'skill' && f.approved)
@@ -825,9 +823,9 @@ export function Profile() {
                   </span>
                   <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
                     {savedSettings['identity.email'] ? (
-                      <span className="text-teal-600 dark:text-teal-400 font-bold">✓ Ready</span>
+                      <span className="text-status-success-fg font-bold">✓ Ready</span>
                     ) : (
-                      <span className="text-amber-800 dark:text-amber-300 font-bold">○ Contact needed</span>
+                      <span className="text-status-warn-fg font-bold">○ Contact needed</span>
                     )}
                   </span>
                   <span className="text-xs text-muted-foreground block mt-1">
@@ -841,8 +839,8 @@ export function Profile() {
                   <span
                     className={
                       fullName.trim() && headline.trim()
-                        ? 'text-teal-600 dark:text-teal-400 font-bold'
-                        : 'text-amber-800 dark:text-amber-300 font-bold'
+                        ? 'text-status-success-fg font-bold'
+                        : 'text-status-warn-fg font-bold'
                     }
                   >
                     {fullName.trim() && headline.trim() ? '✓' : '○'}
@@ -856,9 +854,7 @@ export function Profile() {
                 <div className="flex items-start gap-2.5 text-xs py-2 border-b border-border/60 leading-relaxed text-foreground">
                   <span
                     className={
-                      targetCountries.length > 0
-                        ? 'text-teal-600 dark:text-teal-400 font-bold'
-                        : 'text-amber-800 dark:text-amber-300 font-bold'
+                      targetCountries.length > 0 ? 'text-status-success-fg font-bold' : 'text-status-warn-fg font-bold'
                     }
                   >
                     {targetCountries.length > 0 ? '✓' : '○'}
@@ -872,9 +868,7 @@ export function Profile() {
                 <div className="flex items-start gap-2.5 text-xs py-2 border-b border-border/60 leading-relaxed text-foreground">
                   <span
                     className={
-                      documents.length > 0
-                        ? 'text-teal-600 dark:text-teal-400 font-bold'
-                        : 'text-amber-800 dark:text-amber-300 font-bold'
+                      documents.length > 0 ? 'text-status-success-fg font-bold' : 'text-status-warn-fg font-bold'
                     }
                   >
                     {documents.length > 0 ? '✓' : '○'}
@@ -889,8 +883,8 @@ export function Profile() {
                   <span
                     className={
                       linkedinUrl.trim() || githubUrl.trim()
-                        ? 'text-teal-600 dark:text-teal-400 font-bold'
-                        : 'text-amber-800 dark:text-amber-300 font-bold'
+                        ? 'text-status-success-fg font-bold'
+                        : 'text-status-warn-fg font-bold'
                     }
                   >
                     {linkedinUrl.trim() || githubUrl.trim() ? '✓' : '○'}
@@ -905,8 +899,8 @@ export function Profile() {
                   <span
                     className={
                       facts.some((f) => f.kind === 'role' && f.approved)
-                        ? 'text-teal-600 dark:text-teal-400 font-bold'
-                        : 'text-amber-800 dark:text-amber-300 font-bold'
+                        ? 'text-status-success-fg font-bold'
+                        : 'text-status-warn-fg font-bold'
                     }
                   >
                     {facts.some((f) => f.kind === 'role' && f.approved) ? '✓' : '○'}
@@ -921,20 +915,20 @@ export function Profile() {
             </section>
 
             {/* 2. Focused Action Card */}
-            <div className="rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-slate-100 p-5 shadow-md border border-slate-700/60">
-              <h3 className="text-base font-semibold text-white mb-1.5">Actionable recommendation</h3>
-              <p className="text-xs text-slate-300 mb-4 leading-relaxed">{nextActionAdvice.text}</p>
+            <div className="rounded-xl bg-card text-card-foreground p-5 shadow-xs border border-border">
+              <h3 className="text-base font-semibold text-foreground mb-1.5">Actionable recommendation</h3>
+              <p className="text-xs text-muted-foreground mb-4 leading-relaxed">{nextActionAdvice.text}</p>
               {nextActionAdvice.btnHref.startsWith('#') ? (
                 <a
                   href={nextActionAdvice.btnHref}
-                  className="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 shadow-xs"
+                  className="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-accent text-accent-fg hover:bg-accent-hover h-8 px-3 shadow-xs"
                 >
                   {nextActionAdvice.btnText}
                 </a>
               ) : (
                 <Link
                   href={nextActionAdvice.btnHref}
-                  className="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 shadow-xs"
+                  className="inline-flex items-center justify-center rounded-md text-xs font-semibold bg-accent text-accent-fg hover:bg-accent-hover h-8 px-3 shadow-xs"
                 >
                   {nextActionAdvice.btnText}
                 </Link>
@@ -1033,7 +1027,7 @@ export function Profile() {
                         return (
                           <span
                             key={c}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-teal-500/10 border border-teal-500/30 text-xs font-medium text-teal-700 dark:text-teal-300"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-status-success-bg border border-status-success-border text-xs font-medium text-status-success-fg"
                           >
                             {market ? `${market.flag} ${market.name}` : c}
                           </span>

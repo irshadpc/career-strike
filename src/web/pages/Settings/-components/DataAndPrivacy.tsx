@@ -225,7 +225,7 @@ export function DataAndPrivacy() {
         {deleteStatus ? (
           <p
             role="status"
-            className="p-3 rounded-lg border border-teal-500/30 bg-teal-500/10 text-teal-800 dark:text-teal-200 text-xs"
+            className="p-3 rounded-lg border border-status-success-border bg-status-success-bg text-status-success-fg text-xs"
             data-testid="delete-status"
           >
             {deleteStatus}

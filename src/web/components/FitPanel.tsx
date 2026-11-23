@@ -3,11 +3,11 @@ import { EVIDENCE_LABEL, TIER_LABEL, VERDICT_LABEL } from '../format';
 import { Link } from '../router';
 
 const TIER_STYLES: Record<string, string> = {
-  strong: 'bg-primary text-primary-foreground border-transparent shadow-2xs',
-  possible: 'border-primary text-primary bg-primary/10',
-  stretch: 'border-dashed border-border text-muted-foreground',
-  ineligible: 'border-destructive/40 bg-destructive/10 text-destructive',
-  unknown: 'border-border text-muted-foreground/60',
+  strong: 'bg-accent text-accent-fg border-transparent shadow-2xs',
+  possible: 'border-border bg-subtle text-ink',
+  stretch: 'border-dashed border-border text-ink-muted',
+  ineligible: 'border-status-danger-border bg-status-danger-bg text-status-danger-fg',
+  unknown: 'border-border text-ink-muted',
 };
 
 export function TierChip({ tier }: { tier: string }) {
@@ -20,17 +20,17 @@ export function TierChip({ tier }: { tier: string }) {
 }
 
 const FACTOR_BORDER: Record<string, string> = {
-  meets: 'border-l-emerald-500',
-  partial: 'border-l-primary',
-  gap: 'border-l-amber-500',
-  unknown: 'border-l-muted-foreground/40',
+  meets: 'border-l-status-success-fg',
+  partial: 'border-l-accent',
+  gap: 'border-l-status-warn-fg',
+  unknown: 'border-l-border',
 };
 
 const VERDICT_COLOR: Record<string, string> = {
-  meets: 'text-emerald-700 dark:text-emerald-400',
-  partial: 'text-primary',
-  gap: 'text-amber-800 dark:text-amber-400',
-  unknown: 'text-muted-foreground',
+  meets: 'text-status-success-fg font-semibold',
+  partial: 'text-ink font-semibold',
+  gap: 'text-status-warn-fg font-semibold',
+  unknown: 'text-ink-muted',
 };
 
 /** How a posting fits the candidate: the tier, the rule that decided it, and every factor with its evidence. */

@@ -68,7 +68,7 @@ export function MarketPulseSection() {
           <dt className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
             Salary Transparency
           </dt>
-          <dd className="text-xl font-bold font-serif text-teal-600 dark:text-teal-400 mt-1 m-0">
+          <dd className="text-xl font-bold font-serif text-status-success-fg mt-1 m-0">
             {salaryTransparency.disclosurePercentage}%
           </dd>
         </div>

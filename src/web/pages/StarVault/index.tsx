@@ -159,6 +159,7 @@ export function StarVault() {
           </p>
           <div className="grid grid-cols-2 gap-2">
             <select
+              aria-label="Story competency"
               value={draft.competency}
               onChange={(e) => setDraft({ ...draft, competency: e.target.value })}
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"

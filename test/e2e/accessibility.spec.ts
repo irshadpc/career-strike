@@ -11,6 +11,13 @@ async function seriousViolations(page: Page): Promise<string[]> {
     .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
 }
 
+async function contrastViolations(page: Page): Promise<string[]> {
+  const results = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze();
+  return results.violations.map(
+    (v) => `${v.id}: ${v.nodes.map((n) => `${n.target.join(' ')} (${n.failureSummary})`).join(', ')}`,
+  );
+}
+
 for (const scheme of ['light', 'dark'] as const) {
   test(`no serious or critical axe violations (${scheme})`, async ({ page, cs }) => {
     test.slow();
@@ -47,10 +54,33 @@ for (const scheme of ['light', 'dark'] as const) {
       '/insights',
       '/markets',
       '/outreach',
+      '/autopilot',
+      '/contacts',
+      '/offers',
+      '/star-vault',
+      '/hired',
     ]) {
       await page.goto(`${cs.origin}${route}`);
       await expect(page.locator('main h1')).toBeVisible();
       expect(await seriousViolations(page), route).toEqual([]);
+    }
+  });
+
+  test(`editorial contrast gate for all button and badge variants (${scheme})`, async ({ page, cs }) => {
+    test.slow();
+    await page.emulateMedia({ colorScheme: scheme });
+    await signIn(page, cs);
+    cs.seed('lever', 'contrast', [{ title: 'Design System Engineer' }]);
+    const jobs = ((await cs.api('GET', '/api/jobs')).body as { jobs: { id: string }[] }).jobs;
+    const firstJobId = jobs[0]?.id;
+    if (firstJobId) {
+      await cs.api('POST', '/api/autopilot/batch', { jobIds: [firstJobId] });
+    }
+
+    for (const route of ['/opportunities', '/autopilot', '/settings', '/profile', '/applications']) {
+      await page.goto(`${cs.origin}${route}`);
+      await expect(page.locator('main h1')).toBeVisible();
+      expect(await contrastViolations(page), `${route} (${scheme}) contrast check`).toEqual([]);
     }
   });
 }

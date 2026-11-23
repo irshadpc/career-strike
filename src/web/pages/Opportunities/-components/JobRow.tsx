@@ -16,30 +16,30 @@ export function getAtsProviderPill(job: JobSummary): { name: string; color: stri
   if (url.includes('greenhouse.io') || url.includes('gh_src=') || sources.includes('greenhouse')) {
     return {
       name: 'on Greenhouse',
-      color: 'bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-500/30',
+      color: 'bg-status-success-bg text-status-success-fg border-status-success-border',
     };
   }
   if (url.includes('lever.co') || sources.includes('lever')) {
     return {
       name: 'on Lever',
-      color: 'bg-blue-500/10 text-blue-800 dark:text-blue-300 border-blue-500/30',
+      color: 'bg-subtle text-ink border-border',
     };
   }
   if (url.includes('ashbyhq.com') || sources.includes('ashby')) {
     return {
       name: 'on Ashby',
-      color: 'bg-purple-500/10 text-purple-800 dark:text-purple-300 border-purple-500/30',
+      color: 'bg-subtle text-ink border-border',
     };
   }
   if (url.includes('myworkdayjobs.com') || url.includes('workday.com') || url.includes('myworkday.com')) {
     return {
       name: 'on Workday',
-      color: 'bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30',
+      color: 'bg-status-warn-bg text-status-warn-fg border-status-warn-border',
     };
   }
   return {
     name: 'Direct Portal',
-    color: 'bg-muted/40 text-muted-foreground border-border/60',
+    color: 'bg-subtle text-ink-secondary border-border',
   };
 }
 
@@ -112,12 +112,10 @@ export function JobRow({
           <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
             <TierChip tier={job.fit.tier} />
             {job.fit.matchedSkills.length > 0 && (
-              <span className="text-teal-700 dark:text-teal-300">You have {listSome(job.fit.matchedSkills)}</span>
+              <span className="text-status-success-fg font-medium">You have {listSome(job.fit.matchedSkills)}</span>
             )}
             {job.fit.missingRequiredSkills.length > 0 && (
-              <span className="text-amber-700 dark:text-amber-400">
-                Missing {listSome(job.fit.missingRequiredSkills)}
-              </span>
+              <span className="text-status-warn-fg font-medium">Missing {listSome(job.fit.missingRequiredSkills)}</span>
             )}
             {job.fit.immediateStartAsked && (
               <Badge variant="warning" className="text-[10px]">
@@ -131,14 +129,14 @@ export function JobRow({
             {filterSkillCount && filterSkillCount > 0 ? (
               <Badge
                 variant="outline"
-                className="bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 text-[10px] font-semibold"
+                className="bg-status-success-bg text-status-success-fg border-status-success-border text-[10px] font-semibold"
               >
                 {job.matchedSkills?.length || 0}/{filterSkillCount} skills matched
               </Badge>
             ) : job.matchedSkills && job.matchedSkills.length > 0 ? (
               <Badge
                 variant="outline"
-                className="bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 text-[10px] font-semibold"
+                className="bg-status-success-bg text-status-success-fg border-status-success-border text-[10px] font-semibold"
               >
                 {job.matchedSkills.length} matched
               </Badge>
@@ -150,8 +148,8 @@ export function JobRow({
                   key={skill}
                   className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border transition-colors ${
                     isMatched
-                      ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border-emerald-500/40 font-semibold'
-                      : 'bg-muted/40 text-muted-foreground border-border/60'
+                      ? 'bg-status-success-bg text-status-success-fg border-status-success-border font-semibold'
+                      : 'bg-subtle text-ink-secondary border-border'
                   }`}
                 >
                   {skill}

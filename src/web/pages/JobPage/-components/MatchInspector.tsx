@@ -35,11 +35,11 @@ export function MatchInspector({ jobId }: { jobId: string }) {
           <div className="space-y-2 p-3 rounded-md bg-muted/20 border border-border/40">
             <h3 className="text-xs font-semibold text-foreground m-0">1. Mandatory gate check</h3>
             {data.gateCheck.gap.length === 0 ? (
-              <p className="text-teal-700 dark:text-teal-300 m-0">No hard blockers detected.</p>
+              <p className="text-status-success-fg m-0">No hard blockers detected.</p>
             ) : (
               <ul className="space-y-1 p-0 m-0 list-none">
                 {data.gateCheck.gap.map((g) => (
-                  <li key={g} className="text-amber-700 dark:text-amber-400">
+                  <li key={g} className="text-status-warn-fg">
                     Gap: {g}
                   </li>
                 ))}
@@ -51,11 +51,11 @@ export function MatchInspector({ jobId }: { jobId: string }) {
               2. Skill alignment ({Math.round(data.skillAlignment.ratio * 100)}%)
             </h3>
             <p className="m-0">
-              <strong className="text-teal-700 dark:text-teal-300">Exact:</strong>{' '}
+              <strong className="text-status-success-fg">Exact:</strong>{' '}
               {data.skillAlignment.exact.length ? data.skillAlignment.exact.join(', ') : '—'}
             </p>
             <p className="m-0">
-              <strong className="text-amber-700 dark:text-amber-400">Missing:</strong>{' '}
+              <strong className="text-status-warn-fg">Missing:</strong>{' '}
               {data.skillAlignment.missing.length ? data.skillAlignment.missing.join(', ') : '—'}
             </p>
           </div>

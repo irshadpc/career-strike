@@ -233,7 +233,7 @@ export function Home() {
                   </h2>
                   <Badge
                     variant="outline"
-                    className="border-emerald-600/30 text-emerald-700 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20 text-[10px] gap-1 py-0.5"
+                    className="border-status-success-border text-status-success-fg bg-status-success-bg text-[10px] gap-1 py-0.5"
                   >
                     <CheckCircle2 className="h-3 w-3" /> ATS Verified
                   </Badge>
@@ -294,7 +294,7 @@ export function Home() {
                           </Badge>
                           <Badge
                             variant="outline"
-                            className="text-[10px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20"
+                            className="text-[10px] bg-status-success-bg text-status-success-fg border-status-success-border"
                           >
                             {pkt.atsAuditPassed ? 'ATS Audit 100%' : 'Draft'}
                           </Badge>
@@ -558,7 +558,7 @@ export function Home() {
                                 <strong>Effort:</strong> {rec.dimensions.applicationEffort.level}
                               </p>
                               {rec.job.salary && (
-                                <p className="m-0 font-mono text-[11px] text-teal-600 dark:text-teal-400">
+                                <p className="m-0 font-mono text-[11px] text-status-success-fg">
                                   {rec.job.salary.currency} {rec.job.salary.min?.toLocaleString() ?? '—'} -{' '}
                                   {rec.job.salary.max?.toLocaleString() ?? '—'}/{rec.job.salary.interval}
                                 </p>
@@ -757,8 +757,8 @@ export function Home() {
                 <div className="space-y-0.5">
                   <dt className="text-muted-foreground font-semibold">Local service</dt>
                   <dd className="text-foreground flex items-center gap-1.5 m-0">
-                    <span className="inline-block w-2 h-2 rounded-full bg-teal-500" aria-hidden="true" /> Running · v
-                    {overview.data.service.version}
+                    <span className="inline-block w-2 h-2 rounded-full bg-status-success-fg" aria-hidden="true" />{' '}
+                    Running · v{overview.data.service.version}
                   </dd>
                 </div>
                 {overview.data.service.startedAt && (
@@ -782,7 +782,7 @@ export function Home() {
                           {overview.data.sources.boards} monitored
                         </Link>
                         {overview.data.sources.failing > 0 && (
-                          <span className="text-amber-600 dark:text-amber-400 font-medium">
+                          <span className="text-status-warn-fg font-medium">
                             {' '}
                             · {overview.data.sources.failing} failing
                           </span>

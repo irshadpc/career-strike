@@ -139,8 +139,8 @@ export function Shell() {
                 <Link href="/" className="text-2xl font-bold font-serif text-foreground tracking-tight no-underline">
                   Career <span className="text-primary italic font-medium">Strike</span>
                 </Link>
-                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-sans font-medium bg-emerald-500/10 text-emerald-800 dark:text-emerald-200 border border-emerald-500/25">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-sans font-medium bg-status-success-bg text-status-success-fg border border-status-success-border">
+                  <span className="w-1.5 h-1.5 rounded-full bg-status-success-fg animate-pulse" />
                   Local &amp; Private
                 </span>
               </div>
@@ -269,7 +269,7 @@ export function Shell() {
         {connection === 'unavailable' && (
           <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-4">
             <div
-              className="p-4 rounded-xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 text-sm shadow-xs"
+              className="p-4 rounded-xl border border-status-warn-border bg-status-warn-bg text-status-warn-fg text-sm shadow-xs"
               role="status"
             >
               <strong>The Career Strike service is not responding.</strong> Your data is safe on this device. Retrying

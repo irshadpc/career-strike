@@ -34,16 +34,14 @@
   --color-ring: var(--focus);
   --color-background: var(--paper);
   --color-foreground: var(--ink);
-  --color-primary: var(--accent);
-  --color-primary-foreground: var(--on-accent);
+  --color-primary: var(--color-accent);
+  --color-primary-foreground: var(--color-accent-fg);
   --color-secondary: var(--paper-subtle);
   --color-secondary-foreground: var(--ink);
-  --color-destructive: var(--danger);
-  --color-destructive-foreground: #ffffff;
+  --color-destructive: var(--color-status-danger-fg);
+  --color-destructive-foreground: var(--color-status-danger-bg);
   --color-muted: var(--paper-subtle);
   --color-muted-foreground: var(--ink-soft);
-  --color-accent: var(--accent-wash);
-  --color-accent-foreground: var(--accent-strong);
   --color-popover: var(--paper-raised);
   --color-popover-foreground: var(--ink);
   --color-card: var(--paper-raised);
@@ -58,31 +56,31 @@
    A high-clarity career operating workspace: precision typography, deep onyx, signal coral, and kinetic evidence trails. */
 
 :root {
-  --paper: #f5f7f8;
-  --canvas: #ffffff;
-  --paper-subtle: #edf1f3;
-  --paper-raised: #ffffff;
-  --paper-sunk: #e2e8ea;
-  --ink: #111820;
-  --ink-soft: #47545b;
-  --ink-faint: #52636b;
-  --rule: #dce3e5;
-  --rule-strong: #b8c4c7;
-  --accent: #c43822; /* Deep Signal Coral: 5.38:1 contrast for WCAG AA */
-  --accent-text: #c43822; /* High-contrast coral for text links and borders */
-  --accent-hover: #ab2e1a;
-  --accent-strong: #8f2312;
-  --accent-wash: #fdf1ef;
-  --on-accent: #ffffff;
-  --teal: #0e766e; /* Precision Teal: verified facts & status */
-  --teal-wash: #eaf6f5;
-  --attention: #9a4b08;
-  --attention-wash: #fbf3e8;
-  --danger: #b92b27;
-  --danger-wash: #fdeeee;
-  --ok: #0e766e;
-  --ok-wash: #eaf6f5;
-  --focus: #e8553e;
+  --paper: var(--color-canvas);
+  --canvas: var(--color-surface);
+  --paper-subtle: var(--color-subtle);
+  --paper-raised: var(--color-surface);
+  --paper-sunk: var(--color-subtle);
+  --ink: var(--color-ink);
+  --ink-soft: var(--color-ink-secondary);
+  --ink-faint: var(--color-ink-muted);
+  --rule: var(--color-border);
+  --rule-strong: var(--color-border);
+  --accent: var(--color-accent);
+  --accent-text: var(--color-ink);
+  --accent-hover: var(--color-accent-hover);
+  --accent-strong: var(--color-ink);
+  --accent-wash: var(--color-subtle);
+  --on-accent: var(--color-accent-fg);
+  --teal: var(--color-status-success-fg);
+  --teal-wash: var(--color-status-success-bg);
+  --attention: var(--color-status-warn-fg);
+  --attention-wash: var(--color-status-warn-bg);
+  --danger: var(--color-status-danger-fg);
+  --danger-wash: var(--color-status-danger-bg);
+  --ok: var(--color-status-success-fg);
+  --ok-wash: var(--color-status-success-bg);
+  --focus: var(--color-accent);
 
   /* Elevation */
   --shadow-1: 0 1px 3px rgba(17, 24, 32, 0.04), 0 1px 2px rgba(17, 24, 32, 0.02);
@@ -108,31 +106,31 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --paper: #0e1317;
-    --canvas: #151c22;
-    --paper-subtle: #1c252d;
-    --paper-raised: #151c22;
-    --paper-sunk: #090d10;
-    --ink: #eef2f5;
-    --ink-soft: #c2cdd4;
-    --ink-faint: #8f9ea7;
-    --rule: #26333c;
-    --rule-strong: #384955;
-    --accent: #f06a54;
-    --accent-text: #f06a54;
-    --accent-hover: #fa7b66;
-    --accent-strong: #ff917e;
-    --accent-wash: #2e1612;
-    --on-accent: #0f1412;
-    --teal: #2dd4bf;
-    --teal-wash: #0d2826;
-    --attention: #f59e0b;
-    --attention-wash: #2b1f09;
-    --danger: #ef4444;
-    --danger-wash: #2d1212;
-    --ok: #2dd4bf;
-    --ok-wash: #0d2826;
-    --focus: #f06a54;
+    --paper: var(--color-canvas);
+    --canvas: var(--color-surface);
+    --paper-subtle: var(--color-subtle);
+    --paper-raised: var(--color-surface);
+    --paper-sunk: var(--color-canvas);
+    --ink: var(--color-ink);
+    --ink-soft: var(--color-ink-secondary);
+    --ink-faint: var(--color-ink-muted);
+    --rule: var(--color-border);
+    --rule-strong: var(--color-border);
+    --accent: var(--color-accent);
+    --accent-text: var(--color-ink);
+    --accent-hover: var(--color-accent-hover);
+    --accent-strong: var(--color-ink);
+    --accent-wash: var(--color-subtle);
+    --on-accent: var(--color-accent-fg);
+    --teal: var(--color-status-success-fg);
+    --teal-wash: var(--color-status-success-bg);
+    --attention: var(--color-status-warn-fg);
+    --attention-wash: var(--color-status-warn-bg);
+    --danger: var(--color-status-danger-fg);
+    --danger-wash: var(--color-status-danger-bg);
+    --ok: var(--color-status-success-fg);
+    --ok-wash: var(--color-status-success-bg);
+    --focus: var(--color-accent);
 
     --shadow-1: 0 1px 2px rgb(0 0 0 / 0.45);
     --shadow-2: 0 2px 8px -2px rgb(0 0 0 / 0.5), 0 12px 32px -20px rgb(0 0 0 / 0.6);
@@ -144,31 +142,31 @@
 
 :root.dark,
 :root[data-theme="dark"] {
-  --paper: #0e1317;
-  --canvas: #151c22;
-  --paper-subtle: #1c252d;
-  --paper-raised: #151c22;
-  --paper-sunk: #090d10;
-  --ink: #eef2f5;
-  --ink-soft: #c2cdd4;
-  --ink-faint: #8f9ea7;
-  --rule: #26333c;
-  --rule-strong: #384955;
-  --accent: #f06a54;
-  --accent-text: #f06a54;
-  --accent-hover: #fa7b66;
-  --accent-strong: #ff917e;
-  --accent-wash: #2e1612;
-  --on-accent: #0f1412;
-  --teal: #2dd4bf;
-  --teal-wash: #0d2826;
-  --attention: #f59e0b;
-  --attention-wash: #2b1f09;
-  --danger: #ef4444;
-  --danger-wash: #2d1212;
-  --ok: #2dd4bf;
-  --ok-wash: #0d2826;
-  --focus: #f06a54;
+  --paper: var(--color-canvas);
+  --canvas: var(--color-surface);
+  --paper-subtle: var(--color-subtle);
+  --paper-raised: var(--color-surface);
+  --paper-sunk: var(--color-canvas);
+  --ink: var(--color-ink);
+  --ink-soft: var(--color-ink-secondary);
+  --ink-faint: var(--color-ink-muted);
+  --rule: var(--color-border);
+  --rule-strong: var(--color-border);
+  --accent: var(--color-accent);
+  --accent-text: var(--color-ink);
+  --accent-hover: var(--color-accent-hover);
+  --accent-strong: var(--color-ink);
+  --accent-wash: var(--color-subtle);
+  --on-accent: var(--color-accent-fg);
+  --teal: var(--color-status-success-fg);
+  --teal-wash: var(--color-status-success-bg);
+  --attention: var(--color-status-warn-fg);
+  --attention-wash: var(--color-status-warn-bg);
+  --danger: var(--color-status-danger-fg);
+  --danger-wash: var(--color-status-danger-bg);
+  --ok: var(--color-status-success-fg);
+  --ok-wash: var(--color-status-success-bg);
+  --focus: var(--color-accent);
 
   --shadow-1: 0 1px 2px rgb(0 0 0 / 0.45);
   --shadow-2: 0 2px 8px -2px rgb(0 0 0 / 0.5), 0 12px 32px -20px rgb(0 0 0 / 0.6);

@@ -4,9 +4,9 @@ import { statusText } from '../format';
 import { Button } from './ui/button';
 
 const STATUS_STYLES: Record<string, string> = {
-  active: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-200',
-  closed: 'border-border bg-muted/60 text-muted-foreground',
-  unverified: 'border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-200',
+  active: 'border-status-success-border bg-status-success-bg text-status-success-fg',
+  closed: 'border-border bg-subtle text-ink-muted',
+  unverified: 'border-status-warn-border bg-status-warn-bg text-status-warn-fg',
 };
 
 export function StatusChip({ status, lastVerifiedAt }: { status: EffectiveStatus; lastVerifiedAt: string | null }) {
