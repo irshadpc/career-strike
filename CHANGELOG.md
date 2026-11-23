@@ -3,6 +3,23 @@
 Every release of Career Strike is listed here, newest first. The section for a version is shown in
 the dashboard after you update, and is published as that version's release notes on GitHub.
 
+## [0.9.0] - 2026-11-23
+
+### Added
+
+- **Autopilot Queue & Reusable Answer Vault**: Supervised application runtime (`/autopilot`) with human-in-the-loop pause-before-submit confirmation. Reusable screening answers (`answer_vault`) with `saveAsDefault`, batch picker on `/opportunities` with ATS provider detection (Greenhouse, Lever, Ashby, Workday, Direct Portal), Daily Focus Cap enforcement, duplicate employer warning banners, warm-path referral CRM intercept (`/contacts`), 1-click clipboard helpers for portals gated by candidate SSO or CAPTCHA, and immutable receipt cards with resume snapshot IDs.
+- **Calm Editorial Design System & Semantic Color Tokens**: High-contrast editorial palette in Tailwind v4 (`src/web/index.css`) supporting light and `.dark` themes: 90% neutral surfaces (`--color-canvas: #FAF9F7`, `--color-surface: #FFFFFF`, `--color-subtle: #F3F2EE`, `--color-border: #E4E2DC`), 8% structural ink (`--color-ink: #18181B`, `--color-ink-secondary: #52525B`, `--color-ink-muted: #71717A`), and 2% intent accent. Standardized WCAG AAA status signals (7.2:1–10.6:1 contrast ratios).
+- **Hardened UI Components & Accessible Controls**: Comprehensive audit of `Button`, `Badge`, `Alert`, and dense views (`JobRow.tsx`, `Autopilot`, `Profile`, `FitPanel`, `jobBits`), eliminating low-contrast raw utilities and adding accessible names to form select controls.
+- **Automated Playwright Contrast E2E Gate**: Integrated `@axe-core/playwright` contrast gate asserting zero color contrast or WCAG 2.1 AA/AAA violations across all button/badge states and all core application views in both light and dark modes.
+- **Persistent Localhost Sessions**: 14-day sliding TTL HttpOnly SameSite=Strict session cookie so browser tab restores and bookmarks work seamlessly without expiring.
+- **Batch-Approve Extracted Facts**: "Approve all high-confidence facts" bulk action with instant Undo toast in Profile.
+- **Read-Only IMAP Recruiter Polling**: Native `imapflow` polling transport with TLS allowlist and confirmation cards to auto-advance Applied → Screening → Interview.
+- **Local ONNX Semantic Matcher**: Dedicated Node `worker_thread` running `@huggingface/transformers` to resolve conceptual skill and role misses without event loop blocking.
+- **Auto-Seed Hired Mode**: Automatically generates initial 30-60-90 plan, stakeholder checklist, and interview debrief notes directly from accepted offers.
+- **Round-Trip ATS Document Pipeline**: Unpdf and X/Y column reconstruction for multi-column resumes and Tesseract OCR fallback for scanned PDFs.
+- **Chrome Native Messaging Clipper**: Native messaging host bridge (`career-strike clipper`) + Manifest V3 extension in `plugins/chrome-clipper/` for 1-click clipping from LinkedIn, Workday, and Naukri directly into local SQLite.
+- **Sovereign .mcpb Desktop Bundle**: Double-clickable `.mcpb` bundle (`npm run pack:mcpb`) for Claude Desktop with classification-gated MCP tools and nightly research prep packets.
+
 ## [0.8.0] - 2026-11-21
 
 ### Added
