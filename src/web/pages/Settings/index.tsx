@@ -3,7 +3,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
 import { UpdatesPanel } from '../../components/Updates';
 import { useResource } from '../../hooks/useResource';
-import { useHashFocus } from '../../router';
+import { Link, useHashFocus } from '../../router';
 import { AiAssistants, AiRequests } from './-components/AiAssistants';
 import { DataAndPrivacy } from './-components/DataAndPrivacy';
 import { SettingField } from './-components/SettingField';
@@ -70,12 +70,12 @@ export function Settings() {
           <p className="text-xs text-muted-foreground mb-3">
             Optional, local-only inbox sync lives on its own page so it never mixes with declared settings.
           </p>
-          <a
+          <Link
             href="/imap-sync"
             className="inline-flex items-center justify-center rounded-md text-sm font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3"
           >
             Open inbox sync
-          </a>
+          </Link>
         </section>
       )}
     </>

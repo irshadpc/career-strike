@@ -37,7 +37,26 @@ export function StarVault() {
   const [transcript, setTranscript] = useState('');
   const [persona, setPersona] = useState<'warm' | 'skeptical' | 'ai'>('warm');
   const [score, setScore] = useState<string | null>(null);
+  const [savingStory, setSavingStory] = useState(false);
+  const [competencyFilter, setCompetencyFilter] = useState<string>('ALL');
+  const [editingStoryId, setEditingStoryId] = useState<string | null>(null);
+  const [confirmDeleteStoryId, setConfirmDeleteStoryId] = useState<string | null>(null);
+  const [debriefNotes, setDebriefNotes] = useState<string>(() => {
+    try {
+      return localStorage.getItem('cs_star_debrief_draft') ?? '';
+    } catch {
+      return '';
+    }
+  });
   const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('cs_star_debrief_draft', debriefNotes);
+    } catch {
+      // ignore
+    }
+  }, [debriefNotes]);
 
   const load = useCallback(async () => {
     try {
@@ -58,23 +77,47 @@ export function StarVault() {
       toast({ variant: 'destructive', title: 'Title required' });
       return;
     }
+    setSavingStory(true);
     try {
-      await api('/api/star-stories', {
-        method: 'POST',
-        body: {
-          competency: draft.competency,
-          title: draft.title.trim(),
-          situation: draft.situation.trim(),
-          task: draft.task.trim(),
-          action: draft.action.trim(),
-          result: draft.result.trim(),
-        },
-      });
+      const payload = {
+        competency: draft.competency,
+        title: draft.title.trim(),
+        situation: draft.situation.trim(),
+        task: draft.task.trim(),
+        action: draft.action.trim(),
+        result: draft.result.trim(),
+      };
+      if (editingStoryId) {
+        await api(`/api/star-stories/${encodeURIComponent(editingStoryId)}`, {
+          method: 'PUT',
+          body: payload,
+        });
+        toast({ variant: 'success', title: 'STAR story updated' });
+      } else {
+        await api('/api/star-stories', {
+          method: 'POST',
+          body: payload,
+        });
+        toast({ variant: 'success', title: 'STAR story saved', description: 'It will compound across interviews.' });
+      }
+      setEditingStoryId(null);
       setDraft({ competency: COMPETENCIES[0], title: '', situation: '', task: '', action: '', result: '' });
-      toast({ variant: 'success', title: 'STAR story saved', description: 'It will compound across interviews.' });
       void load();
     } catch {
       toast({ variant: 'destructive', title: 'Could not save story' });
+    } finally {
+      setSavingStory(false);
+    }
+  };
+
+  const deleteStory = async (storyId: string) => {
+    try {
+      await api(`/api/star-stories/${encodeURIComponent(storyId)}`, { method: 'DELETE' });
+      setConfirmDeleteStoryId(null);
+      toast({ variant: 'success', title: 'Story deleted' });
+      void load();
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not delete story' });
     }
   };
 
@@ -174,6 +217,7 @@ export function StarVault() {
               value={draft.title}
               onChange={(e) => setDraft({ ...draft, title: e.target.value })}
               placeholder="Story title"
+              aria-label="Story title"
               className="h-9 rounded-md border border-input bg-background px-3 text-sm"
             />
           </div>
@@ -183,44 +227,131 @@ export function StarVault() {
               value={draft[k]}
               onChange={(e) => setDraft({ ...draft, [k]: e.target.value })}
               placeholder={k.charAt(0).toUpperCase() + k.slice(1)}
+              aria-label={k.charAt(0).toUpperCase() + k.slice(1)}
               rows={2}
               className="text-xs"
             />
           ))}
-          <Button size="sm" className="w-full" onClick={() => void saveStory()}>
-            Save story
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" className="flex-1" disabled={savingStory} onClick={() => void saveStory()}>
+              {savingStory ? 'Saving story…' : editingStoryId ? 'Update story' : 'Save story'}
+            </Button>
+            {editingStoryId && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setEditingStoryId(null);
+                  setDraft({ competency: COMPETENCIES[0], title: '', situation: '', task: '', action: '', result: '' });
+                }}
+              >
+                Cancel edit
+              </Button>
+            )}
+          </div>
 
           <div className="pt-3 border-t border-border space-y-2">
-            <h3 className="text-xs font-semibold text-foreground m-0">Saved stories</h3>
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <h3 className="text-xs font-semibold text-foreground m-0">Saved stories</h3>
+              <select
+                aria-label="Filter stories by competency"
+                value={competencyFilter}
+                onChange={(e) => setCompetencyFilter(e.target.value)}
+                className="h-7 rounded border border-input bg-background px-2 text-xs"
+              >
+                <option value="ALL">All competencies</option>
+                {COMPETENCIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
             {error && <ErrorPanel message="Could not load stories." onRetry={() => void load()} />}
             {!stories && !error && <Loading label="Loading stories" />}
             {stories && stories.length === 0 && (
               <p className="text-xs text-muted-foreground italic">No stories yet. Capture your first win.</p>
             )}
-            {stories?.map((s) => (
-              <div key={s.id} className="p-3 rounded-md bg-muted/20 border border-border/40 text-xs space-y-1">
-                <div className="flex items-center justify-between gap-2">
-                  <Badge variant="secondary" className="text-[10px]">
-                    {s.competency}
-                  </Badge>
-                  <span className="text-muted-foreground">reuse ×{s.reuseCount}</span>
+            {stories
+              ?.filter((s) => competencyFilter === 'ALL' || s.competency === competencyFilter)
+              .map((s) => (
+                <div key={s.id} className="p-3 rounded-md bg-muted/20 border border-border/40 text-xs space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <Badge variant="secondary" className="text-[10px]">
+                      {s.competency}
+                    </Badge>
+                    <span className="text-muted-foreground">reuse ×{s.reuseCount}</span>
+                  </div>
+                  <p className="m-0 font-medium text-foreground">{s.title}</p>
+                  <p className="m-0 text-muted-foreground line-clamp-2">{s.result || s.action || s.situation}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs"
+                      onClick={async () => {
+                        try {
+                          await api(`/api/star-stories/${s.id}/reuse`, { method: 'POST' });
+                          toast({ variant: 'success', title: 'Marked story as reused' });
+                          void load();
+                        } catch {
+                          toast({ variant: 'destructive', title: 'Could not update reuse counter' });
+                        }
+                      }}
+                    >
+                      Mark reused
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs"
+                      onClick={() => {
+                        setEditingStoryId(s.id);
+                        setDraft({
+                          competency: s.competency,
+                          title: s.title,
+                          situation: s.situation,
+                          task: s.task,
+                          action: s.action,
+                          result: s.result,
+                        });
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    {confirmDeleteStoryId === s.id ? (
+                      <span className="inline-flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="text-xs"
+                          onClick={() => void deleteStory(s.id)}
+                        >
+                          Delete?
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-xs"
+                          onClick={() => setConfirmDeleteStoryId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </span>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-xs text-muted-foreground"
+                        onClick={() => setConfirmDeleteStoryId(s.id)}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                <p className="m-0 font-medium text-foreground">{s.title}</p>
-                <p className="m-0 text-muted-foreground line-clamp-2">{s.result || s.action || s.situation}</p>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-xs h-7"
-                  onClick={async () => {
-                    await api(`/api/star-stories/${s.id}/reuse`, { method: 'POST' }).catch(() => {});
-                    void load();
-                  }}
-                >
-                  Mark reused
-                </Button>
-              </div>
-            ))}
+              ))}
           </div>
         </section>
 
@@ -266,18 +397,49 @@ export function StarVault() {
             onChange={(e) => setTranscript(e.target.value)}
             rows={6}
             placeholder="Your spoken answer will appear here (editable)…"
+            aria-label="Spoken answer transcript"
             className="text-xs"
           />
           <Button size="sm" variant="outline" className="w-full" onClick={evaluate} disabled={!transcript.trim()}>
             Evaluate delivery
           </Button>
           {score && <p className="text-xs text-muted-foreground m-0 font-mono">{score}</p>}
-          <div className="pt-3 border-t border-border text-xs text-muted-foreground space-y-1">
+          <div className="pt-3 border-t border-border text-xs text-muted-foreground space-y-2">
             <p className="m-0">
               <strong className="text-foreground">Hot debrief:</strong> right after any real interview, capture tough
-              questions and stumbling blocks here within 3 minutes, before memory fades.
+              questions and stumbling blocks here within 3 minutes, before memory fades. Saved automatically on this
+              device.
             </p>
-            <Textarea placeholder="Quick debrief notes…" rows={3} className="text-xs" />
+            <Textarea
+              value={debriefNotes}
+              onChange={(e) => setDebriefNotes(e.target.value)}
+              placeholder="Quick debrief notes…"
+              aria-label="Quick debrief notes"
+              rows={3}
+              className="text-xs"
+            />
+            {debriefNotes.trim() && (
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setDraft((d) => ({
+                      ...d,
+                      title: d.title || 'Interview debrief reflection',
+                      situation: d.situation || debriefNotes.trim(),
+                    }));
+                    toast({ variant: 'success', title: 'Copied debrief notes into STAR draft' });
+                  }}
+                >
+                  Promote to STAR draft
+                </Button>
+                <Button type="button" size="sm" variant="ghost" onClick={() => setDebriefNotes('')}>
+                  Clear
+                </Button>
+              </div>
+            )}
           </div>
         </section>
       </div>

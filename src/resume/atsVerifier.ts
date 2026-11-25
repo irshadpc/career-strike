@@ -76,7 +76,16 @@ export async function verifyResumeBuffer(
   let expectedText = '';
   let expectedFields: string[] = [];
   if ('entries' in source) {
-    const parts: string[] = [source.fullName, source.email ?? '', source.phone ?? '', source.summary ?? ''];
+    const parts: string[] = [
+      source.fullName,
+      source.email ?? '',
+      source.phone ?? '',
+      source.location ?? '',
+      ...(source.links ?? []),
+      source.summary ?? '',
+      ...(source.skills ?? []),
+      ...(source.languages ?? []),
+    ];
     expectedFields = [source.fullName, source.email ?? '', source.phone ?? ''].filter(Boolean);
     for (const e of source.entries) {
       parts.push(`${e.title} ${e.organization}`);
@@ -213,13 +222,16 @@ export async function verifyResumeBuffer(
     });
     failures.push(`Missing fields: ${missingKeyFields.join(', ')}.`);
   } else if (tokenRecall < 0.98) {
+    const sampleMissing = missingWords.slice(0, 12).join(', ');
     checks.push({
       id: 'vector_text_presence',
       label: 'Vector text & field recall',
       status: 'warn',
-      explanation: `${Math.round(tokenRecall * 100)}% token recall (target ≥98%). Some body words may have been dropped.`,
+      explanation: `${Math.round(tokenRecall * 100)}% token recall (target ≥98%). Missing sample: ${sampleMissing || 'n/a'}.`,
     });
-    warnings.push(`Token recall was ${Math.round(tokenRecall * 100)}% (<98%).`);
+    warnings.push(
+      `Token recall was ${Math.round(tokenRecall * 100)}% (<98%). Missing sample: ${sampleMissing || 'n/a'}.`,
+    );
   } else {
     checks.push({
       id: 'vector_text_presence',
@@ -378,12 +390,16 @@ export async function verifyResumeBuffer(
       let hasLayoutTables = false;
 
       const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
-      const phoneRegex = /\+?\d[\d\s-]{7,}\d/;
+      const phoneRegex = /(?:\+?\d[\d\s().-]{7,}\d)/;
 
       for (const name of fileNames) {
         if (/word\/(header|footer)\d*\.xml/i.test(name)) {
           const content = strFromU8(files[name]!);
-          if (emailRegex.test(content) || phoneRegex.test(content)) {
+          const plainHeader = content
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+          if (emailRegex.test(plainHeader) || phoneRegex.test(plainHeader)) {
             piiInHeader = true;
           }
         }

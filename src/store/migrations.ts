@@ -1225,4 +1225,16 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX IF NOT EXISTS idx_autopilot_queue_created ON autopilot_queue (created_at DESC);
     `,
   },
+  {
+    version: 32,
+    name: 'performance_indexes',
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_tasks_kind_created ON tasks (kind, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_jobs_employer_lower_status ON jobs (LOWER(employer), status);
+      CREATE INDEX IF NOT EXISTS idx_jobs_dup_status_seen ON jobs (duplicate_of, status, first_seen_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_app_events_state_at ON application_events (to_state, at);
+      CREATE INDEX IF NOT EXISTS idx_job_user_state_disp ON job_user_state (disposition, updated_at);
+      DROP INDEX IF EXISTS jobs_market_json;
+    `,
+  },
 ];

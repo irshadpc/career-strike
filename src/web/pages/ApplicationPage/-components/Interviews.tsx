@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { type ApplicationView, api, type Interview } from '../../../api';
 import { downloadInterviewIcs } from '../../../candidateExperience';
 import { Button } from '../../../components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../components/ui/form';
 import { Input } from '../../../components/ui/input';
 import { formatDateTime } from '../../../format';
 import { Link } from '../../../router';
@@ -38,7 +38,7 @@ export function Interviews({ view, onChange }: { view: ApplicationView; onChange
     setList(prep.interviews);
   }, [view.id]);
 
-  useEffect(() => void reload(), [reload, view.state]);
+  useEffect(() => void reload(), [reload]);
   const canSchedule = SUBMITTED.includes(view.state);
 
   const onSubmit = async (values: InterviewFormValues): Promise<void> => {
@@ -88,7 +88,7 @@ export function Interviews({ view, onChange }: { view: ApplicationView; onChange
                 }
                 title="Download .ics calendar file"
               >
-                📅 .ics
+                .ics calendar
               </Button>
               <label className="sr-only" htmlFor={`int-${i.id}`}>
                 Outcome of {i.stage}
@@ -128,6 +128,7 @@ export function Interviews({ view, onChange }: { view: ApplicationView; onChange
                   <FormControl>
                     <Input id="int-stage" placeholder="e.g. phone screen" className="h-8 text-xs" {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -153,6 +154,7 @@ export function Interviews({ view, onChange }: { view: ApplicationView; onChange
                       <option value="other">Other</option>
                     </select>
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -168,6 +170,7 @@ export function Interviews({ view, onChange }: { view: ApplicationView; onChange
                   <FormControl>
                     <Input id="int-when" type="datetime-local" required className="h-8 text-xs" {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />

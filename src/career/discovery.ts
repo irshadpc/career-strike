@@ -3,7 +3,7 @@ import { assertBoard } from '../sources/adapters.js';
 import { type NormalizedPosting, type SourceAdapter, SourceError, type SourceId } from '../sources/types.js';
 import type { Db } from '../store/db.js';
 import { backoffMs } from '../supervisor/scheduler.js';
-import type { Task, TaskSupervisor } from '../supervisor/tasks.js';
+import type { Task, TaskState, TaskSupervisor } from '../supervisor/tasks.js';
 import { type SyncResult, syncBoard } from './jobs.js';
 
 export interface SourceBoard {
@@ -100,16 +100,31 @@ export class Discovery {
 
   listBoards(): SourceBoard[] {
     const rows = this.db.prepare('SELECT * FROM source_boards ORDER BY added_at').all() as BoardRow[];
-    return rows.map((r) => this.toBoard(r));
+    if (rows.length === 0) return [];
+    const latestTasks = this.db
+      .prepare(
+        `SELECT kind, id, state, ended_at
+         FROM (
+           SELECT kind, id, state, ended_at,
+                  ROW_NUMBER() OVER (PARTITION BY kind ORDER BY created_at DESC, rowid DESC) AS rn
+           FROM tasks
+           WHERE kind LIKE 'discover:%'
+         )
+         WHERE rn = 1`,
+      )
+      .all() as { kind: string; id: string; state: TaskState; ended_at: string | null }[];
+    const taskByKind = new Map(latestTasks.map((t) => [t.kind, t]));
+    return rows.map((r) => this.toBoard(r, taskByKind.get(`discover:${r.id}`) ?? null));
   }
 
   getBoard(id: string): SourceBoard | null {
     const row = this.db.prepare('SELECT * FROM source_boards WHERE id = ?').get(id) as BoardRow | undefined;
-    return row ? this.toBoard(row) : null;
+    if (!row) return null;
+    const last = this.tasks.list(1, `discover:${row.id}`)[0];
+    return this.toBoard(row, last ? { id: last.id, state: last.state, ended_at: last.endedAt } : null);
   }
 
-  private toBoard(r: BoardRow): SourceBoard {
-    const last = this.tasks.list(1, `discover:${r.id}`)[0];
+  private toBoard(r: BoardRow, last: { id: string; state: TaskState; ended_at: string | null } | null): SourceBoard {
     return {
       id: r.id,
       source: r.source,
@@ -124,7 +139,7 @@ export class Discovery {
       lastSyncedAt: r.last_synced_at,
       lastStatus: r.last_status,
       jobsFetchedCount: r.jobs_fetched_count,
-      lastTask: last ? { id: last.id, state: last.state, endedAt: last.endedAt } : null,
+      lastTask: last ? { id: last.id, state: last.state, endedAt: last.ended_at } : null,
     };
   }
 

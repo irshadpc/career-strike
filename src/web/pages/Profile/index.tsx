@@ -472,10 +472,7 @@ export function Profile() {
                   </p>
                   <div className="flex gap-2 flex-wrap">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/60 border border-border text-xs font-medium text-secondary-foreground">
-                      📍 {candidateCountry ? `Country: ${candidateCountry}` : 'Location unconfirmed'}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-teal-500/10 border border-teal-500/30 text-xs font-medium text-teal-700 dark:text-teal-300">
-                      Open to relocation
+                      {candidateCountry ? `Country: ${candidateCountry}` : 'Location unconfirmed'}
                     </span>
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-secondary/60 border border-border text-xs font-medium text-secondary-foreground">
                       {remotePref === 'remote_only'
@@ -497,7 +494,13 @@ export function Profile() {
               </div>
 
               {/* Structured Edit Form */}
-              <div className="border-t border-border mt-6 pt-5 space-y-4">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void saveProfileDraft();
+                }}
+                className="border-t border-border mt-6 pt-5 space-y-4"
+              >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label htmlFor="candidate-fullname" className="block text-xs font-medium text-foreground">
@@ -546,18 +549,12 @@ export function Profile() {
                 </div>
 
                 <div className="flex gap-3 items-center pt-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void saveProfileDraft()}
-                    disabled={isSaving}
-                  >
+                  <Button type="submit" variant="secondary" size="sm" disabled={isSaving}>
                     {isSaving ? 'Saving...' : 'Apply overview changes'}
                   </Button>
                   {isDirty && <span className="text-xs text-status-warn-fg font-medium">● Unsaved changes</span>}
                 </div>
-              </div>
+              </form>
             </section>
 
             {/* 2. Professional Links Profile Card */}
@@ -630,7 +627,13 @@ export function Profile() {
               </div>
 
               {/* Edit Mode Links Form */}
-              <div className="border-t border-border mt-5 pt-4 space-y-4">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void saveProfileDraft();
+                }}
+                className="border-t border-border mt-5 pt-4 space-y-4"
+              >
                 <div className="space-y-1">
                   <label htmlFor="candidate-linkedin" className="block text-xs font-medium text-foreground">
                     LinkedIn profile address
@@ -694,17 +697,11 @@ export function Profile() {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => void saveProfileDraft()}
-                    disabled={isSaving}
-                  >
+                  <Button type="submit" variant="secondary" size="sm" disabled={isSaving}>
                     {isSaving ? 'Saving...' : 'Apply link changes'}
                   </Button>
                 </div>
-              </div>
+              </form>
             </section>
 
             {/* 3. Experience Timeline */}
@@ -803,14 +800,17 @@ export function Profile() {
                   <span className="text-[11px] uppercase tracking-wider font-semibold text-muted-foreground block mb-1">
                     Job Matching
                   </span>
-                  <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                    <span className="text-status-success-fg font-bold">✓</span>{' '}
-                    {facts &&
-                    facts.some((f) => f.kind === 'role' && f.approved) &&
-                    facts.some((f) => f.kind === 'skill' && f.approved)
-                      ? 'Ready'
-                      : 'Roles & skills needed'}
-                  </span>
+                  {facts &&
+                  facts.some((f) => f.kind === 'role' && f.approved) &&
+                  facts.some((f) => f.kind === 'skill' && f.approved) ? (
+                    <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <span className="text-status-success-fg font-bold">✓</span> Ready
+                    </span>
+                  ) : (
+                    <span className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                      <span className="text-status-warn-fg font-bold">○</span> Roles &amp; skills needed
+                    </span>
+                  )}
                   <span className="text-xs text-muted-foreground block mt-1">
                     {facts
                       ? `${facts.filter((f) => f.kind === 'role' && f.approved).length} roles, ${facts.filter((f) => f.kind === 'skill' && f.approved).length} skills confirmed`
@@ -829,7 +829,13 @@ export function Profile() {
                     )}
                   </span>
                   <span className="text-xs text-muted-foreground block mt-1">
-                    {savedSettings['identity.email'] ? 'Contact details ready' : 'Add email in settings to apply'}
+                    {savedSettings['identity.email'] ? (
+                      'Contact details ready'
+                    ) : (
+                      <Link href="/settings#group-identity" className="text-primary hover:underline">
+                        Add email in settings to apply →
+                      </Link>
+                    )}
                   </span>
                 </div>
               </div>

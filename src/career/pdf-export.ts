@@ -20,26 +20,29 @@ let idleTimer: ReturnType<typeof setTimeout> | null = null;
 const CDP_ARGS = ['--no-sandbox', '--disable-dev-shm-usage', '--font-render-hinting=none'];
 
 async function acquireBrowser(): Promise<Browser> {
-  browserPromise ??= (async () => {
-    // Google Chrome first (already on user machines), then the Playwright-managed Chromium.
-    for (const [channel, useSystemDefault] of [
-      ['chrome', true],
-      [undefined, false],
-    ] as const) {
-      try {
-        browser = await chromium.launch({
-          channel,
-          args: useSystemDefault ? CDP_ARGS : CDP_ARGS,
-          headless: true,
-        });
-        return browser;
-      } catch {
-        browser = null;
-        // continue to next candidate
+  if (!browserPromise) {
+    browserPromise = (async () => {
+      // Google Chrome first (already on user machines), then the Playwright-managed Chromium.
+      for (const [channel, useSystemDefault] of [
+        ['chrome', true],
+        [undefined, false],
+      ] as const) {
+        try {
+          browser = await chromium.launch({
+            channel,
+            args: useSystemDefault ? CDP_ARGS : CDP_ARGS,
+            headless: true,
+          });
+          return browser;
+        } catch {
+          browser = null;
+          // continue to next candidate
+        }
       }
-    }
-    throw new Error('No usable Chromium found (Google Chrome, or the Playwright-managed build).');
-  })();
+      browserPromise = null;
+      throw new Error('No usable Chromium found (Google Chrome, or the Playwright-managed build).');
+    })();
+  }
   return browserPromise;
 }
 
@@ -69,6 +72,7 @@ export async function htmlToAtsPdf(html: string): Promise<Buffer> {
   } finally {
     await context.close();
     idleTimer = setTimeout(() => void recycleBrowser(), BROWSER_IDLE_MS);
+    idleTimer.unref?.();
   }
 }
 

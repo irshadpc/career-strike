@@ -36,12 +36,53 @@ interface SpatialItem {
   height: number;
 }
 
+export interface ReconstructOptions {
+  preserveLines?: boolean;
+}
+
+function joinColumnLines(sorted: SpatialItem[], lineTolerance: number, preserveLines: boolean): string {
+  if (sorted.length === 0) return '';
+  if (!preserveLines) {
+    return sorted
+      .map((it) => it.str)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+  const lines: string[] = [];
+  let currentLine: string[] = [];
+  let currentY: number | null = null;
+  for (const item of sorted) {
+    const trimmed = item.str.trim();
+    if (!trimmed) continue;
+    if (currentY !== null && Math.abs(item.y - currentY) > lineTolerance) {
+      if (currentLine.length > 0) lines.push(currentLine.join(' ').replace(/\s+/g, ' ').trim());
+      currentLine = [trimmed];
+      currentY = item.y;
+    } else {
+      currentLine.push(trimmed);
+      if (currentY === null) currentY = item.y;
+    }
+  }
+  if (currentLine.length > 0) lines.push(currentLine.join(' ').replace(/\s+/g, ' ').trim());
+  return lines.join('\n');
+}
+
+function looksLikeDateOrMeta(line: string): boolean {
+  const t = line.trim();
+  if (t.length <= 32 && /\b(19|20)\d{2}\b|present|current|ongoing/i.test(t)) return true;
+  if (t.length <= 16 && /^\d+$/.test(t)) return true;
+  return false;
+}
+
 /**
  * Reconstructs column reading order using spatial X/Y coordinates to prevent
  * column interleaving in multi-column resume PDFs.
  */
-export function reconstructColumns(items: SpatialItem[]): string {
+export function reconstructColumns(items: SpatialItem[], options: ReconstructOptions = {}): string {
   if (items.length === 0) return '';
+  const lineTolerance = 4.0;
+  const preserveLines = options.preserveLines ?? false;
   const xs = items.map((it) => it.x);
   const minX = Math.min(...xs);
   const maxX = Math.max(...xs);
@@ -51,62 +92,99 @@ export function reconstructColumns(items: SpatialItem[]): string {
   const leftCol = items.filter((it) => it.x < midX);
   const rightCol = items.filter((it) => it.x >= midX);
 
-  const isTwoColumn = leftCol.length >= 5 && rightCol.length >= 5 && width > 200;
+  const distinctRows = (col: SpatialItem[]) => new Set(col.map((it) => Math.round(it.y / lineTolerance))).size;
+  const rightSubstantialLines = (() => {
+    if (rightCol.length < 5) return 0;
+    const byRow = new Map<number, string[]>();
+    for (const it of rightCol) {
+      const row = Math.round(it.y / lineTolerance);
+      const arr = byRow.get(row) ?? [];
+      arr.push(it.str.trim());
+      byRow.set(row, arr);
+    }
+    let substantial = 0;
+    for (const parts of byRow.values()) {
+      const line = parts.join(' ').trim();
+      if (line.length > 0 && !looksLikeDateOrMeta(line)) substantial++;
+    }
+    return substantial;
+  })();
 
-  const sortByReadingOrder = (colItems: SpatialItem[]) => {
-    const lineTolerance = 4.0;
-    return [...colItems].sort((a, b) => {
+  // Only treat as two-column when both halves span multiple lines and the right half
+  // contains genuine prose (not merely right-aligned dates on a single-column resume).
+  const isTwoColumn =
+    leftCol.length >= 5 &&
+    rightCol.length >= 5 &&
+    width > 200 &&
+    distinctRows(leftCol) >= 4 &&
+    distinctRows(rightCol) >= 4 &&
+    rightSubstantialLines >= 2;
+
+  const sortByReadingOrder = (colItems: SpatialItem[]) =>
+    [...colItems].sort((a, b) => {
       const dy = Math.abs(a.y - b.y);
       if (dy > lineTolerance) {
         return b.y - a.y; // Higher y first (PDF origin bottom-left)
       }
       return a.x - b.x; // Left to right
     });
-  };
 
   if (isTwoColumn) {
-    const sortedLeft = sortByReadingOrder(leftCol);
-    const sortedRight = sortByReadingOrder(rightCol);
-    const leftText = sortedLeft
-      .map((it) => it.str)
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    const rightText = sortedRight
-      .map((it) => it.str)
-      .join(' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    const leftText = joinColumnLines(sortByReadingOrder(leftCol), lineTolerance, preserveLines);
+    const rightText = joinColumnLines(sortByReadingOrder(rightCol), lineTolerance, preserveLines);
     return `${leftText}\n${rightText}`;
   }
 
-  const sorted = sortByReadingOrder(items);
-  return sorted
-    .map((it) => it.str)
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return joinColumnLines(sortByReadingOrder(items), lineTolerance, preserveLines);
+}
+
+/**
+ * Extracts embedded JPEG scan streams from a scanned PDF buffer so tesseract.js can OCR them.
+ */
+function extractEmbeddedJpegsFromPdf(bytes: Buffer): Buffer[] {
+  const images: Buffer[] = [];
+  let offset = 0;
+  while (offset < bytes.length - 4) {
+    const start = bytes.indexOf(Buffer.from([0xff, 0xd8, 0xff]), offset);
+    if (start < 0) break;
+    const end = bytes.indexOf(Buffer.from([0xff, 0xd9]), start + 3);
+    if (end < 0) break;
+    const slice = bytes.subarray(start, end + 2);
+    if (slice.length >= 1024) images.push(slice);
+    offset = end + 2;
+    if (images.length >= 6) break;
+  }
+  return images;
 }
 
 /**
  * OCR Fallback for scanned PDFs or sparse image-only pages.
  */
 async function ocrPdfFallback(bytes: Buffer): Promise<string | null> {
-  // Only attempt image OCR if the buffer contains an image signature
   if (bytes.length < 4) return null;
   const isImage =
     (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) || // PNG
     (bytes[0] === 0xff && bytes[1] === 0xd8) || // JPEG
     (bytes[0] === 0x49 && bytes[1] === 0x49) || // TIFF
     (bytes[0] === 0x4d && bytes[1] === 0x4d); // TIFF
-  if (!isImage) return null;
+
+  const candidates = isImage ? [bytes] : extractEmbeddedJpegsFromPdf(bytes);
+  if (candidates.length === 0) return null;
 
   try {
     const { createWorker } = await import('tesseract.js');
     const worker = await createWorker('eng');
-    const res = await worker.recognize(bytes).catch(() => ({ data: { text: '' } }));
-    await worker.terminate().catch(() => {});
-    return res.data?.text?.trim() || null;
+    try {
+      const texts: string[] = [];
+      for (const img of candidates) {
+        const res = await worker.recognize(img).catch(() => ({ data: { text: '' } }));
+        const t = res.data?.text?.trim();
+        if (t) texts.push(t);
+      }
+      return texts.join('\n').trim() || null;
+    } finally {
+      await worker.terminate().catch(() => {});
+    }
   } catch {
     return null;
   }
@@ -141,7 +219,7 @@ async function extractPdfText(bytes: Buffer, options: PdfOptions = {}): Promise<
             height: (textItem as { height?: number }).height ?? 0,
           });
         }
-        const joined = reconstructColumns(spatialItems);
+        const joined = reconstructColumns(spatialItems, { preserveLines: true });
         items.push(joined);
         totalChars += joined.length;
         pageCount++;
@@ -214,7 +292,7 @@ function fallbackExtractPdf(bytes: Buffer): ExtractResult {
 function extractPdfOperators(content: string): string {
   const out: string[] = [];
   const operatorRegex = /\((?:\\.|[^()\\])*\)\s*Tj|\[(?:[^\]]*)\]\s*TJ/gi;
-  const match: RegExpExecArray | null = operatorRegex.exec(content);
+  let match: RegExpExecArray | null = operatorRegex.exec(content);
   while (match !== null) {
     const token = match[0];
     if (/TJ$/i.test(token)) {
@@ -225,6 +303,7 @@ function extractPdfOperators(content: string): string {
       if (stringMatch) out.push(decodePdfString(`(${stringMatch[1]})`));
     }
     out.push(' ');
+    match = operatorRegex.exec(content);
   }
   return out.join('');
 }
@@ -290,11 +369,14 @@ function extractDocxText(bytes: Buffer): string | null {
   if (!entryName) return null;
   const xml = strFromU8(unzipped[entryName]!);
   const paragraphs = xml.split(/<\/w:p>/i);
-  const lines = paragraphs
-    .map((paragraph) =>
-      [...paragraph.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)].map((m) => decodeHTML(m[1]!)).join(''),
-    )
-    .filter((line) => line.trim().length > 0);
+  const lines: string[] = [];
+  for (const paragraph of paragraphs) {
+    const normalized = paragraph.replace(/<w:tab\b[^>]*\/?>/gi, ' ').replace(/<w:(?:br|cr)\b[^>]*\/?>/gi, '\n');
+    const text = [...normalized.matchAll(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/gi)].map((m) => decodeHTML(m[1]!)).join('');
+    for (const part of text.split('\n')) {
+      if (part.trim().length > 0) lines.push(part.trim());
+    }
+  }
   return lines.join('\n').trim() || null;
 }
 

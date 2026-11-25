@@ -20,7 +20,7 @@ export function CountryFocusViews({ countries }: { countries: string[] }) {
           {COUNTRY_REGISTRY[code as keyof typeof COUNTRY_REGISTRY]?.name ?? code} best matches
         </Link>
       ))}
-      <Link href="/settings" className="text-primary hover:underline ml-auto font-medium">
+      <Link href="/markets" className="text-primary hover:underline ml-auto font-medium">
         Edit markets →
       </Link>
     </nav>

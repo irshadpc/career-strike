@@ -1,11 +1,12 @@
-import { Briefcase, Building, CheckCircle2, ChevronRight, ExternalLink, Globe, MapPin, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Building, CheckCircle2, ChevronRight, ExternalLink, Globe, MapPin, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { api, type Disposition, type JobDetail, type JobSummary } from '../../../api';
 import { TierChip } from '../../../components/FitPanel';
+import { DispositionControls } from '../../../components/jobBits';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { EMPLOYMENT_LABEL, formatSalary, REMOTE_LABEL } from '../../../format';
-import { Link, useNavigateTo } from '../../../router';
+import { useNavigateTo } from '../../../router';
 
 export interface OpportunityPeekDrawerProps {
   job: JobSummary | null;
@@ -17,17 +18,40 @@ export function OpportunityPeekDrawer({ job, onClose, onDisposition }: Opportuni
   const navigate = useNavigateTo();
   const [fullJob, setFullJob] = useState<JobDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const drawerRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape key
+  // Move focus into drawer when opened & restore on close; trap Tab; close on Escape
   useEffect(() => {
+    if (!job) return;
+    const prevFocus = document.activeElement as HTMLElement | null;
+    drawerRef.current?.focus();
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+      if (e.key === 'Tab' && drawerRef.current) {
+        const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0]!;
+        const last = focusable[focusable.length - 1]!;
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      prevFocus?.focus?.();
+    };
+  }, [job, onClose]);
 
   // Fetch full job description when job changes
   useEffect(() => {
@@ -65,7 +89,9 @@ export function OpportunityPeekDrawer({ job, onClose, onDisposition }: Opportuni
       aria-label={`Opportunity details for ${job.title}`}
     >
       <div
-        className="w-full sm:w-[540px] lg:w-[620px] h-full bg-card border-l border-border shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200"
+        ref={drawerRef}
+        tabIndex={-1}
+        className="w-full sm:w-[540px] lg:w-[620px] h-full bg-card border-l border-border shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200 outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drawer Header */}
@@ -112,7 +138,7 @@ export function OpportunityPeekDrawer({ job, onClose, onDisposition }: Opportuni
 
         {/* Action Toolbar */}
         <div className="px-6 py-3 border-b border-border bg-background flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               type="button"
               size="sm"
@@ -125,6 +151,14 @@ export function OpportunityPeekDrawer({ job, onClose, onDisposition }: Opportuni
               <span>Open Full Inspector</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Button>
+            {onDisposition && (
+              <DispositionControls
+                jobId={job.id}
+                title={job.title}
+                disposition={job.disposition}
+                onChange={(d) => onDisposition(job.id, d)}
+              />
+            )}
             {(fullJob?.postingUrl || fullJob?.applyUrl) && (
               <a
                 href={fullJob.postingUrl || fullJob.applyUrl || '#'}
@@ -159,8 +193,8 @@ export function OpportunityPeekDrawer({ job, onClose, onDisposition }: Opportuni
                       variant="outline"
                       className={`text-xs ${
                         isMatched
-                          ? 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 font-semibold'
-                          : 'bg-muted/40 text-muted-foreground border-border'
+                          ? 'bg-status-success-bg text-status-success-fg border-status-success-border font-semibold'
+                          : 'bg-subtle text-ink-secondary border-border'
                       }`}
                     >
                       {isMatched && <CheckCircle2 className="w-3 h-3 mr-1 inline" />}
@@ -187,7 +221,7 @@ export function OpportunityPeekDrawer({ job, onClose, onDisposition }: Opportuni
             ) : fullJob && fullJob.description ? (
               <div className="prose prose-sm dark:prose-invert max-w-none text-foreground/90 leading-relaxed space-y-3 text-sm">
                 {Array.isArray(fullJob.description) ? (
-                  fullJob.description.map((block: any, i: number) => {
+                  fullJob.description.map((block, i) => {
                     if (block.type === 'heading') {
                       return (
                         <h4 key={i} className="font-semibold text-foreground text-sm pt-2">
@@ -195,16 +229,14 @@ export function OpportunityPeekDrawer({ job, onClose, onDisposition }: Opportuni
                         </h4>
                       );
                     }
-                    if (block.type === 'list' && Array.isArray(block.items)) {
+                    if (block.type === 'item') {
                       return (
-                        <ul key={i} className="list-disc pl-5 space-y-1">
-                          {block.items.map((item: string, j: number) => (
-                            <li key={j}>{item}</li>
-                          ))}
+                        <ul key={i} className="list-disc pl-5 my-1">
+                          <li>{block.text}</li>
                         </ul>
                       );
                     }
-                    return <p key={i}>{block.text || String(block)}</p>;
+                    return <p key={i}>{block.text}</p>;
                   })
                 ) : (
                   <p className="whitespace-pre-line">{String(fullJob.description)}</p>

@@ -118,8 +118,9 @@ test.describe('applications', () => {
     await page.getByRole('button', { name: 'Prepare an application' }).click();
     await expect(page.getByText('Still needed: Résumé/CV.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Mark ready for review' })).toBeDisabled();
-    page.once('dialog', (d) => void d.accept('Not the right team'));
     await page.getByRole('button', { name: 'Reject' }).click();
+    await page.getByLabel(/Why are you rejecting/).fill('Not the right team');
+    await page.getByRole('button', { name: 'Confirm reject' }).click();
     await expect(page.getByText('Cancelled', { exact: true })).toBeVisible();
     await expect(page.getByText('This application can no longer be edited.')).toBeVisible();
 

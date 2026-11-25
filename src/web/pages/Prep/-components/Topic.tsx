@@ -5,9 +5,10 @@ import { api, type Prep as PrepData, type PrepTopic, type ProfileFact } from '..
 import { findMatchingCareerEvidence } from '../../../candidateExperience';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../components/ui/form';
 import { Input } from '../../../components/ui/input';
 import { type PracticeLogFormValues, practiceLogSchema } from '../-schema/prep';
+import type { PrepStarStory } from '../index';
 
 export const CONFIDENCE = ['', 'Not ready', 'Shaky', 'Getting there', 'Confident', 'Ready'];
 
@@ -15,11 +16,13 @@ export function Topic({
   topic,
   applicationId,
   facts,
+  starStories = [],
   onLogged,
 }: {
   topic: PrepTopic;
   applicationId: string;
   facts: ProfileFact[];
+  starStories?: PrepStarStory[];
   onLogged: (d: PrepData) => void;
 }) {
   const [status, setStatus] = useState<string | null>(null);
@@ -70,8 +73,8 @@ export function Topic({
 
   return (
     <li
-      className={`p-4 rounded-lg border bg-card shadow-xs space-y-3 ${
-        topic.gap ? 'border-amber-500/40 bg-amber-500/5' : 'border-border'
+      className={`p-4 rounded-lg border bg-card space-y-3 ${
+        topic.gap ? 'border-status-warn-border bg-status-warn-bg/40' : 'border-border'
       }`}
       data-topic={topic.id}
     >
@@ -102,12 +105,12 @@ export function Topic({
           </span>
           {matchedEvidence.skills.map((s) => (
             <Badge key={s} variant="secondary" className="text-[10px]">
-              ⚡ {s}
+              {s}
             </Badge>
           ))}
           {matchedEvidence.roles.map((r) => (
             <Badge key={r} variant="outline" className="text-[10px]">
-              💼 {r}
+              {r}
             </Badge>
           ))}
         </div>
@@ -130,12 +133,12 @@ export function Topic({
           onClick={() => setShowStarGuide(!showStarGuide)}
           aria-expanded={showStarGuide}
         >
-          {showStarGuide ? '▾ Hide STAR Story Assistant' : '▸ ⭐ Use STAR Story Framework'}
+          {showStarGuide ? '▾ Hide STAR Story Assistant' : '▸ STAR Story Framework'}
         </Button>
       </div>
 
       {showStarGuide && (
-        <div className="p-3.5 rounded-lg border border-teal-500/30 bg-teal-50/40 dark:bg-teal-950/20 text-xs space-y-2">
+        <div className="p-3.5 rounded-lg border border-status-success-border bg-status-success-bg/50 text-xs space-y-2">
           <p className="m-0 text-foreground">
             Structure your behavioral & technical answers with <strong>STAR</strong>:
           </p>
@@ -154,8 +157,34 @@ export function Topic({
             </div>
           </div>
           <Button type="button" variant="secondary" size="sm" className="text-xs h-7" onClick={insertStarTemplate}>
-            ✍️ Insert STAR Outline into Notes
+            Insert STAR Outline into Notes
           </Button>
+          {starStories.length > 0 && (
+            <div className="pt-2 border-t border-border/60 space-y-1.5">
+              <span className="font-semibold text-foreground block">Insert from your STAR Vault:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {starStories.slice(0, 6).map((story) => (
+                  <Button
+                    key={story.id}
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-7"
+                    onClick={() => {
+                      const formatted = `[${story.competency}] ${story.title} — S: ${story.situation} | T: ${story.task} | A: ${story.action} | R: ${story.result}`;
+                      const cur = form.getValues('notes');
+                      form.setValue('notes', cur ? `${cur}\n${formatted}` : formatted);
+                      void api(`/api/star-stories/${encodeURIComponent(story.id)}/reuse`, { method: 'POST' }).catch(
+                        () => {},
+                      );
+                    }}
+                  >
+                    + {story.title}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -187,6 +216,7 @@ export function Topic({
                     ))}
                   </select>
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -210,6 +240,7 @@ export function Topic({
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -225,6 +256,7 @@ export function Topic({
                 <FormControl>
                   <Input id={`${id}-notes`} type="text" className="h-8 text-xs" {...field} />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />

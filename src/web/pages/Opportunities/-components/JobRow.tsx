@@ -1,4 +1,5 @@
 import { Eye } from 'lucide-react';
+import { memo } from 'react';
 import type { Disposition, JobSummary } from '../../../api';
 import { TierChip } from '../../../components/FitPanel';
 import { DispositionControls, StatusChip } from '../../../components/jobBits';
@@ -43,7 +44,7 @@ export function getAtsProviderPill(job: JobSummary): { name: string; color: stri
   };
 }
 
-export function JobRow({
+export const JobRow = memo(function JobRow({
   job,
   selected,
   compareFull,
@@ -67,15 +68,18 @@ export function JobRow({
   const salary = formatSalary(job.salary);
   const atsPill = getAtsProviderPill(job);
   return (
-    <li className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-lg border border-border bg-card shadow-xs hover:border-border/80 transition-colors">
+    <li className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-lg border border-border bg-card hover:border-foreground/30 transition-colors">
       <div className="space-y-1.5 flex-1 min-w-0">
-        <h2 className="text-base font-semibold text-foreground m-0 truncate">
-          <Link href={`/jobs/${job.id}`} className="hover:underline">
-            {job.title}
-          </Link>
-        </h2>
-        <p className="flex flex-wrap items-center gap-x-2.5 text-xs text-muted-foreground m-0">
-          <span className="font-medium text-foreground">{job.employer}</span>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="text-base font-semibold text-foreground m-0 truncate">
+            <Link href={`/jobs/${job.id}`} className="text-foreground hover:text-primary hover:underline no-underline">
+              {job.title}
+            </Link>
+          </h2>
+          {salary && <span className="text-xs font-mono font-semibold text-foreground shrink-0">{salary}</span>}
+        </div>
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground m-0">
+          <span className="font-semibold text-foreground">{job.employer}</span>
           <span
             className={`inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-medium border ${atsPill.color}`}
           >
@@ -83,28 +87,22 @@ export function JobRow({
           </span>
           {(job.normalizedLocation || job.locationText) && (
             <>
-              <span>•</span>
+              <span>·</span>
               <span>{job.normalizedLocation || job.locationText}</span>
             </>
           )}
           {(job.countryCode || job.market.location.countryCode) && (
             <>
-              <span>•</span>
-              <span className="font-mono">{job.countryCode || job.market.location.countryCode}</span>
+              <span>·</span>
+              <span className="font-mono text-[11px]">{job.countryCode || job.market.location.countryCode}</span>
             </>
           )}
-          <span>•</span>
+          <span>·</span>
           <span>{REMOTE_LABEL[job.workMode || job.remotePolicy]}</span>
           {job.employmentType !== 'unknown' && (
             <>
-              <span>•</span>
+              <span>·</span>
               <span>{EMPLOYMENT_LABEL[job.employmentType]}</span>
-            </>
-          )}
-          {salary && (
-            <>
-              <span>•</span>
-              <span className="font-semibold text-foreground">{salary}</span>
             </>
           )}
         </p>
@@ -232,7 +230,7 @@ export function JobRow({
       </div>
     </li>
   );
-}
+});
 
 function GhostJobTriage({ job }: { job: JobSummary }) {
   const ageDays = Math.max(0, Math.floor((Date.now() - new Date(job.firstSeenAt).getTime()) / 86_400_000));

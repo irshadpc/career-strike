@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { api } from '../../api';
 import { PageHeader } from '../../components/PageHeader';
 import { Button } from '../../components/ui/button';
 import { useToast } from '../../components/ui/toast';
@@ -13,6 +14,13 @@ interface OfferInputs {
   exitMultiple: number;
   taxRate: number;
   colIndex: number;
+}
+
+interface SavedOfferScenario {
+  id: string;
+  name: string;
+  data: OfferInputs;
+  createdAt: string;
 }
 
 const DEFAULTS: OfferInputs = {
@@ -56,7 +64,22 @@ export function Offers() {
   const { toast } = useToast();
   const [inputs, setInputs] = useState<OfferInputs>(DEFAULTS);
   const [scenarioName, setScenarioName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [scenarios, setScenarios] = useState<SavedOfferScenario[]>([]);
   const r = useMemo(() => compute(inputs), [inputs]);
+
+  const loadScenarios = useCallback(async () => {
+    try {
+      const res = await api<{ scenarios: SavedOfferScenario[] }>('/api/offer-scenarios');
+      setScenarios(res.scenarios ?? []);
+    } catch {
+      // ignore initial load error cleanly
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadScenarios();
+  }, [loadScenarios]);
 
   const set = (k: keyof OfferInputs, v: number) => setInputs((p) => ({ ...p, [k]: v }));
 
@@ -65,17 +88,33 @@ export function Offers() {
       toast({ variant: 'destructive', title: 'Name the scenario first' });
       return;
     }
+    setSaving(true);
     try {
-      await fetch('/api/offer-scenarios', {
+      await api('/api/offer-scenarios', {
         method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: scenarioName.trim(), data: inputs }),
+        body: { name: scenarioName.trim(), data: inputs },
       });
       toast({ variant: 'success', title: 'Scenario saved', description: scenarioName.trim() });
       setScenarioName('');
+      await loadScenarios();
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not save scenario',
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteScenario = async (id: string) => {
+    try {
+      await api(`/api/offer-scenarios/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      toast({ variant: 'success', title: 'Scenario deleted' });
+      await loadScenarios();
     } catch {
-      toast({ variant: 'destructive', title: 'Could not save scenario' });
+      toast({ variant: 'destructive', title: 'Could not delete scenario' });
     }
   };
 
@@ -113,12 +152,54 @@ export function Offers() {
               value={scenarioName}
               onChange={(e) => setScenarioName(e.target.value)}
               placeholder="Scenario name (e.g. Acme offer)"
+              aria-label="Scenario name"
               className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"
             />
-            <Button size="sm" onClick={() => void saveScenario()}>
-              Save scenario
+            <Button size="sm" disabled={saving} onClick={() => void saveScenario()}>
+              {saving ? 'Saving…' : 'Save scenario'}
             </Button>
           </div>
+          {scenarios.length > 0 && (
+            <div className="pt-3 border-t border-border space-y-2">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground m-0">
+                Saved scenarios ({scenarios.length})
+              </h3>
+              <ul className="space-y-1.5 m-0 p-0 list-none">
+                {scenarios.map((s) => {
+                  const summary = compute(s.data);
+                  return (
+                    <li
+                      key={s.id}
+                      className="flex items-center justify-between gap-2 p-2.5 rounded-md border border-border/70 bg-muted/20 text-xs"
+                    >
+                      <div className="min-w-0">
+                        <strong className="text-foreground block truncate">{s.name}</strong>
+                        <span className="text-muted-foreground font-mono">
+                          4-yr total: ${money(summary.fourYearTotal)} · Net/yr: ${money(summary.netAnnual)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setInputs(s.data);
+                            toast({ variant: 'success', title: `Loaded "${s.name}"` });
+                          }}
+                        >
+                          Load
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => void deleteScenario(s.id)}>
+                          Delete
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </section>
 
         <section className="p-5 bg-card rounded-lg border border-border shadow-xs space-y-4">

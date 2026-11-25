@@ -28,15 +28,19 @@ export function Insights() {
   } | null>(null);
 
   const load = useCallback(async () => {
-    try {
-      setData(await api<Strategy>('/api/strategy'));
+    const [strategyRes, funnelRes] = await Promise.allSettled([
+      api<Strategy>('/api/strategy'),
+      api<typeof funnel>('/api/funnel'),
+    ]);
+    if (strategyRes.status === 'fulfilled') {
+      setData(strategyRes.value);
       setError(false);
-    } catch {
+    } else {
       setError(true);
     }
-    api<typeof funnel>('/api/funnel')
-      .then(setFunnel)
-      .catch(() => {});
+    if (funnelRes.status === 'fulfilled') {
+      setFunnel(funnelRes.value);
+    }
   }, []);
 
   useEffect(() => void load(), [load]);
@@ -79,7 +83,7 @@ export function Insights() {
           className="mb-8 p-5 bg-card rounded-lg border border-border shadow-xs space-y-3"
         >
           <h2 id="funnel-title" className="text-base font-bold text-foreground m-0">
-            Funnel diagnostics (Pillar 4)
+            Funnel diagnostics
           </h2>
           <p className="text-xs text-muted-foreground m-0">
             {funnel.total} tracked applications · {funnel.applied} applied · {funnel.screened} screened ·{' '}
@@ -206,17 +210,6 @@ export function Insights() {
             </ul>
           </div>
         )}
-
-        <div className="pt-2">
-          <h3 className="text-base font-semibold text-foreground mb-2">Applications submitted per week</h3>
-          <ul className="space-y-1.5 p-0 m-0 list-none text-xs text-muted-foreground">
-            {m.submittedPerWeek.map((w) => (
-              <li key={w.weekStart} className="p-2 rounded bg-muted/30 border border-border/40">
-                Week of {formatDate(w.weekStart)}: <span className="font-semibold text-foreground">{w.count}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
 
         <div className="pt-2">
           <h3 className="text-base font-semibold text-foreground mb-2">Weekly campaign summary</h3>

@@ -1,33 +1,12 @@
 @import "tailwindcss";
-@import "@fontsource/atkinson-hyperlegible/400.css";
-@import "@fontsource/atkinson-hyperlegible/700.css";
-@import "@fontsource-variable/fraunces";
-@import "@fontsource/ibm-plex-mono/400.css";
 
 @theme {
-  --color-cs-accent: #c43822;
-  --color-cs-accent-hover: #ab2e1a;
-  --color-cs-accent-strong: #8f2312;
-  --color-cs-accent-wash: #fdf1ef;
-  --color-cs-teal: #0e766e;
-  --color-cs-teal-wash: #eaf6f5;
-  --color-cs-attention: #9a4b08;
-  --color-cs-attention-wash: #fbf3e8;
-  --color-cs-danger: #b92b27;
-  --color-cs-danger-wash: #fdeeee;
-  --color-cs-paper: #f5f7f8;
-  --color-cs-canvas: #ffffff;
-  --color-cs-ink: #111820;
-  --color-cs-ink-soft: #47545b;
-  --color-cs-ink-faint: #52636b;
-  --color-cs-rule: #dce3e5;
-  --color-cs-rule-strong: #b8c4c7;
   --font-display: "Fraunces Variable", Georgia, serif;
   --font-body:
     "Atkinson Hyperlegible", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  --radius-cs: 8px;
-  --radius-cs-lg: 12px;
+  --radius-cs: 6px;
+  --radius-cs-lg: 10px;
 
   --color-border: var(--rule);
   --color-input: var(--rule);
@@ -36,6 +15,7 @@
   --color-foreground: var(--ink);
   --color-primary: var(--color-accent);
   --color-primary-foreground: var(--color-accent-fg);
+  --color-accent-foreground: var(--color-accent-fg);
   --color-secondary: var(--paper-subtle);
   --color-secondary-foreground: var(--ink);
   --color-destructive: var(--color-status-danger-fg);
@@ -46,14 +26,13 @@
   --color-popover-foreground: var(--ink);
   --color-card: var(--paper-raised);
   --color-card-foreground: var(--ink);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-lg);
 }
 
-/* Career Strike — Signal & Momentum Design System
-   A high-clarity career operating workspace: precision typography, deep onyx, signal coral, and kinetic evidence trails. */
+/* Career Strike — Editorial Slate & Executive Cobalt Design System */
 
 :root {
   --paper: var(--color-canvas);
@@ -67,7 +46,7 @@
   --rule: var(--color-border);
   --rule-strong: var(--color-border);
   --accent: var(--color-accent);
-  --accent-text: var(--color-ink);
+  --accent-text: var(--color-accent);
   --accent-hover: var(--color-accent-hover);
   --accent-strong: var(--color-ink);
   --accent-wash: var(--color-subtle);
@@ -82,13 +61,11 @@
   --ok-wash: var(--color-status-success-bg);
   --focus: var(--color-accent);
 
-  /* Elevation */
-  --shadow-1: 0 1px 3px rgba(17, 24, 32, 0.04), 0 1px 2px rgba(17, 24, 32, 0.02);
-  --shadow-2: 0 4px 12px -2px rgba(17, 24, 32, 0.06), 0 2px 6px -1px rgba(17, 24, 32, 0.03);
-  --shadow-3: 0 12px 32px -4px rgba(17, 24, 32, 0.08), 0 4px 12px -2px rgba(17, 24, 32, 0.04);
+  --shadow-1: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-2: 0 2px 8px -2px rgba(15, 23, 42, 0.06);
+  --shadow-3: 0 8px 24px -4px rgba(15, 23, 42, 0.08);
   --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 24%, transparent);
 
-  /* Motion */
   --t-fast: 140ms;
   --t-med: 280ms;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -98,8 +75,8 @@
     "Atkinson Hyperlegible", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-  --radius: 8px;
-  --radius-lg: 12px;
+  --radius: 6px;
+  --radius-lg: 10px;
   --measure: 72ch;
   color-scheme: light;
 }
@@ -175,81 +152,83 @@
   color-scheme: dark;
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
 
-html {
-  -webkit-text-size-adjust: 100%;
-}
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
 
-body {
-  margin: 0;
-  background-color: var(--paper);
-  color: var(--ink);
-  font: 400 1.0625rem / 1.6 var(--font-body);
-  text-rendering: optimizeLegibility;
-}
+  body {
+    margin: 0;
+    background-color: var(--paper);
+    color: var(--ink);
+    font: 400 1.0625rem / 1.6 var(--font-body);
+    text-rendering: optimizeLegibility;
+  }
 
-::selection {
-  background: var(--accent);
-  color: var(--on-accent);
-}
+  ::selection {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
 
-* {
-  scrollbar-width: thin;
-  scrollbar-color: var(--rule-strong) transparent;
-}
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule-strong) transparent;
+  }
 
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
 
-::-webkit-scrollbar-thumb {
-  background: var(--rule-strong);
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
+  ::-webkit-scrollbar-thumb {
+    background: var(--rule-strong);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-a {
-  color: var(--accent-text);
-  text-underline-offset: 0.18em;
-  text-decoration-thickness: 1px;
-  transition: color var(--t-fast) var(--ease);
-}
+  a {
+    color: var(--accent-text);
+    text-underline-offset: 0.18em;
+    text-decoration-thickness: 1px;
+    transition: color var(--t-fast) var(--ease);
+  }
 
-a:hover {
-  color: var(--accent-hover);
-  text-decoration-thickness: 2px;
-}
+  a:hover {
+    color: var(--accent-hover);
+    text-decoration-thickness: 2px;
+  }
 
-code,
-pre {
-  font-family: var(--font-mono);
-  font-size: 0.92em;
-}
+  code,
+  pre {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+  }
 
-:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
-  border-radius: 2px;
-  box-shadow: var(--ring);
-}
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 2px;
+    box-shadow: var(--ring);
+  }
 
-summary {
-  cursor: pointer;
-}
+  summary {
+    cursor: pointer;
+  }
 
-summary:hover {
-  color: var(--accent);
+  summary:hover {
+    color: var(--accent);
+  }
 }
 
 .visually-hidden {

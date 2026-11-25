@@ -29,20 +29,32 @@ const SUMMARY_LABEL: Record<OutreachState, string> = {
   DISMISSED: 'Dismissed',
 };
 
+interface CrmContact {
+  id: string;
+  name: string;
+  company: string | null;
+  title: string | null;
+  email: string | null;
+  linkedinUrl: string | null;
+}
+
 export function Outreach() {
   const [data, setData] = useState<OutreachPayload | null>(null);
+  const [crmContacts, setCrmContacts] = useState<CrmContact[]>([]);
   const [applications, setApplications] = useState<ApplicationSummary[]>([]);
   const [error, setError] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [outreach, apps] = await Promise.all([
+      const [outreach, apps, crm] = await Promise.all([
         api<OutreachPayload>('/api/outreach'),
         api<{ applications: ApplicationSummary[] }>('/api/applications').catch(() => ({ applications: [] })),
+        api<{ contacts: CrmContact[] }>('/api/contacts').catch(() => ({ contacts: [] })),
       ]);
       setData(outreach);
       setApplications(apps.applications);
+      setCrmContacts(crm.contacts);
       setError(false);
     } catch {
       setError(true);
@@ -159,6 +171,55 @@ export function Outreach() {
               void load();
             }}
           />
+          {crmContacts.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-border/60 space-y-2">
+              <span className="text-xs font-semibold text-foreground block">
+                From your Network CRM ({crmContacts.length})
+              </span>
+              <ul className="space-y-1.5 list-none p-0 m-0 text-xs">
+                {crmContacts.slice(0, 5).map((c) => {
+                  const alreadyInOutreach = data.contacts.some((oc) => oc.name.toLowerCase() === c.name.toLowerCase());
+                  return (
+                    <li key={c.id} className="flex items-center justify-between gap-2 p-2 rounded bg-muted/30">
+                      <span className="truncate text-muted-foreground">
+                        <strong className="text-foreground">{c.name}</strong>
+                        {c.company ? ` @ ${c.company}` : ''}
+                      </span>
+                      {!alreadyInOutreach && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-[11px] shrink-0"
+                          onClick={async () => {
+                            try {
+                              await api('/api/outreach/contacts', {
+                                method: 'POST',
+                                body: {
+                                  name: c.name,
+                                  employer: c.company,
+                                  roleTitle: c.title,
+                                  profileUrl: c.linkedinUrl,
+                                  email: c.email,
+                                  notes: null,
+                                },
+                              });
+                              setMessage(`Imported ${c.name} into Outreach.`);
+                              void load();
+                            } catch {
+                              setMessage(`Could not import ${c.name}.`);
+                            }
+                          }}
+                        >
+                          Use for outreach
+                        </Button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </section>
 
         <div className="lg:col-span-2 space-y-6">

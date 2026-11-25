@@ -78,7 +78,7 @@ export function FitPanel({ fit }: { fit: FitDetail }) {
               <ul className="divide-y divide-border/60 text-xs text-muted-foreground pl-2 mt-2 border-t border-border/40 pt-1">
                 {f.evidence.map((e, i) => (
                   <li key={i} className="py-1 first:pt-0 last:pb-0">
-                    <span className="font-mono text-[10px] uppercase font-semibold text-muted-foreground/80">
+                    <span className="font-mono text-[10px] uppercase font-semibold text-muted-foreground">
                       {EVIDENCE_LABEL[e.source]}
                     </span>{' '}
                     {e.text}

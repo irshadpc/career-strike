@@ -1,8 +1,26 @@
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { canonicalSkill } from '../../../../matching/skills';
 import { ApiError, api, type ProfileFact, type ValidationIssue } from '../../../api';
+
+const COMMON_SKILL_ALIASES: Record<string, string> = {
+  js: 'JavaScript',
+  ecmascript: 'JavaScript',
+  ts: 'TypeScript',
+  k8s: 'Kubernetes',
+  postgres: 'PostgreSQL',
+  golang: 'Go',
+  reactjs: 'React',
+  'react.js': 'React',
+  nodejs: 'Node.js',
+  'node.js': 'Node.js',
+};
+
+function normalizeClientSkill(input: string): string {
+  const clean = input.trim().replace(/\s+/g, ' ');
+  return COMMON_SKILL_ALIASES[clean.toLowerCase()] ?? clean;
+}
+
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { useToast } from '../../../components/ui/toast';
@@ -58,9 +76,9 @@ export function FactSection({
     );
     if (section.kind === 'skill') {
       const typed = String(value.name ?? '').trim();
-      const name = (canonicalSkill(typed) ?? typed).toLowerCase();
+      const label = normalizeClientSkill(typed);
+      const name = label.toLowerCase();
       if (facts.some((f) => String(f.value.name).toLowerCase() === name)) {
-        const label = canonicalSkill(typed) ?? typed;
         setStatus(`${label} is already in your skills.`);
         toast({
           title: `${label} is already in your skills`,
@@ -200,7 +218,7 @@ export function FactSection({
                   key={f.id}
                   id={`fact-${f.id}`}
                   className={`flex flex-wrap items-center justify-between gap-2 py-2.5 first:pt-0 last:pb-0 transition-colors rounded-md ${
-                    flashId === f.id ? 'bg-teal-500/10 ring-1 ring-teal-500/40 px-2 -mx-2' : ''
+                    flashId === f.id ? 'bg-status-success-bg ring-1 ring-status-success-border px-2 -mx-2' : ''
                   }`}
                 >
                   <div className="flex items-center gap-2">

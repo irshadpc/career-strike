@@ -1,4 +1,4 @@
-import { Document, HeadingLevel, Packer, Paragraph, TextRun } from 'docx';
+import { Document, HeadingLevel, Packer, Paragraph, TabStopType, TextRun } from 'docx';
 import type { MasterResumeDocument } from './master-resume.js';
 
 /**
@@ -27,10 +27,13 @@ export async function buildMasterDocx(master: MasterResumeDocument): Promise<Buf
   return Buffer.from(await Packer.toBuffer(doc));
 }
 
+const MASTER_SECTION_RE =
+  /^(PROFESSIONAL SUMMARY|CORE SKILLS|PROFESSIONAL EXPERIENCE|VERIFIED PROJECTS & ACHIEVEMENTS|PORTFOLIO|EDUCATION & CERTIFICATIONS|LANGUAGES)$/i;
+
 function buildBlocks(master: MasterResumeDocument): Paragraph[] {
   const blocks: Paragraph[] = [];
 
-  // 1. Body-only contact block: name first (HeaadingLevel.HEADING_1), then contact/summary lines.
+  // 1. Body-only contact block: name first (HeadingLevel.HEADING_1), then contact/summary lines.
   const vals = [master.identity.email, master.identity.phone, master.identity.linkedin]
     .filter((v): v is string => !!v)
     .map((v) => v.replace(/^mailto:/i, ''));
@@ -44,14 +47,19 @@ function buildBlocks(master: MasterResumeDocument): Paragraph[] {
   if (summary) blocks.push(new Paragraph({ children: [new TextRun(summary)], spacing: { after: 320 } }));
 
   let inRole = false;
+  let seenFirstSection = false;
+  let inSummarySection = false;
   for (const rawLine of master.content.split('\n')) {
     const line = rawLine.trim();
     if (!line) continue;
-    const isSection =
-      /^(PROFESSIONAL SUMMARY|CORE SKILLS|PROFESSIONAL EXPERIENCE|VERIFIED PROJECTS & ACHIEVEMENTS|PORTFOLIO|EDUCATION & CERTIFICATIONS|LANGUAGES)$/i.test(
-        line,
-      );
+    const isSection = MASTER_SECTION_RE.test(line);
     if (isSection) {
+      seenFirstSection = true;
+      inSummarySection = /^PROFESSIONAL SUMMARY$/i.test(line);
+      if (inSummarySection) {
+        inRole = false;
+        continue; // Already rendered body summary above without duplicating
+      }
       const level =
         line === 'PROFESSIONAL EXPERIENCE' || line === 'VERIFIED PROJECTS & ACHIEVEMENTS'
           ? HeadingLevel.HEADING_2
@@ -60,20 +68,28 @@ function buildBlocks(master: MasterResumeDocument): Paragraph[] {
       inRole = line === 'PROFESSIONAL EXPERIENCE';
       continue;
     }
+    if (!seenFirstSection || inSummarySection) {
+      // Skip top identity header (name/headline/contact) and summary body already emitted above
+      continue;
+    }
     if (line.startsWith('•') || line.startsWith('*') || line.startsWith('-')) {
       blocks.push(new Paragraph({ bullet: { level: 0 }, children: [new TextRun(line.replace(/^[•*-]\s*/, ''))] }));
       continue;
     }
     if (inRole) {
-      // Role header (Title — Employer (start – end)) with a hairline top border.
+      // Role header (Title — Employer (start – end)) with right-aligned tab stop.
       const m = line.match(/^(.+?)\s*—\s*(.+?)\s*(\([^)]*\))$/);
       if (m) {
         blocks.push(
           new Paragraph({
             heading: HeadingLevel.HEADING_3,
+            tabStops: [{ type: TabStopType.RIGHT, position: 10080 }],
             spacing: { before: 380, after: 100 },
             border: { top: { style: 'single', color: '000000', space: 120, size: 6 } },
-            children: [new TextRun(m[1]!.trim()), new TextRun(` — ${m[2]!.trim()} ${m[3]?.trim() ?? ''}`)],
+            children: [
+              new TextRun({ text: `${m[1]!.trim()} — ${m[2]!.trim()}`, bold: true }),
+              new TextRun(`\t${m[3]?.trim() ?? ''}`),
+            ],
           }),
         );
       } else {
@@ -95,7 +111,7 @@ export function extractSummary(content: string): string {
   const out: string[] = [];
   for (let i = start + 1; i < lines.length; i++) {
     const line = lines[i]!;
-    if (/^[A-Z ]+$/.test(line) && line.length > 3) break; // next section header
+    if (MASTER_SECTION_RE.test(line) || (/^[A-Z][A-Z &/-]+$/.test(line) && line.length > 5)) break; // next section header
     if (line) out.push(line);
   }
   return out.join(' ').trim();

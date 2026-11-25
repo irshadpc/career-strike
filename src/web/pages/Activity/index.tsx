@@ -116,7 +116,7 @@ export function Activity() {
           {backoff.map((b) => (
             <li
               key={b.id}
-              className="p-2.5 rounded bg-amber-500/10 border border-amber-500/30 text-amber-900 dark:text-amber-200"
+              className="p-2.5 rounded bg-status-warn-bg border border-status-warn-border text-status-warn-fg"
             >
               Board “{b.board}” failed {b.consecutiveFailures} time{b.consecutiveFailures === 1 ? '' : 's'}; scheduled
               checks wait until {formatDateTime(b.nextAttemptAt!)}

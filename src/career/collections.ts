@@ -237,6 +237,21 @@ export function listCuratedCollections(db: Db, now = new Date()): CareerCollecti
     now.getTime(),
   ).jobs;
 
+  const jobsByEmployer = new Map<string, JobSummary[]>();
+  for (const j of allJobs) {
+    const key = j.employer.toLowerCase();
+    const arr = jobsByEmployer.get(key) ?? [];
+    arr.push(j);
+    jobsByEmployer.set(key, arr);
+  }
+
+  // Compute Company360 once per company instead of re-querying across every collection
+  const profileCache = new Map<string, Company360Profile>();
+  for (const comp of registry) {
+    const p360 = getCompany360(db, comp.id, now);
+    if (p360) profileCache.set(comp.id, p360);
+  }
+
   return rows.map((row) => {
     let filter: Record<string, unknown> = {};
     try {
@@ -249,9 +264,9 @@ export function listCuratedCollections(db: Db, now = new Date()): CareerCollecti
     let matchingOpenRolesCount = 0;
 
     for (const comp of registry) {
-      const companyJobs = allJobs.filter((j) => j.employer.toLowerCase() === comp.name.toLowerCase());
-      const p360 = getCompany360(db, comp.id, now);
+      const p360 = profileCache.get(comp.id);
       if (!p360) continue;
+      const companyJobs = jobsByEmployer.get(comp.name.toLowerCase()) ?? [];
       if (matchesRule(row.rule_kind, filter, p360, companyJobs)) {
         matchingCompaniesCount += 1;
         matchingOpenRolesCount += companyJobs.length;
@@ -298,11 +313,19 @@ export function getCuratedCollection(db: Db, slugOrId: string, now = new Date())
     now.getTime(),
   ).jobs;
 
+  const jobsByEmployer = new Map<string, JobSummary[]>();
+  for (const j of allJobs) {
+    const key = j.employer.toLowerCase();
+    const arr = jobsByEmployer.get(key) ?? [];
+    arr.push(j);
+    jobsByEmployer.set(key, arr);
+  }
+
   const matchedCompanies: Company360Profile[] = [];
   const matchedRoles: JobSummary[] = [];
 
   for (const comp of registry) {
-    const companyJobs = allJobs.filter((j) => j.employer.toLowerCase() === comp.name.toLowerCase());
+    const companyJobs = jobsByEmployer.get(comp.name.toLowerCase()) ?? [];
     const p360 = getCompany360(db, comp.id, now);
     if (!p360) continue;
     if (matchesRule(row.rule_kind, filter, p360, companyJobs)) {

@@ -52,11 +52,15 @@ export function AiAssistants() {
 
   const revoke = async (c: Client): Promise<void> => {
     if (!window.confirm(`Disconnect ${NAMES[c.name] ?? c.name}? It will lose all access immediately.`)) return;
-    await api(`/api/mcp-clients/${c.id}/revoke`, { method: 'POST' }).catch(() => setStatus('Could not disconnect.'));
-    setStatus(
-      `${NAMES[c.name] ?? c.name} disconnected. To remove it from the assistant’s settings too, run: career-strike disconnect ${c.name}`,
-    );
-    void load();
+    try {
+      await api(`/api/mcp-clients/${c.id}/revoke`, { method: 'POST' });
+      setStatus(
+        `${NAMES[c.name] ?? c.name} disconnected. To remove it from the assistant’s settings too, run: career-strike disconnect ${c.name}`,
+      );
+      void load();
+    } catch {
+      setStatus('Could not disconnect.');
+    }
   };
 
   return (
@@ -214,10 +218,14 @@ export function AiRequests() {
     void load();
   };
   const decline = async (d: DisclosureItem): Promise<void> => {
-    await api(`/api/disclosures/${d.id}/decline`, { method: 'POST' }).catch(() => undefined);
-    setStatus(`Declined. Nothing was shared with ${name(d.provider)}.`);
-    setPreview(null);
-    void load();
+    try {
+      await api(`/api/disclosures/${d.id}/decline`, { method: 'POST' });
+      setStatus(`Declined. Nothing was shared with ${name(d.provider)}.`);
+      setPreview(null);
+      void load();
+    } catch {
+      setStatus('Could not decline request.');
+    }
   };
 
   if (!items) return null;

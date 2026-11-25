@@ -1,7 +1,6 @@
 import type { CandidateProfile } from '../career/profile.js';
 import type { MarketFacts, PublishedSalary, RemotePolicy } from '../sources/types.js';
 import type { PostingRequirements } from './requirements.js';
-import { mentions } from './skills.js';
 
 export type Verdict = 'meets' | 'partial' | 'gap' | 'unknown';
 export type EvidenceSource = 'posting' | 'profile' | 'settings' | 'inferred';
@@ -149,6 +148,26 @@ const COUNTRY_NAMES: readonly [string, string][] = (() => {
   return out;
 })();
 
+function compilePhraseRegex(phrase: string): RegExp {
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  return new RegExp(`(?<![A-Za-z0-9+#.])${escaped}(?![A-Za-z0-9+#])`, 'i');
+}
+
+const COMPILED_COUNTRY_NAMES: [string, RegExp][] = COUNTRY_NAMES.map(([code, name]) => [
+  code,
+  compilePhraseRegex(name),
+]);
+const SKILL_REGEX_CACHE = new Map<string, RegExp>();
+
+function cachedMentions(text: string, phrase: string): boolean {
+  let re = SKILL_REGEX_CACHE.get(phrase);
+  if (!re) {
+    re = compilePhraseRegex(phrase);
+    SKILL_REGEX_CACHE.set(phrase, re);
+  }
+  return re.test(text);
+}
+
 // "City, ST" with a US state abbreviation. These collide with ISO codes (CA, IN, DE…), so a
 // bare two-letter code is never read as a country.
 const US_STATE =
@@ -158,7 +177,7 @@ const US_STATE =
 export function countriesIn(text: string | null): string[] {
   if (!text) return [];
   const found = new Set<string>();
-  for (const [code, name] of COUNTRY_NAMES) if (mentions(text, name)) found.add(code);
+  for (const [code, re] of COMPILED_COUNTRY_NAMES) if (re.test(text)) found.add(code);
   if (US_STATE.test(text) || /(?<![A-Za-z])US(?![A-Za-z])/.test(text)) found.add('US');
   return [...found];
 }
@@ -406,7 +425,7 @@ function skillsFactor(
   // Candidate skills Career Strike does not know but the posting mentions in the candidate's own words.
   const known = new Set(reqs.map((r) => r.skill.toLowerCase()));
   const ownWords = profile.skills.filter(
-    (sk) => !known.has(sk.name.toLowerCase()) && sk.name.length >= 3 && mentions(job.descriptionText, sk.name),
+    (sk) => !known.has(sk.name.toLowerCase()) && sk.name.length >= 3 && cachedMentions(job.descriptionText, sk.name),
   );
   const transferable = [
     ...matched.filter((r) => r.importance === 'mentioned').map((r) => r.skill),

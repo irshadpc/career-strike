@@ -114,8 +114,8 @@ export function ApplicationPage({ id }: { id: string }) {
           aria-live="polite"
           className={`text-xs p-3 rounded-md border ${
             message.kind === 'error'
-              ? 'border-destructive/30 bg-destructive/10 text-destructive'
-              : 'border-teal-500/30 bg-teal-50 dark:bg-teal-950/20 text-teal-900 dark:text-teal-200'
+              ? 'border-status-danger-border bg-status-danger-bg text-status-danger-fg'
+              : 'border-status-success-border bg-status-success-bg text-status-success-fg'
           }`}
         >
           {message.text}
@@ -124,6 +124,31 @@ export function ApplicationPage({ id }: { id: string }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-2 space-y-6">
+          {view.state === 'OFFER' && (
+            <section
+              aria-labelledby="offer-received-title"
+              className="p-5 rounded-xl border border-status-success-border bg-status-success-bg space-y-3"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 id="offer-received-title" className="text-base font-semibold text-status-success-fg m-0">
+                    Offer received from {view.job.employer}
+                  </h2>
+                  <p className="text-xs text-muted-foreground m-0 mt-0.5">
+                    Compare total compensation &amp; equity in Offers Lab, or accept to initialize your 30-60-90 plan.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Link href="/offers" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-xs')}>
+                    Compare in Offers Lab
+                  </Link>
+                  <Link href="/hired" className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'text-xs')}>
+                    Open Hired Mode →
+                  </Link>
+                </div>
+              </div>
+            </section>
+          )}
           {editable ? (
             <Editor
               key={`${view.version}`}
@@ -187,7 +212,7 @@ function PersonalizationPanel({
     }
   }, [application.id]);
 
-  useEffect(() => void load(), [load, application.version]);
+  useEffect(() => void load(), [load]);
 
   const generate = async (): Promise<void> => {
     setBusy(true);
@@ -225,7 +250,7 @@ function PersonalizationPanel({
       )}
       {data?.warnings.map((warning) => (
         <p
-          className="p-3 rounded-md border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 text-xs"
+          className="p-3 rounded-md border border-status-warn-border bg-status-warn-bg text-status-warn-fg text-xs"
           key={warning}
         >
           {warning}
@@ -278,16 +303,20 @@ function DocumentVariantEditor({
 }) {
   const [content, setContent] = useState(variant.content);
   const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const changed = content !== variant.content;
 
   const save = async (): Promise<void> => {
     setBusy(true);
+    setSaveError(null);
     try {
       await api(`/api/applications/${applicationId}/personalization/${variant.id}`, {
         method: 'PUT',
         body: { content },
       });
       await onChanged();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save document edit.');
     } finally {
       setBusy(false);
     }
@@ -309,6 +338,11 @@ function DocumentVariantEditor({
         onChange={(event) => setContent(event.target.value)}
         className="font-mono text-xs"
       />
+      {saveError && (
+        <p role="alert" className="text-xs text-status-danger-fg m-0">
+          {saveError}
+        </p>
+      )}
       {variant.evidence.length > 0 && (
         <p className="text-xs text-muted-foreground">
           Evidence:{' '}
@@ -382,7 +416,7 @@ function Editor({
       )}
       {view.missingRequired.length > 0 && (
         <p
-          className="p-3 rounded-md border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 text-xs"
+          className="p-3 rounded-md border border-status-warn-border bg-status-warn-bg text-status-warn-fg text-xs"
           role="note"
         >
           Still needed: {view.missingRequired.join(', ')}.
@@ -664,11 +698,13 @@ function Actions({
 }) {
   const navigate = useNavigateTo();
   const [ack, setAck] = useState(false);
+  const [confirmReject, setConfirmReject] = useState(false);
+  const [rejectNote, setRejectNote] = useState('');
   const can = (s: string): boolean => view.allowedTransitions.includes(s as ApplicationView['state']);
   const reject = (): void => {
-    const note = window.prompt('Why are you rejecting this application? (optional)');
-    if (note === null) return;
-    void run('Rejected. Nothing was sent.', () => post('reject', { note: note.trim() || null }));
+    void run('Rejected. Nothing was sent.', () => post('reject', { note: rejectNote.trim() || null }));
+    setConfirmReject(false);
+    setRejectNote('');
   };
 
   return (
@@ -721,7 +757,7 @@ function Actions({
       )}
       {view.duplicateRisk.length > 0 && (
         <div
-          className="p-3 rounded-md border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-200 text-xs"
+          className="p-3 rounded-md border border-status-warn-border bg-status-warn-bg text-status-warn-fg text-xs"
           role="note"
           data-testid="duplicate-risk"
         >
@@ -862,18 +898,56 @@ function Actions({
           can={can}
         />
       )}
-      {can('CANCELLED') && (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onClick={reject}
-          className="w-full text-xs text-muted-foreground"
-        >
-          Reject
-        </Button>
-      )}
+      {can('CANCELLED') &&
+        (confirmReject ? (
+          <div className="p-3 rounded-lg border border-destructive/30 bg-destructive/5 space-y-2 text-xs">
+            <label htmlFor="reject-application-note" className="block font-medium text-foreground">
+              Why are you rejecting this application? (optional)
+            </label>
+            <Input
+              id="reject-application-note"
+              value={rejectNote}
+              onChange={(e) => setRejectNote(e.target.value)}
+              placeholder="Optional note"
+              className="h-8 text-xs bg-background"
+            />
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={busy}
+                onClick={reject}
+                className="h-7 text-xs"
+              >
+                Confirm reject
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setConfirmReject(false);
+                  setRejectNote('');
+                }}
+                className="h-7 text-xs"
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={busy}
+            onClick={() => setConfirmReject(true)}
+            className="w-full text-xs text-muted-foreground"
+          >
+            Reject
+          </Button>
+        ))}
       {view.state === 'CANCELLED' && (
         <Button
           type="button"
@@ -1091,6 +1165,23 @@ function FollowUpStudio({ view }: { view: ApplicationView }) {
   const [contactName, setContactName] = useState('');
   const [highlight, setHighlight] = useState('');
   const [copied, setCopied] = useState(false);
+  const [warmContacts, setWarmContacts] = useState<Array<{ id: string; name: string; title: string | null }>>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    api<{ contacts: Array<{ id: string; name: string; title: string | null }> }>(
+      `/api/contacts/warm-paths?company=${encodeURIComponent(view.job.employer)}`,
+    )
+      .then((res) => {
+        if (!cancelled) setWarmContacts(res.contacts ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setWarmContacts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [view.job.employer]);
 
   const candidateName = useMemo(() => {
     const f = view.payload.fields.find((field) =>
@@ -1123,7 +1214,7 @@ function FollowUpStudio({ view }: { view: ApplicationView }) {
   return (
     <section className="space-y-3" aria-labelledby="outreach-title">
       <h3 id="outreach-title" className="text-base font-semibold text-foreground m-0">
-        ✉️ Professional Follow-Up Studio
+        Follow-Up &amp; Outreach Studio
       </h3>
       <p className="text-xs text-muted-foreground m-0">
         Draft thoughtful, stage-appropriate correspondence with one-click copy.
@@ -1170,6 +1261,26 @@ function FollowUpStudio({ view }: { view: ApplicationView }) {
       </div>
 
       <div className="space-y-2">
+        {warmContacts.length > 0 && (
+          <div className="text-xs space-y-1">
+            <span className="text-muted-foreground font-medium block">Warm contacts at {view.job.employer}:</span>
+            <div className="flex flex-wrap gap-1.5">
+              {warmContacts.map((c) => (
+                <Button
+                  key={c.id}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-[11px]"
+                  onClick={() => setContactName(c.name)}
+                >
+                  {c.name}
+                  {c.title ? ` (${c.title})` : ''}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
         <div className="space-y-1">
           <label htmlFor="outreach-contact" className="text-xs text-muted-foreground font-medium block">
             Contact or recruiter name (optional)
@@ -1215,7 +1326,7 @@ function FollowUpStudio({ view }: { view: ApplicationView }) {
         </pre>
         <div>
           <Button type="button" variant="secondary" size="sm" className="w-full text-xs h-7" onClick={handleCopy}>
-            {copied ? '✓ Copied to Clipboard!' : '📋 Copy Outreach Draft'}
+            {copied ? 'Copied to Clipboard' : 'Copy Outreach Draft'}
           </Button>
         </div>
       </div>

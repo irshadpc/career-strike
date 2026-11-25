@@ -66,10 +66,18 @@ export function MarketTable({
                 return (
                   <tr
                     key={m.code}
-                    className={`border-b border-border/50 hover:bg-muted/40 transition-colors cursor-pointer ${
+                    tabIndex={0}
+                    aria-selected={isActive}
+                    className={`border-b border-border/50 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer ${
                       isActive ? 'bg-muted/60 font-medium' : ''
                     }`}
                     onClick={() => onSelectMarket(m.code)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectMarket(m.code);
+                      }
+                    }}
                   >
                     <td className="p-3">
                       <div className="flex items-center gap-2.5">

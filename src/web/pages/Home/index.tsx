@@ -15,6 +15,13 @@ import { Count } from './-components/Count';
 const dateFormat = new Intl.DateTimeFormat(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
 const timeFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
+function localDateKey(d = new Date()): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 export function Home() {
   const overview = useResource<Overview>('/api/overview');
   const readiness = useResource<{ readiness: ProfileReadinessReport }>('/api/profile/readiness');
@@ -92,13 +99,14 @@ export function Home() {
   const { toast } = useToast();
 
   // Daily focus cap: a calm, anti-burnout guardrail (Pillar 1 of the candidate UX audit).
-  // Tracks how many roles the candidate has actively decided on today, on this device.
-  const todayKey = new Date().toISOString().slice(0, 10);
+  // Tracks how many roles the candidate has actively decided on today in the local timezone.
+  const todayKey = localDateKey();
   const [focusCap, setFocusCap] = useState<number>(() => {
     const v = window.localStorage.getItem('cs.dailyFocusCap');
     const n = v ? Number(v) : 5;
     return Number.isFinite(n) && n > 0 ? n : 5;
   });
+  const [focusCapInput, setFocusCapInput] = useState<string>(() => String(focusCap));
   const [focusDone, setFocusDone] = useState<number>(() => {
     const raw = window.localStorage.getItem(`cs.dailyFocus.done.${todayKey}`);
     const n = raw ? Number(raw) : 0;
@@ -140,7 +148,65 @@ export function Home() {
       {overview.state === 'error' && <ErrorPanel message={overview.message} onRetry={overview.retry} />}
       {overview.state === 'ready' && (
         <>
-          {/* Daily focus cap — calm, anti-burnout guardrail (Pillar 1). */}
+          {/* Candidate Command Bar — direct path across all 4 career stages */}
+          <nav
+            aria-label="Job search workflow stages"
+            className="mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+          >
+            <Link
+              href="/profile"
+              className="p-3.5 rounded-lg border border-border bg-card hover:border-foreground/30 transition-colors no-underline space-y-1"
+            >
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold block">
+                01 · Foundation
+              </span>
+              <strong className="text-sm text-foreground block">Profile &amp; Verified Skills</strong>
+              <span className="text-xs text-muted-foreground block">
+                {readiness.state === 'ready'
+                  ? `${readiness.data.readiness.counts.confirmedRoles} roles · ${readiness.data.readiness.counts.confirmedSkills} skills confirmed`
+                  : 'Import CV or confirm roles'}
+              </span>
+            </Link>
+            <Link
+              href="/opportunities"
+              className="p-3.5 rounded-lg border border-border bg-card hover:border-foreground/30 transition-colors no-underline space-y-1"
+            >
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold block">
+                02 · Discover Jobs
+              </span>
+              <strong className="text-sm text-foreground block">Get Jobs &amp; Shortlist</strong>
+              <span className="text-xs text-muted-foreground block">
+                {overview.data.jobs.open} verified open · {overview.data.sources.boards} boards
+              </span>
+            </Link>
+            <Link
+              href="/resume"
+              className="p-3.5 rounded-lg border border-border bg-card hover:border-foreground/30 transition-colors no-underline space-y-1"
+            >
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold block">
+                03 · Tailor &amp; Verify
+              </span>
+              <strong className="text-sm text-foreground block">Resume Studio</strong>
+              <span className="text-xs text-muted-foreground block">
+                1-click job tailoring, XYZ audit &amp; ATS export
+              </span>
+            </Link>
+            <Link
+              href="/autopilot"
+              className="p-3.5 rounded-lg border border-border bg-card hover:border-foreground/30 transition-colors no-underline space-y-1"
+            >
+              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground font-semibold block">
+                04 · Apply &amp; Track
+              </span>
+              <strong className="text-sm text-foreground block">Autopilot &amp; Pipeline</strong>
+              <span className="text-xs text-muted-foreground block">
+                {overview.data.applications.submitted} submitted · {overview.data.applications.interviewing}{' '}
+                interviewing
+              </span>
+            </Link>
+          </nav>
+
+          {/* Daily focus cap — calm, anti-burnout guardrail. */}
           <section
             aria-labelledby="focus-cap-title"
             className="mb-6 p-4 bg-card border border-border rounded-xl shadow-xs"
@@ -163,15 +229,20 @@ export function Home() {
                     type="number"
                     min={1}
                     max={20}
-                    value={focusCap}
+                    value={focusCapInput}
                     onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (Number.isFinite(n) && n > 0 && n <= 20) {
+                      const raw = e.target.value;
+                      setFocusCapInput(raw);
+                      const n = Number(raw);
+                      if (raw.trim() !== '' && Number.isFinite(n) && n >= 1 && n <= 20) {
                         setFocusCap(n);
                         window.localStorage.setItem('cs.dailyFocusCap', String(n));
                       }
                     }}
-                    className="h-7 w-14 rounded-md border border-input bg-background px-2 text-xs"
+                    onBlur={() => {
+                      setFocusCapInput(String(focusCap));
+                    }}
+                    className="h-9 w-16 rounded-md border border-input bg-background px-2 text-xs text-foreground"
                   />
                 </label>
                 {focusDone >= focusCap && !restOverride && (
@@ -191,7 +262,7 @@ export function Home() {
           {readiness.state === 'ready' && (
             <section
               aria-labelledby="readiness-home-title"
-              className="mb-6 p-4 bg-card border border-border rounded-xl shadow-xs"
+              className="mb-6 p-4 bg-card border border-border rounded-xl shadow-xs space-y-3"
             >
               <div className="flex justify-between items-center flex-wrap gap-4">
                 <div>
@@ -217,13 +288,47 @@ export function Home() {
                   {readiness.data.readiness.actionLabel}
                 </Link>
               </div>
+              {overview.data.jobs.open === 0 && readiness.data.readiness.counts.confirmedRoles === 0 && (
+                <ol className="grid grid-cols-1 md:grid-cols-3 gap-3 list-none p-0 m-0 pt-2 border-t border-border/60 text-xs">
+                  <li className="p-3 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                    <span className="font-semibold text-foreground block">1. Import your background</span>
+                    <span className="text-muted-foreground block">
+                      Upload a resume PDF/DOCX or confirm your roles &amp; skills.
+                    </span>
+                    <Link href="/profile" className="text-primary font-medium hover:underline inline-block pt-1">
+                      Set up Profile →
+                    </Link>
+                  </li>
+                  <li className="p-3 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                    <span className="font-semibold text-foreground block">2. Connect target markets &amp; boards</span>
+                    <span className="text-muted-foreground block">
+                      Pick focus countries and add Greenhouse, Lever, or Ashby boards.
+                    </span>
+                    <Link
+                      href="/opportunities/sources"
+                      className="text-primary font-medium hover:underline inline-block pt-1"
+                    >
+                      Configure Sources →
+                    </Link>
+                  </li>
+                  <li className="p-3 rounded-lg bg-muted/30 border border-border/60 space-y-1">
+                    <span className="font-semibold text-foreground block">3. Tailor &amp; verify resume</span>
+                    <span className="text-muted-foreground block">
+                      Audit XYZ impact and align keywords in Resume Studio.
+                    </span>
+                    <Link href="/resume" className="text-primary font-medium hover:underline inline-block pt-1">
+                      Open Resume Studio →
+                    </Link>
+                  </li>
+                </ol>
+              )}
             </section>
           )}
 
           {/* Morning Review Queue (Top 3 Ready Packets) */}
           <section
             aria-labelledby="morning-review-queue-title"
-            className="mb-6 p-5 bg-card border-2 border-primary/20 rounded-xl shadow-xs space-y-4"
+            className="mb-6 p-5 bg-card border border-border rounded-lg space-y-4"
           >
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <div>
@@ -331,17 +436,16 @@ export function Home() {
                           }}
                         >
                           {applyingJobId === pkt.jobId ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" aria-hidden="true" />
+                              <span>Launching…</span>
+                            </>
                           ) : (
-                            <>Review & Apply</>
+                            <>Review &amp; Apply</>
                           )}
                         </Button>
                         <Link
-                          href={
-                            pkt.variantId
-                              ? `/resume-studio?variantId=${encodeURIComponent(pkt.variantId)}`
-                              : '/resume-studio'
-                          }
+                          href={pkt.variantId ? `/resume?variantId=${encodeURIComponent(pkt.variantId)}` : '/resume'}
                           className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-xs')}
                         >
                           Edit Draft
@@ -366,14 +470,24 @@ export function Home() {
                         </Button>
                       </div>
                     </div>
-                    {pkt.screeningAnswers && (
-                      <div className="text-xs text-muted-foreground bg-background/50 p-2.5 rounded border border-border/50">
-                        <span className="font-medium text-foreground block mb-1">Pre-Drafted Answers:</span>
-                        <div className="line-clamp-2 italic">
-                          "{pkt.screeningAnswers.why_this_role || pkt.screeningAnswers.work_authorization}"
+                    {(() => {
+                      const entries = Object.entries(pkt.screeningAnswers ?? {}).filter(([, val]) =>
+                        Boolean(val && val.trim()),
+                      );
+                      if (entries.length === 0) return null;
+                      const previewText =
+                        pkt.screeningAnswers?.why_this_role?.trim() ||
+                        pkt.screeningAnswers?.work_authorization?.trim() ||
+                        entries[0]![1].trim();
+                      return (
+                        <div className="text-xs text-muted-foreground bg-background/50 p-2.5 rounded border border-border/50">
+                          <span className="font-medium text-foreground block mb-1">
+                            Pre-Drafted Answers ({entries.length}):
+                          </span>
+                          <div className="line-clamp-2 italic">“{previewText}”</div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 ))}
               </div>
@@ -644,10 +758,12 @@ export function Home() {
                           </Link>
                         </h3>
                         <p className="text-xs text-muted-foreground m-0 leading-relaxed">{a.reason}</p>
-                        <p className="text-[11px] font-mono text-muted-foreground m-0">
-                          <span className="sr-only">Why this is shown: rule </span>
-                          {a.rule}
-                        </p>
+                        <details className="pt-0.5">
+                          <summary className="text-[11px] text-muted-foreground cursor-pointer select-none">
+                            Why this is shown
+                          </summary>
+                          <p className="text-[11px] font-mono text-muted-foreground mt-0.5 mb-0">{a.rule}</p>
+                        </details>
                       </div>
                     </li>
                   ))}

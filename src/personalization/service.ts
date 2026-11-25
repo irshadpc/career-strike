@@ -1,9 +1,12 @@
 import { createHash, randomBytes } from 'node:crypto';
 import type { ApplicationPayload } from '../applications/payload.js';
 import { listEvidence, profileFingerprint } from '../career/evidence.js';
+import { listMasterEntries } from '../career/master-vault.js';
 import { listFacts } from '../career/profile.js';
 import type { PostingRequirements, SkillRequirement } from '../matching/requirements.js';
+import { canonicalSkill, skillsIn } from '../matching/skills.js';
 import type { Db } from '../store/db.js';
+import { getSettings } from '../store/settings.js';
 import type { DocumentVariant, EvidenceClassification, PersonalizationView, RequirementMatch } from './types.js';
 
 type VariantKind = DocumentVariant['kind'];
@@ -177,6 +180,28 @@ export class PersonalizationService {
           previous.id,
           at,
         );
+      // Retain evidence rows whose claim or skill still appears in the candidate's edited content.
+      const prevEvidence = this.db
+        .prepare(
+          'SELECT claim_index, claim_text, evidence_ref, classification FROM document_variant_evidence WHERE variant_id = ?',
+        )
+        .all(previous.id) as {
+        claim_index: number;
+        claim_text: string;
+        evidence_ref: string;
+        classification: EvidenceClassification;
+      }[];
+      const lowerContent = content.toLowerCase();
+      const contentSkills = new Set(skillsIn(content).map((s) => s.toLowerCase()));
+      const insertEv = this.db.prepare(
+        'INSERT INTO document_variant_evidence (variant_id, claim_index, claim_text, evidence_ref, classification) VALUES (?, ?, ?, ?, ?)',
+      );
+      for (const ev of prevEvidence) {
+        const claimCanonical = (canonicalSkill(ev.claim_text) ?? ev.claim_text).toLowerCase();
+        if (lowerContent.includes(ev.claim_text.toLowerCase()) || contentSkills.has(claimCanonical)) {
+          insertEv.run(replacement, ev.claim_index, ev.claim_text, ev.evidence_ref, ev.classification);
+        }
+      }
       this.audit('personalization.variant.edited', `${applicationId}:${previous.kind}`, at);
     })();
     const current = this.currentVariants(applicationId);
@@ -317,30 +342,93 @@ export class PersonalizationService {
   private requirementMatches(skills: SkillRequirement[]): RequirementMatch[] {
     const facts = listFacts(this.db, { approvedOnly: true });
     const evidence = listEvidence(this.db, { confirmedOnly: true });
+    const masterEntries = listMasterEntries(this.db);
+
+    const textMatchesSkill = (text: string, reqSkill: string, reqCanonical: string): boolean => {
+      if (!text) return false;
+      const lower = text.toLowerCase();
+      if (lower.includes(reqSkill.toLowerCase())) return true;
+      return skillsIn(text).some((s) => s.toLowerCase() === reqCanonical.toLowerCase());
+    };
+
     return skills.map((requirement) => {
-      const skillFacts = facts.filter(
-        (f) => f.kind === 'skill' && String(f.value.name).toLowerCase() === requirement.skill.toLowerCase(),
-      );
-      if (skillFacts.length)
+      const reqCanonical = canonicalSkill(requirement.skill) ?? requirement.skill;
+      const skillFacts = facts.filter((f) => {
+        if (f.kind !== 'skill') return false;
+        const name = String(f.value.name ?? '');
+        const factCanonical = canonicalSkill(name) ?? name;
+        return (
+          name.toLowerCase() === requirement.skill.toLowerCase() ||
+          factCanonical.toLowerCase() === reqCanonical.toLowerCase()
+        );
+      });
+      if (skillFacts.length) {
         return {
           requirement: requirement.skill,
           classification: 'STRONG_MATCH',
           evidenceRefs: skillFacts.map((f) => f.id),
           explanation: `Listed in your confirmed skills. Employer evidence: ${quote(requirement.evidence)}`,
         };
+      }
+
+      const roleRefs = facts
+        .filter(
+          (f) => f.kind === 'role' && textMatchesSkill(String(f.value.summary ?? ''), requirement.skill, reqCanonical),
+        )
+        .map((f) => f.id);
+      const achievementRefs = evidence
+        .filter(
+          (e) =>
+            e.kind === 'achievement' && textMatchesSkill(String(e.value.text ?? ''), requirement.skill, reqCanonical),
+        )
+        .map((e) => e.id);
+      const detailRefs = evidence
+        .filter(
+          (e) =>
+            e.kind === 'employment_detail' &&
+            textMatchesSkill(String(e.value.summary ?? ''), requirement.skill, reqCanonical),
+        )
+        .map((e) => e.id);
+      const bulletRefs = masterEntries
+        .flatMap((e) => e.bullets)
+        .filter(
+          (b) =>
+            b.canonicalSkillIds.some((s) => s.toLowerCase() === reqCanonical.toLowerCase()) ||
+            textMatchesSkill(b.rawText, requirement.skill, reqCanonical),
+        )
+        .map((b) => b.id);
+      const directEvidenceRefs = [...roleRefs, ...achievementRefs, ...detailRefs, ...bulletRefs];
+      if (directEvidenceRefs.length > 0) {
+        return {
+          requirement: requirement.skill,
+          classification: 'STRONG_MATCH',
+          evidenceRefs: directEvidenceRefs,
+          explanation: `Demonstrated in your confirmed experience. Employer evidence: ${quote(requirement.evidence)}`,
+        };
+      }
+
       const projects = evidence.filter(
         (e) =>
           e.kind === 'project' &&
-          Array.isArray(e.value.skills) &&
-          e.value.skills.some((s) => String(s).toLowerCase() === requirement.skill.toLowerCase()),
+          ((Array.isArray(e.value.skills) &&
+            e.value.skills.some((s) => {
+              const sStr = String(s);
+              return (
+                sStr.toLowerCase() === requirement.skill.toLowerCase() ||
+                (canonicalSkill(sStr) ?? sStr).toLowerCase() === reqCanonical.toLowerCase()
+              );
+            })) ||
+            textMatchesSkill(String(e.value.summary ?? ''), requirement.skill, reqCanonical)),
       );
-      if (projects.length)
+      if (projects.length) {
         return {
           requirement: requirement.skill,
           classification: 'TRANSFERABLE_EXPERIENCE',
           evidenceRefs: projects.map((e) => e.id),
           explanation: `Named in a confirmed project. Employer evidence: ${quote(requirement.evidence)}`,
         };
+      }
+
       return {
         requirement: requirement.skill,
         classification: requirement.importance === 'required' ? 'MISSING' : 'UNVERIFIED',
@@ -350,35 +438,118 @@ export class PersonalizationService {
     });
   }
 
+  private sortRolesDesc<T extends { value: Record<string, unknown> }>(roles: T[]): T[] {
+    return [...roles].sort((a, b) => {
+      const aEnd = typeof a.value.endYear === 'number' ? a.value.endYear : 9999;
+      const bEnd = typeof b.value.endYear === 'number' ? b.value.endYear : 9999;
+      if (bEnd !== aEnd) return bEnd - aEnd;
+      const aStart = typeof a.value.startYear === 'number' ? a.value.startYear : 0;
+      const bStart = typeof b.value.startYear === 'number' ? b.value.startYear : 0;
+      return bStart - aStart;
+    });
+  }
+
   private resume(
     job: JobRow,
     matches: RequirementMatch[],
   ): { kind: VariantKind; content: string; evidence: RequirementMatch[] } {
     const facts = listFacts(this.db, { approvedOnly: true });
     const evidence = listEvidence(this.db, { confirmedOnly: true });
-    const roles = facts.filter((f) => f.kind === 'role');
+    const settings = getSettings(this.db);
+
+    const fullName = typeof settings['identity.fullName'] === 'string' ? settings['identity.fullName'].trim() : '';
+    const email = typeof settings['identity.email'] === 'string' ? settings['identity.email'].trim() : '';
+    const phone = typeof settings['identity.phone'] === 'string' ? settings['identity.phone'].trim() : '';
+    const country = typeof settings['candidate.country'] === 'string' ? settings['candidate.country'].trim() : '';
+    const linkedin =
+      typeof settings['candidate.linkedinUrl'] === 'string' ? settings['candidate.linkedinUrl'].trim() : '';
+    const github = typeof settings['candidate.githubUrl'] === 'string' ? settings['candidate.githubUrl'].trim() : '';
+    const candidateSummary =
+      typeof settings['identity.summary'] === 'string' ? settings['identity.summary'].trim() : '';
+
+    const roles = this.sortRolesDesc(facts.filter((f) => f.kind === 'role'));
     const skills = facts.filter((f) => f.kind === 'skill');
+    const educations = facts.filter((f) => f.kind === 'education');
+    const certifications = facts.filter((f) => f.kind === 'certification');
+    const languages = facts.filter((f) => f.kind === 'language');
+
     const relevant = matches
       .filter((m) => m.classification === 'STRONG_MATCH' || m.classification === 'TRANSFERABLE_EXPERIENCE')
       .map((m) => m.requirement);
-    const projects = evidence.filter((e) => e.kind === 'project').slice(0, 3);
-    const achievements = evidence.filter((e) => e.kind === 'achievement').slice(0, 5);
-    const lines = [
-      `TARGET ROLE: ${job.title}`,
-      '',
-      'SUMMARY',
-      relevant.length
-        ? `Confirmed experience relevant to this role: ${relevant.join(', ')}.`
-        : 'This tailored draft contains only confirmed profile information.',
-      '',
-      'SKILLS',
-    ];
-    lines.push(skills.map((f) => String(f.value.name)).join(', ') || '[Add confirmed skills]');
+    const relevantLower = new Set(relevant.map((r) => (canonicalSkill(r) ?? r).toLowerCase()));
+
+    const sortedSkills = [...skills].sort((a, b) => {
+      const aName = String(a.value.name ?? '');
+      const bName = String(b.value.name ?? '');
+      const aHit = relevantLower.has((canonicalSkill(aName) ?? aName).toLowerCase()) ? 1 : 0;
+      const bHit = relevantLower.has((canonicalSkill(bName) ?? bName).toLowerCase()) ? 1 : 0;
+      if (bHit !== aHit) return bHit - aHit;
+      return aName.localeCompare(bName);
+    });
+
+    const relevanceScoreForText = (txt: string): number => {
+      let score = 0;
+      for (const s of skillsIn(txt)) {
+        if (relevantLower.has(s.toLowerCase())) score += 2;
+      }
+      for (const term of relevantLower) {
+        if (txt.toLowerCase().includes(term)) score += 1;
+      }
+      return score;
+    };
+
+    const projects = [...evidence.filter((e) => e.kind === 'project')]
+      .sort(
+        (a, b) =>
+          relevanceScoreForText(`${String(b.value.name ?? '')} ${String(b.value.summary ?? '')}`) -
+          relevanceScoreForText(`${String(a.value.name ?? '')} ${String(a.value.summary ?? '')}`),
+      )
+      .slice(0, 4);
+    const achievements = [...evidence.filter((e) => e.kind === 'achievement')]
+      .sort(
+        (a, b) => relevanceScoreForText(String(b.value.text ?? '')) - relevanceScoreForText(String(a.value.text ?? '')),
+      )
+      .slice(0, 6);
+
+    const detailsByRole = new Map<string, string[]>();
+    for (const ev of evidence) {
+      if (ev.kind === 'employment_detail' && typeof ev.value.roleFactId === 'string') {
+        const list = detailsByRole.get(ev.value.roleFactId) ?? [];
+        const sum = String(ev.value.summary ?? '').trim();
+        if (sum) list.push(sum);
+        detailsByRole.set(ev.value.roleFactId, list);
+      }
+    }
+
+    const lines: string[] = [];
+    if (fullName) lines.push(fullName);
+    const contactLine = [email, phone, country, linkedin, github].filter(Boolean).join(' · ');
+    if (contactLine) lines.push(contactLine);
+    lines.push(`TARGET ROLE: ${job.title} — ${job.employer}`);
+    lines.push('');
+
+    lines.push('SUMMARY');
+    if (candidateSummary && relevant.length) {
+      lines.push(`${candidateSummary} Highlighted alignment: ${relevant.join(', ')}.`);
+    } else if (candidateSummary) {
+      lines.push(candidateSummary);
+    } else if (relevant.length) {
+      lines.push(`Confirmed experience relevant to this role: ${relevant.join(', ')}.`);
+    } else {
+      lines.push('This tailored draft contains only confirmed profile information.');
+    }
+    lines.push('');
+
+    lines.push('SKILLS');
+    lines.push(sortedSkills.map((f) => String(f.value.name)).join(', ') || '[Add confirmed skills]');
     lines.push('', 'EXPERIENCE');
     for (const role of roles) {
       const v = role.value;
       lines.push(`${v.title}${v.employer ? ` — ${v.employer}` : ''} (${v.startYear}–${v.endYear ?? 'Present'})`);
       if (v.summary) lines.push(String(v.summary));
+      for (const extra of detailsByRole.get(role.id) ?? []) {
+        lines.push(`• ${extra}`);
+      }
     }
     if (projects.length) {
       lines.push('', 'SELECTED PROJECTS');
@@ -388,6 +559,24 @@ export class PersonalizationService {
       lines.push('', 'CONFIRMED ACHIEVEMENTS');
       for (const achievement of achievements) lines.push(`• ${achievement.value.text}`);
     }
+    if (educations.length) {
+      lines.push('', 'EDUCATION');
+      for (const ed of educations) {
+        const v = ed.value;
+        lines.push(`${v.qualification}${v.institution ? ` — ${v.institution}` : ''}${v.year ? ` (${v.year})` : ''}`);
+      }
+    }
+    if (certifications.length) {
+      lines.push('', 'CERTIFICATIONS');
+      for (const cert of certifications) {
+        const v = cert.value;
+        lines.push(`${v.name}${v.issuer ? ` — ${v.issuer}` : ''}${v.year ? ` (${v.year})` : ''}`);
+      }
+    }
+    if (languages.length) {
+      lines.push('', 'LANGUAGES');
+      lines.push(languages.map((l) => `${String(l.value.name)} (${String(l.value.level)})`).join(', '));
+    }
     return { kind: 'resume', content: lines.join('\n'), evidence: matches };
   }
 
@@ -396,9 +585,11 @@ export class PersonalizationService {
     matches: RequirementMatch[],
   ): { kind: VariantKind; content: string; evidence: RequirementMatch[] } {
     const facts = listFacts(this.db, { approvedOnly: true });
-    const roles = facts.filter((f) => f.kind === 'role');
+    const settings = getSettings(this.db);
+    const fullName = typeof settings['identity.fullName'] === 'string' ? settings['identity.fullName'].trim() : '';
+    const roles = this.sortRolesDesc(facts.filter((f) => f.kind === 'role'));
     const strong = matches.filter((m) => m.classification === 'STRONG_MATCH').map((m) => m.requirement);
-    const latest = roles.at(-1);
+    const latest = roles[0];
     const body = [
       `Dear ${job.employer} hiring team,`,
       '',
@@ -411,6 +602,7 @@ export class PersonalizationService {
         : 'I would welcome the chance to discuss the experience documented in my application.',
       '',
       'Kind regards,',
+      ...(fullName ? [fullName] : []),
     ].join('\n');
     return { kind: 'cover_letter', content: body, evidence: matches };
   }

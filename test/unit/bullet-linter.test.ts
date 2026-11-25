@@ -47,4 +47,16 @@ describe('Google XYZ & Anti-Slop Bullet Linter', () => {
     expect(audit.hasVisualSymmetryTell).toBe(false);
     expect(audit.quantifiedRate).toBeGreaterThan(0.6);
   });
+
+  it('extracts multiple metrics, flags first-person pronouns, and detects duplicate opening verbs', () => {
+    const b = lintBullet('I reduced p99 API latency by 42% across 10M daily requests saving $120k annually.');
+    expect(b.metrics.length).toBeGreaterThanOrEqual(3);
+    expect(b.warnings.some((w) => w.includes('first-person'))).toBe(true);
+
+    const audit = lintRoleBullets([
+      'Built distributed cache layer cutting p99 latency by 35%.',
+      'Built automated CI/CD pipeline across 20 services.',
+    ]);
+    expect(audit.duplicateVerbs).toContain('built');
+  });
 });

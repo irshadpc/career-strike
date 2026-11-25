@@ -18,6 +18,8 @@ export function JobPage({ id }: { id: string }) {
   const [job, setJob] = useState<JobDetail | null>(null);
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [prepareError, setPrepareError] = useState<string | null>(null);
+  const [queueingAutopilot, setQueueingAutopilot] = useState(false);
+  const [queuedNotice, setQueuedNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (res.state === 'ready') setJob(res.data.job);
@@ -44,6 +46,24 @@ export function JobPage({ id }: { id: string }) {
           ? ((err.body as { message?: string } | null)?.message ?? 'Could not prepare an application.')
           : 'Could not prepare an application.',
       );
+    }
+  };
+
+  const queueForAutopilot = async (): Promise<void> => {
+    setQueueingAutopilot(true);
+    setPrepareError(null);
+    setQueuedNotice(null);
+    try {
+      await api('/api/autopilot/batch', { method: 'POST', body: { jobIds: [id] } });
+      setQueuedNotice('Added to Autopilot Queue.');
+    } catch (err) {
+      setPrepareError(
+        err instanceof ApiError
+          ? ((err.body as { message?: string } | null)?.message ?? 'Could not queue for Autopilot.')
+          : 'Could not queue for Autopilot.',
+      );
+    } finally {
+      setQueueingAutopilot(false);
     }
   };
 
@@ -100,9 +120,20 @@ export function JobPage({ id }: { id: string }) {
                 </Link>
               ) : (
                 job.status !== 'CLOSED' && (
-                  <Button type="button" size="sm" onClick={() => void prepare()}>
-                    Prepare an application
-                  </Button>
+                  <>
+                    <Button type="button" size="sm" onClick={() => void prepare()}>
+                      Prepare an application
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={queueingAutopilot}
+                      onClick={() => void queueForAutopilot()}
+                    >
+                      {queueingAutopilot ? 'Queueing…' : 'Queue in Autopilot'}
+                    </Button>
+                  </>
                 )
               )}
               {job.applyUrl && job.status !== 'CLOSED' && (
@@ -114,6 +145,14 @@ export function JobPage({ id }: { id: string }) {
                 </ExternalLink>
               )}
             </div>
+            {queuedNotice && (
+              <p className="text-xs text-status-success-fg m-0" role="status">
+                {queuedNotice}{' '}
+                <Link href="/autopilot" className="underline font-medium">
+                  Open Autopilot →
+                </Link>
+              </p>
+            )}
             {prepareError && (
               <p className="text-xs text-destructive m-0" role="alert">
                 {prepareError}

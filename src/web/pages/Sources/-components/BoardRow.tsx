@@ -37,6 +37,7 @@ export function BoardRow({
   onRemoved: () => void;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const running = task && (task.state === 'RUNNING' || task.state === 'QUEUED');
 
   const fetchNow = async (): Promise<void> => {
@@ -54,9 +55,9 @@ export function BoardRow({
   };
 
   const remove = async (): Promise<void> => {
-    if (!window.confirm(`Stop monitoring ${board.board}? Jobs already found stay in your list.`)) return;
     try {
       await api(`/api/sources/${board.id}`, { method: 'DELETE' });
+      setConfirmRemove(false);
       onRemoved();
     } catch {
       setError('Could not remove.');
@@ -126,9 +127,20 @@ export function BoardRow({
             Fetch now
           </Button>
         )}
-        <Button type="button" variant="ghost" size="sm" onClick={() => void remove()}>
-          Stop monitoring
-        </Button>
+        {confirmRemove ? (
+          <div className="inline-flex items-center gap-1.5">
+            <Button type="button" variant="destructive" size="sm" onClick={() => void remove()}>
+              Confirm remove
+            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmRemove(false)}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmRemove(true)}>
+            Stop monitoring
+          </Button>
+        )}
       </div>
     </li>
   );

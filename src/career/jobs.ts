@@ -479,7 +479,13 @@ function marketOf(row: {
   return marketFacts(row.location_text, row.remote_policy);
 }
 
-function fitFor(row: JobRow, status: EffectiveStatus, ctx: CandidateContext): Fit | undefined {
+function fitFor(
+  row: JobRow,
+  status: EffectiveStatus,
+  ctx: CandidateContext,
+  salary: PublishedSalary | null,
+  market: MarketFacts,
+): Fit | undefined {
   if (!ctx.profile || !ctx.settings) return undefined;
   return evaluateFit(
     {
@@ -488,11 +494,11 @@ function fitFor(row: JobRow, status: EffectiveStatus, ctx: CandidateContext): Fi
       locationText: row.location_text,
       remotePolicy: row.remote_policy,
       employmentType: row.employment_type,
-      salary: row.salary_json ? (JSON.parse(row.salary_json) as PublishedSalary) : null,
+      salary,
       status,
       descriptionText: row.description_text,
       requirements: requirementsOf(row),
-      market: marketOf(row),
+      market,
     },
     ctx.profile,
     ctx.settings,
@@ -516,7 +522,9 @@ function toSummary(
   ctx?: CandidateContext,
 ): JobSummary & { fitDetail?: Fit } {
   const status = effectiveStatus(row.status, row.last_verified_at, now);
-  const fit = ctx ? fitFor(row, status, ctx) : undefined;
+  const salary = row.salary_json ? (JSON.parse(row.salary_json) as PublishedSalary) : null;
+  const market = marketOf(row);
+  const fit = ctx ? fitFor(row, status, ctx, salary, market) : undefined;
   return {
     id: row.id,
     employer: row.employer,
@@ -524,7 +532,7 @@ function toSummary(
     locationText: row.location_text,
     remotePolicy: row.remote_policy,
     employmentType: row.employment_type,
-    salary: row.salary_json ? (JSON.parse(row.salary_json) as PublishedSalary) : null,
+    salary,
     status,
     firstSeenAt: row.first_seen_at,
     lastVerifiedAt: row.last_verified_at,
@@ -533,7 +541,7 @@ function toSummary(
     duplicateOf: row.duplicate_of,
     disposition: row.disposition ?? 'none',
     employerExcluded: excludedEmployers.has(norm(row.employer)),
-    market: marketOf(row),
+    market,
     sourceCapabilities: row.sources ? [...new Set(row.sources.split(',').map(capabilityForName))] : [],
     countryCode: row.country_code,
     countryCodes: safeStringArray(row.country_codes_json),
@@ -669,13 +677,14 @@ export function listJobs(
     .prepare(`${SUMMARY_SELECT} ${joinSkills} ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY ${order}`)
     .all(params) as JobRow[];
   const fitAvailable = Boolean(ctx.profile && ctx.settings);
+  const rowById = new Map(rows.map((r) => [r.id, r]));
   // Employer exclusion, fit and urgency are computed per job, so they are applied here.
   let visible = rows
     .map((r) => toSummary(r, excluded, now, ctx))
     .filter((j) => query.includeExcludedEmployers || !j.employerExcluded);
   if (query.immediateStart)
     visible = visible.filter(
-      (j) => j.fit?.immediateStartAsked ?? requirementsOf(rows.find((r) => r.id === j.id)!).urgency.length > 0,
+      (j) => j.fit?.immediateStartAsked ?? requirementsOf(rowById.get(j.id)!).urgency.length > 0,
     );
   if (query.tier && fitAvailable) {
     visible = visible.filter((j) =>

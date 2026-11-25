@@ -89,10 +89,10 @@ export async function exportVariantDocx(payload: ResolvedVariantPayload): Promis
 
     for (const entry of entries) {
       const dates = entry.isCurrent
-        ? `${entry.startDate ?? ''} – Present`.trim()
+        ? `${entry.startDate ?? ''} – Present`.replace(/^\s*–\s*/, '').trim()
         : entry.startDate && entry.endDate
           ? `${entry.startDate} – ${entry.endDate}`
-          : (entry.startDate ?? '');
+          : (entry.startDate ?? entry.endDate ?? '');
 
       const locationAndDates = [entry.location, dates].filter(Boolean).join(' · ');
 
@@ -147,21 +147,61 @@ export async function exportVariantDocx(payload: ResolvedVariantPayload): Promis
     }
   };
 
+  const addInlineListSection = (title: string, items?: string[]) => {
+    if (!items || items.length === 0) return;
+    children.push(
+      new Paragraph({
+        heading: HeadingLevel.HEADING_2,
+        spacing: { before: 240, after: 100 },
+        border: {
+          bottom: { style: 'single', color: '111827', space: 60, size: 6 },
+        },
+        children: [
+          new TextRun({
+            text: title.toUpperCase(),
+            bold: true,
+            font: 'Calibri',
+            size: 22,
+          }),
+        ],
+      }),
+      new Paragraph({
+        spacing: { before: 40, after: 120 },
+        children: [
+          new TextRun({
+            text: items.join(' · '),
+            font: 'Calibri',
+            size: 20,
+          }),
+        ],
+      }),
+    );
+  };
+
   const experience = payload.entries.filter((e) => e.entryType === 'experience');
   const projects = payload.entries.filter((e) => e.entryType === 'project');
   const education = payload.entries.filter((e) => e.entryType === 'education');
   const certifications = payload.entries.filter((e) => e.entryType === 'certification');
 
+  addInlineListSection('Core Skills', payload.skills);
   addSection('Professional Experience', experience);
   addSection('Projects & Achievements', projects);
   addSection('Education', education);
   addSection('Certifications', certifications);
+  addInlineListSection('Languages', payload.languages);
+
+  const pageWidthTwips = payload.pageFormat === 'A4' ? 11906 : 12240;
+  const pageHeightTwips = payload.pageFormat === 'A4' ? 16838 : 15840;
 
   const doc = new Document({
     sections: [
       {
         properties: {
           page: {
+            size: {
+              width: pageWidthTwips,
+              height: pageHeightTwips,
+            },
             margin: {
               top: 1080, // 0.75 in
               bottom: 1080,

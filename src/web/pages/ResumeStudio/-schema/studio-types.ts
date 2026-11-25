@@ -32,6 +32,8 @@ export interface BulletLintResult {
   hasPassiveOpener: boolean;
   passiveOpenerMatch: string | null;
   cliches: string[];
+  wordCount?: number;
+  warnings?: string[];
   recommendation: string | null;
   metricPrompt: string | null;
 }
@@ -42,7 +44,20 @@ export interface RoleBulletAudit {
   quantifiedRate: number;
   totalCliches: number;
   hasVisualSymmetryTell: boolean;
+  duplicateVerbs?: string[];
   feedbackSummary: string;
+}
+
+export interface StudioVariant {
+  id: string;
+  jobApplicationId: string | null;
+  name: string;
+  templateId: string;
+  pageFormat: 'LETTER' | 'A4';
+  summaryOverride: string | null;
+  includedEntries: { entryId: string; includedBulletIds: string[] }[];
+  bulletOverrides: Record<string, string>;
+  updatedAt: string;
 }
 
 export interface AlignmentRequirement {

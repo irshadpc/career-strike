@@ -11,18 +11,26 @@ import {
   addMasterEntry,
   deleteMasterBullet,
   deleteMasterEntry,
+  deleteResumeVariant,
   listMasterEntries,
+  listResumeVariants,
   recordResumeSnapshot,
+  reorderMasterEntries,
   resolveResumeVariant,
   saveResumeVariant,
   syncMasterFromProfile,
+  tailorMasterVariantForJd,
+  updateMasterBullet,
+  updateMasterEntry,
 } from '../../career/master-vault.js';
 import { htmlToAtsPdf } from '../../career/pdf-export.js';
+import { listFacts } from '../../career/profile.js';
 import { verifyResumeBuffer } from '../../resume/atsVerifier.js';
 import { exportVariantDocx } from '../../resume/docxExporter.js';
 import { exportVariantPdf } from '../../resume/pdfExporter.js';
 import type { ResolvedVariantPayload } from '../../resume/types.js';
 import type { Db } from '../../store/db.js';
+import { getSettings } from '../../store/settings.js';
 
 export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
   app.get('/api/exports/master-resume', async () => {
@@ -68,6 +76,12 @@ export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
     return { entries };
   });
 
+  app.post('/api/studio/master/sync', async () => {
+    const result = syncMasterFromProfile(db, { mergeNew: true });
+    const entries = listMasterEntries(db);
+    return { ...result, entries };
+  });
+
   app.post('/api/studio/master/entries', async (req, reply) => {
     const schema = z.object({
       entryType: z.enum(['experience', 'project', 'education', 'certification']),
@@ -92,6 +106,32 @@ export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
     return reply.code(201).send({ entry });
   });
 
+  app.patch<{ Params: { id: string } }>('/api/studio/master/entries/:id', async (req, reply) => {
+    const schema = z.object({
+      entryType: z.enum(['experience', 'project', 'education', 'certification']).optional(),
+      organization: z.string().trim().min(1).optional(),
+      title: z.string().trim().min(1).optional(),
+      location: z.string().nullable().optional(),
+      startDate: z.string().nullable().optional(),
+      endDate: z.string().nullable().optional(),
+      isCurrent: z.boolean().optional(),
+      sortOrder: z.number().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', issues: parsed.error.issues });
+    const entry = updateMasterEntry(db, req.params.id, parsed.data);
+    if (!entry) return reply.code(404).send({ error: 'NOT_FOUND' });
+    return { entry };
+  });
+
+  app.post('/api/studio/master/reorder', async (req, reply) => {
+    const schema = z.object({ orderedIds: z.array(z.string().min(1)).min(1) });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', issues: parsed.error.issues });
+    reorderMasterEntries(db, parsed.data.orderedIds);
+    return { entries: listMasterEntries(db) };
+  });
+
   app.delete<{ Params: { id: string } }>('/api/studio/master/entries/:id', async (req, reply) => {
     const deleted = deleteMasterEntry(db, req.params.id);
     if (!deleted) return reply.code(404).send({ error: 'NOT_FOUND' });
@@ -113,6 +153,19 @@ export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
     return reply.code(201).send({ bullet });
   });
 
+  app.patch<{ Params: { id: string } }>('/api/studio/master/bullets/:id', async (req, reply) => {
+    const schema = z.object({
+      rawText: z.string().trim().min(1).optional(),
+      scopeLevel: z.enum(['individual', 'team', 'org']).optional(),
+      starStoryId: z.string().nullable().optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', issues: parsed.error.issues });
+    const bullet = updateMasterBullet(db, req.params.id, parsed.data);
+    if (!bullet) return reply.code(404).send({ error: 'NOT_FOUND' });
+    return { bullet };
+  });
+
   app.delete<{ Params: { id: string } }>('/api/studio/master/bullets/:id', async (req, reply) => {
     const deleted = deleteMasterBullet(db, req.params.id);
     if (!deleted) return reply.code(404).send({ error: 'NOT_FOUND' });
@@ -120,10 +173,35 @@ export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
   });
 
   // Variant resolution & saving
+  app.get<{ Querystring: { jobApplicationId?: string } }>('/api/studio/variants', async (req) => {
+    const variants = listResumeVariants(db, req.query.jobApplicationId || undefined);
+    return { variants };
+  });
+
   app.get<{ Params: { id: string } }>('/api/studio/variants/:id', async (req, reply) => {
     const resolved = resolveResumeVariant(db, req.params.id);
     if (!resolved) return reply.code(404).send({ error: 'NOT_FOUND' });
     return { variant: resolved };
+  });
+
+  app.delete<{ Params: { id: string } }>('/api/studio/variants/:id', async (req, reply) => {
+    const deleted = deleteResumeVariant(db, req.params.id);
+    if (!deleted) return reply.code(404).send({ error: 'NOT_FOUND' });
+    return { ok: true };
+  });
+
+  app.get<{ Params: { id: string } }>('/api/studio/variants/:id/snapshots', async (req) => {
+    const rows = db
+      .prepare(
+        `SELECT id, variant_id AS variantId, job_application_id AS jobApplicationId, format, file_path AS filePath,
+                file_size_bytes AS fileSizeBytes, sha256, created_at AS createdAt
+         FROM resume_snapshots
+         WHERE variant_id = ?
+         ORDER BY created_at DESC
+         LIMIT 20`,
+      )
+      .all(req.params.id);
+    return { snapshots: rows };
   });
 
   app.post('/api/studio/variants', async (req, reply) => {
@@ -166,6 +244,49 @@ export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
     return reply.code(400).send({ error: 'Provide text or bullets' });
   });
 
+  // 1-Click JD Tailoring Suggestion API (non-fabricating)
+  app.post('/api/studio/tailor', async (req, reply) => {
+    const schema = z.object({
+      applicationId: z.string().optional(),
+      jdText: z.string().optional(),
+      targetPages: z.union([z.literal(1), z.literal(2)]).optional(),
+    });
+    const parsed = schema.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'INVALID_INPUT', issues: parsed.error.issues });
+
+    let jdText = parsed.data.jdText?.trim() ?? '';
+    let suggestedName = 'Tailored Resume Variant';
+
+    if (parsed.data.applicationId) {
+      const appRow = db
+        .prepare(
+          `SELECT j.title, j.employer, j.description_text AS descriptionText
+           FROM applications a
+           JOIN jobs j ON j.id = a.job_id
+           WHERE a.id = ?`,
+        )
+        .get(parsed.data.applicationId) as
+        | { title: string; employer: string; descriptionText: string | null }
+        | undefined;
+      if (appRow) {
+        suggestedName = `${appRow.title} — ${appRow.employer}`.slice(0, 80);
+        if (!jdText) {
+          jdText = [appRow.title, appRow.employer, appRow.descriptionText ?? ''].filter(Boolean).join('\n');
+        }
+      }
+    }
+
+    if (!jdText) {
+      return reply.code(400).send({ error: 'MISSING_JD', message: 'Select an application or provide jdText.' });
+    }
+
+    const tailored = tailorMasterVariantForJd(db, {
+      jdText,
+      targetPages: parsed.data.targetPages,
+    });
+    return { tailored: { ...tailored, suggestedName } };
+  });
+
   // 3-Tier Alignment API
   app.post('/api/studio/align', async (req, reply) => {
     const schema = z.object({
@@ -200,6 +321,32 @@ export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
   // Dedicated ATS Resume Studio Verification & Export APIs
   function toPayload(variantId: string): ResolvedVariantPayload {
     const master = buildMasterResume(db);
+    const settings = getSettings(db);
+    const facts = listFacts(db, { approvedOnly: true });
+    const location = typeof settings['candidate.country'] === 'string' ? settings['candidate.country'] : null;
+    const extraLinks = Array.isArray(settings['identity.profileLinks'])
+      ? (settings['identity.profileLinks'] as unknown[]).filter((v): v is string => typeof v === 'string' && !!v.trim())
+      : [];
+    const links = [
+      master.identity.linkedin,
+      typeof settings['candidate.githubUrl'] === 'string' ? settings['candidate.githubUrl'] : null,
+      typeof settings['candidate.portfolioUrl'] === 'string' ? settings['candidate.portfolioUrl'] : null,
+      ...extraLinks,
+    ]
+      .filter((v): v is string => Boolean(v && v.trim()))
+      .filter((v, i, all) => all.indexOf(v) === i);
+    const skills = facts
+      .filter((f) => f.kind === 'skill')
+      .map((f) => String(f.value.name))
+      .sort((a, b) => a.localeCompare(b));
+    const languages = facts
+      .filter((f) => f.kind === 'language')
+      .map((f) => `${String(f.value.name)} (${String(f.value.level)})`);
+    const defaultSummary =
+      typeof settings['identity.summary'] === 'string' && settings['identity.summary'].trim()
+        ? settings['identity.summary'].trim()
+        : null;
+
     if (variantId === 'master') {
       const entries = listMasterEntries(db);
       return {
@@ -210,9 +357,11 @@ export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
         fullName: master.identity.fullName || 'Candidate',
         email: master.identity.email,
         phone: master.identity.phone,
-        location: null,
-        links: [master.identity.linkedin].filter(Boolean) as string[],
-        summary: null,
+        location,
+        links,
+        summary: defaultSummary,
+        skills,
+        languages,
         entries: entries.map((e) => ({
           id: e.id,
           entryType: e.entryType as ResolvedVariantPayload['entries'][0]['entryType'],
@@ -240,9 +389,11 @@ export function registerExportRoutes(app: FastifyInstance, { db }: { db: Db }) {
       fullName: master.identity.fullName || 'Candidate',
       email: master.identity.email,
       phone: master.identity.phone,
-      location: null,
-      links: [master.identity.linkedin].filter(Boolean) as string[],
-      summary: resolved.summary,
+      location,
+      links,
+      summary: resolved.summary ?? defaultSummary,
+      skills,
+      languages,
       entries: resolved.entries.map((e) => ({
         id: e.id,
         entryType: e.entryType as ResolvedVariantPayload['entries'][0]['entryType'],

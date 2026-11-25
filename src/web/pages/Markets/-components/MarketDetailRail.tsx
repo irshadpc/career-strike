@@ -73,7 +73,7 @@ export function MarketDetailRail({ activeMarket, isSelected, isSaving, onToggleT
           {isSelected ? `✓ ${activeMarket.name} is in your targets` : `+ Target ${activeMarket.name}`}
         </Button>
         <Link
-          href={`/opportunities?market=${activeMarket.code}`}
+          href={`/opportunities?country=${activeMarket.code}`}
           className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'w-full text-center text-xs')}
         >
           Explore vacancies in {activeMarket.name} →

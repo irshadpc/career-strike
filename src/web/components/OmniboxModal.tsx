@@ -349,10 +349,11 @@ export function OmniboxModal({ open, onOpenChange, onToggleTheme, currentTheme =
     return [...jobActionItems, ...matchingActions, ...matchingNav];
   }, [query, navItems, actionItems, jobActionItems]);
 
-  // Adjust selection bounds
-  useEffect(() => {
+  // Adjust selection bounds when query changes
+  const handleQueryChange = (nextQuery: string) => {
+    setQuery(nextQuery);
     setSelectedIndex(0);
-  }, [query]);
+  };
 
   // Keyboard navigation inside Omnibox
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -362,7 +363,7 @@ export function OmniboxModal({ open, onOpenChange, onToggleTheme, currentTheme =
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex((prev) => (prev > 0 ? prev - 1 : Math.max(0, filteredItems.length - 1)));
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' && (e.target as HTMLElement)?.tagName !== 'BUTTON') {
       e.preventDefault();
       const item = filteredItems[selectedIndex];
       if (item) item.onSelect();
@@ -378,6 +379,7 @@ export function OmniboxModal({ open, onOpenChange, onToggleTheme, currentTheme =
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[10vh] px-4 bg-black/60 backdrop-blur-xs animate-in fade-in-0 duration-150"
       onClick={() => onOpenChange(false)}
+      onKeyDown={handleKeyDown}
       role="dialog"
       aria-modal="true"
       aria-label="Universal Command Omnibox"
@@ -393,8 +395,8 @@ export function OmniboxModal({ open, onOpenChange, onToggleTheme, currentTheme =
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
+            onChange={(e) => handleQueryChange(e.target.value)}
+            aria-label="Command palette search"
             placeholder="Type a command, job, company, or destination..."
             className="flex-1 bg-transparent border-none outline-none text-base text-foreground placeholder:text-muted-foreground/70"
             autoComplete="off"
@@ -443,7 +445,7 @@ export function OmniboxModal({ open, onOpenChange, onToggleTheme, currentTheme =
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {item.badge && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-status-success-bg text-status-success-fg border border-status-success-border">
                         {item.badge}
                       </span>
                     )}

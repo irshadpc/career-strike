@@ -14,6 +14,10 @@ export function CanvasLenses({
   bulletOverrides,
   activeLens,
   onLensChange,
+  summaryOverride,
+  skills,
+  languages,
+  matchedJdTerms,
 }: {
   master: MasterResumeDocument;
   entries: MasterEntry[];
@@ -22,6 +26,10 @@ export function CanvasLenses({
   bulletOverrides: Record<string, string>;
   activeLens: StudioLens;
   onLensChange: (lens: StudioLens) => void;
+  summaryOverride?: string | null;
+  skills?: string[];
+  languages?: string[];
+  matchedJdTerms?: string[];
 }) {
   const [showRawStream, setShowRawStream] = useState(false);
 
@@ -30,12 +38,12 @@ export function CanvasLenses({
   const [timeLeft, setTimeLeft] = useState(7.4);
   const [flashDone, setFlashDone] = useState(false);
 
-  // Keyboard shortcut listener for ⌘1, ⌘2, ⌘3, ⌘4 (or 1, 2, 3, 4 when not typing in input)
+  // Keyboard shortcut listener for Alt+1..4 so browser Cmd+1..4 tabs and bare digits are never hijacked
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeTag = document.activeElement?.tagName.toLowerCase();
       if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
-      if (e.metaKey || e.ctrlKey || !e.altKey) {
+      if (e.altKey && !e.metaKey && !e.ctrlKey) {
         if (e.key === '1') {
           e.preventDefault();
           onLensChange('print');
@@ -100,6 +108,14 @@ export function CanvasLenses({
   const renderPlainTextStream = () => {
     const lines: string[] = [];
     lines.push('--- CANDIDATE RESUME STREAM ---');
+    if (summaryOverride && summaryOverride.trim()) {
+      lines.push('\nSUMMARY');
+      lines.push(summaryOverride.trim());
+    }
+    if (skills && skills.length > 0) {
+      lines.push('\nCORE SKILLS');
+      lines.push(skills.join(', '));
+    }
     if (experienceEntries.length > 0) {
       lines.push('\nEXPERIENCE');
       for (const e of experienceEntries) {
@@ -302,17 +318,64 @@ export function CanvasLenses({
               {master.content.split('\n')[0] || 'Candidate Resume'}
             </div>
           </div>
-          <p className="text-xs text-neutral-600 mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+          <p className="text-xs text-neutral-600 mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
             {activeLens === 'xray' && (
               <span className="px-1 py-0.5 rounded bg-emerald-100 text-emerald-900 font-mono text-[9px]">
                 /ContactBlock
               </span>
             )}
-            <span>Evidence-verified profile</span>
-            <span>·</span>
-            <span>Local Career Vault</span>
+            {[master.identity.email, master.identity.phone, master.identity.linkedin]
+              .filter((v): v is string => Boolean(v && v.trim()))
+              .map((val, idx, arr) => (
+                <span key={val}>
+                  {val}
+                  {idx < arr.length - 1 ? ' ·' : ''}
+                </span>
+              ))}
+            {!master.identity.email && !master.identity.phone && !master.identity.linkedin && (
+              <span>Evidence-verified profile · Local Career Vault</span>
+            )}
           </p>
         </header>
+
+        {/* Summary Section (WYSIWYG parity with PDF/DOCX exporters) */}
+        {summaryOverride && summaryOverride.trim() && (
+          <section className="mt-4 space-y-1.5">
+            <div className="border-b border-neutral-200 pb-1">
+              <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Summary</h2>
+            </div>
+            <p className="text-xs text-neutral-800 leading-relaxed">{summaryOverride.trim()}</p>
+          </section>
+        )}
+
+        {/* Core Skills Section (WYSIWYG parity with PDF/DOCX exporters) */}
+        {skills && skills.length > 0 && (
+          <section className="mt-4 space-y-1.5">
+            <div className="border-b border-neutral-200 pb-1 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Skills</h2>
+              {matchedJdTerms && matchedJdTerms.length > 0 && (
+                <span className="text-[10px] font-mono text-emerald-700">
+                  {matchedJdTerms.length} JD term{matchedJdTerms.length === 1 ? '' : 's'} matched
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-neutral-800 leading-relaxed">
+              {skills.map((s, idx) => {
+                const isMatched = matchedJdTerms?.some((m) => m.toLowerCase() === s.toLowerCase());
+                return (
+                  <span key={s}>
+                    <span
+                      className={isMatched ? 'font-semibold text-neutral-950 underline decoration-emerald-500' : ''}
+                    >
+                      {s}
+                    </span>
+                    {idx < skills.length - 1 ? ' · ' : ''}
+                  </span>
+                );
+              })}
+            </p>
+          </section>
+        )}
 
         {/* Work Experience Section */}
         {experienceEntries.length > 0 && (
@@ -405,19 +468,45 @@ export function CanvasLenses({
               </h2>
             </div>
             <div className="space-y-3">
-              {projectEntries.map((p) => (
-                <div key={p.id} className="space-y-1 text-xs">
-                  <div className="flex justify-between items-baseline">
-                    <strong className="text-neutral-900 font-bold">{p.title}</strong>
-                    {p.organization && <span className="text-neutral-500 font-mono text-[11px]">{p.organization}</span>}
+              {projectEntries.map((p) => {
+                const isProjectOmitted = !includedEntryIds.has(p.id);
+                return (
+                  <div key={p.id} className={`space-y-1 text-xs ${isProjectOmitted ? 'opacity-40 line-through' : ''}`}>
+                    <div className="flex justify-between items-baseline">
+                      <strong className="text-neutral-900 font-bold">{p.title}</strong>
+                      {p.organization && (
+                        <span className="text-neutral-500 font-mono text-[11px]">{p.organization}</span>
+                      )}
+                    </div>
+                    <ul className="list-disc pl-4 space-y-1 text-neutral-800">
+                      {p.bullets.map((b) => {
+                        const isBulletOmitted = !includedBulletIds.has(b.id);
+                        const isOverridden = Boolean(bulletOverrides[b.id]);
+                        if (isBulletOmitted && activeLens !== 'diff') return null;
+                        return (
+                          <li
+                            key={b.id}
+                            className={
+                              isBulletOmitted
+                                ? 'opacity-40 line-through'
+                                : isOverridden && activeLens === 'diff'
+                                  ? 'bg-emerald-50 text-emerald-950 p-1 rounded border-l-2 border-emerald-500'
+                                  : ''
+                            }
+                          >
+                            {activeLens === 'xray' && (
+                              <span className="mr-1.5 px-1 py-0.2 rounded bg-blue-50 text-blue-700 font-mono text-[9px]">
+                                /LI [#{nextPill()}]
+                              </span>
+                            )}
+                            {bulletOverrides[b.id] ?? b.rawText}
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
-                  <ul className="list-disc pl-4 space-y-1 text-neutral-800">
-                    {p.bullets.map((b) => (
-                      <li key={b.id}>{bulletOverrides[b.id] ?? b.rawText}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -470,10 +559,41 @@ export function CanvasLenses({
           </section>
         )}
 
-        {/* Page Boundary Marker */}
-        <div className="mt-8 pt-4 border-t border-dashed border-neutral-300 text-center text-neutral-600 font-mono text-[10px]">
-          — End of Page 1 (US Letter / A4 Print Boundary) —
-        </div>
+        {/* Languages Section */}
+        {languages && languages.length > 0 && (
+          <section className="mt-5 space-y-1.5">
+            <div className="border-b border-neutral-200 pb-1">
+              <h2 className="text-sm font-bold text-neutral-900 uppercase tracking-wider">Languages</h2>
+            </div>
+            <p className="text-xs text-neutral-800">{languages.join(' · ')}</p>
+          </section>
+        )}
+
+        {/* Page Length & Print Density Indicator */}
+        {(() => {
+          const totalWords = [
+            summaryOverride ?? '',
+            ...(skills ?? []),
+            ...(languages ?? []),
+            ...visibleEntries
+              .filter((e) => includedEntryIds.has(e.id))
+              .flatMap((e) => [
+                e.title,
+                e.organization,
+                ...e.bullets.filter((b) => includedBulletIds.has(b.id)).map((b) => bulletOverrides[b.id] ?? b.rawText),
+              ]),
+          ]
+            .join(' ')
+            .split(/\s+/)
+            .filter(Boolean).length;
+          const estPages = Math.max(1, Math.ceil(totalWords / 480));
+          return (
+            <div className="mt-8 pt-4 border-t border-dashed border-neutral-300 text-center text-neutral-600 font-mono text-[10px]">
+              ~{totalWords} words · Estimated {estPages} page{estPages > 1 ? 's' : ''} (US Letter / A4)
+              {totalWords > 520 ? ' — trim older bullets for strict 1-page fit' : ''}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

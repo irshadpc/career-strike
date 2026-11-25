@@ -1,5 +1,5 @@
 import { FileText, Keyboard, ShieldCheck, X } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button } from './ui/button';
 
 export interface ShortcutsModalProps {
@@ -25,15 +25,22 @@ const SHORTCUTS: ShortcutEntry[] = [
 ];
 
 export function ShortcutsModal({ open, onOpenChange }: ShortcutsModalProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!open) return;
+    const prevFocus = document.activeElement as HTMLElement | null;
+    panelRef.current?.focus();
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onOpenChange(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      prevFocus?.focus?.();
+    };
   }, [open, onOpenChange]);
 
   if (!open) return null;
@@ -47,7 +54,9 @@ export function ShortcutsModal({ open, onOpenChange }: ShortcutsModalProps) {
       aria-label="Keyboard Shortcuts"
     >
       <div
-        className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
+        ref={panelRef}
+        tabIndex={-1}
+        className="w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150 outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

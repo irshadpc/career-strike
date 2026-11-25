@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   type CuratedCollectionDetail,
   type CuratedCollectionSummary,
@@ -11,9 +11,11 @@ import { Button } from '../../../components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../../../components/ui/dialog';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
+import { useToast } from '../../../components/ui/toast';
 import { Link } from '../../../router';
 
 export function CollectionsHub() {
+  const { toast } = useToast();
   const [collections, setCollections] = useState<CuratedCollectionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
@@ -28,21 +30,21 @@ export function CollectionsHub() {
   const [badge, setBadge] = useState('CUSTOM');
   const [saving, setSaving] = useState(false);
 
-  const loadCollections = async () => {
+  const loadCollections = useCallback(async () => {
     try {
       setLoading(true);
       const res = await fetchCollections();
       setCollections(res.collections);
     } catch {
-      // ignore
+      toast({ variant: 'destructive', title: 'Could not load curated collections' });
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
     void loadCollections();
-  }, []);
+  }, [loadCollections]);
 
   const selectCollection = async (slug: string) => {
     if (activeSlug === slug) {
@@ -57,6 +59,7 @@ export function CollectionsHub() {
       setDetail(res.collection);
     } catch {
       setDetail(null);
+      toast({ variant: 'destructive', title: 'Could not load collection details' });
     } finally {
       setLoadingDetail(false);
     }
@@ -77,9 +80,14 @@ export function CollectionsHub() {
       setTitle('');
       setDescription('');
       setKeyword('');
+      toast({ variant: 'success', title: 'Collection created' });
       void loadCollections();
-    } catch {
-      // ignore
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Could not create collection',
+        description: err instanceof Error ? err.message : undefined,
+      });
     } finally {
       setSaving(false);
     }

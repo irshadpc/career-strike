@@ -7,7 +7,15 @@ export class ApiError extends Error {
     readonly code: string,
     readonly body: unknown,
   ) {
-    super(`${code} (HTTP ${status})`);
+    const bodyMessage =
+      typeof body === 'object' &&
+      body !== null &&
+      'message' in body &&
+      typeof (body as { message?: unknown }).message === 'string' &&
+      (body as { message: string }).message.trim().length > 0
+        ? (body as { message: string }).message.trim()
+        : null;
+    super(bodyMessage ?? `${code} (HTTP ${status})`);
   }
 }
 
@@ -407,6 +415,10 @@ export interface MasterResumeDocument {
     hasLinkedIn: boolean;
     hasHeadline: boolean;
     hasSummary: boolean;
+    fullName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    linkedin?: string | null;
   };
   sourceFacts: number;
   sourceEvidence: number;

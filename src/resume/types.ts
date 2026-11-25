@@ -48,5 +48,7 @@ export interface ResolvedVariantPayload {
   location?: string | null;
   links?: string[];
   summary?: string | null;
+  skills?: string[];
+  languages?: string[];
   entries: ResumeVariantEntry[];
 }

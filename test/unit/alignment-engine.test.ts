@@ -73,4 +73,33 @@ describe('Three-Tier Local Alignment Engine', () => {
     expect(res.counterfactualFixes.length).toBeGreaterThanOrEqual(1);
     expect(res.counterfactualFixes[0]?.targetRequirement).toBe('Rust');
   });
+
+  it('does not false-positive "scalable" as payment authentication or "go" inside "mongo"', () => {
+    const jd = `
+      Required Qualifications:
+      • Payment Authentication
+      • Go
+    `;
+    const resume = `
+      Senior Engineer building scalable APIs with MongoDB and TypeScript.
+    `;
+
+    const res = evaluateResumeAlignment(db, resume, jd);
+    expect(res.rubric.find((r) => r.term === 'Payment Authentication')?.status).toBe('GAP');
+    expect(res.rubric.find((r) => r.term === 'Go')?.status).toBe('GAP');
+  });
+
+  it('matches taxonomy aliases embedded inside full JD requirement sentences', () => {
+    const jd = `
+      Required Qualifications:
+      • 3+ years of hands-on K8s and Postgres production operations
+    `;
+    const resume = `
+      Platform Engineer managing Kubernetes clusters and PostgreSQL databases.
+    `;
+
+    const res = evaluateResumeAlignment(db, resume, jd);
+    const req = res.rubric[0]!;
+    expect(['MEETS_EXACT', 'MEETS_SYNONYM']).toContain(req.status);
+  });
 });

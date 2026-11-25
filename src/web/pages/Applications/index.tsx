@@ -162,8 +162,18 @@ export function Applications() {
             )}
           </div>
 
-          {viewMode === 'board' ? (
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 my-6" aria-label="Application pipeline stages">
+          {filtered.length === 0 ? (
+            <div className="my-6 rounded-xl border border-dashed border-border bg-card/40 p-8 text-center space-y-3">
+              <p className="text-sm text-muted-foreground m-0">No applications match “{query.trim()}”.</p>
+              <Button type="button" size="sm" variant="outline" onClick={() => setQuery('')}>
+                Clear filter
+              </Button>
+            </div>
+          ) : viewMode === 'board' ? (
+            <div
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 my-6"
+              aria-label="Application pipeline stages"
+            >
               {BOARD_COLUMNS.map((col) => {
                 const colItems = filtered.filter((a) => col.states.includes(a.state));
                 return (

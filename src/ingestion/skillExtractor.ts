@@ -15,7 +15,12 @@ interface SkillDefinition {
  * Builds a regex that matches any of the given literal tokens with word/symbol boundaries.
  * Correctly handles symbols like C++, C#, .NET, Node.js, and CI/CD.
  */
+const BOUNDARY_REGEX_CACHE = new Map<string, RegExp>();
+
 function makeBoundaryRegex(tokens: readonly string[], caseInsensitive = true): RegExp {
+  const key = `${caseInsensitive ? 'i' : 's'}:${tokens.join('\0')}`;
+  const cached = BOUNDARY_REGEX_CACHE.get(key);
+  if (cached) return cached;
   const parts = tokens.map((t) => {
     // If the token starts or ends with non-word characters, adjust boundary
     const escaped = t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -23,7 +28,9 @@ function makeBoundaryRegex(tokens: readonly string[], caseInsensitive = true): R
     const endBoundary = /\w$/.test(t) ? '\\b' : '(?=$|[\\s,;/()\\[\\]\\.\\-&:])';
     return `${startBoundary}${escaped}${endBoundary}`;
   });
-  return new RegExp(parts.join('|'), caseInsensitive ? 'i' : '');
+  const re = new RegExp(parts.join('|'), caseInsensitive ? 'i' : '');
+  BOUNDARY_REGEX_CACHE.set(key, re);
+  return re;
 }
 
 /**

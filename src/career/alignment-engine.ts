@@ -1,4 +1,5 @@
 import { calculateSemanticScore } from '../matching/embeddings-worker.js';
+import { SKILLS, skillsIn } from '../matching/skills.js';
 import type { Db } from '../store/db.js';
 
 /**
@@ -161,19 +162,70 @@ const CURATED_SEED_SKILLS: readonly TaxonomySkill[] = [
   },
 ];
 
-/** Seed curated taxonomy into SQLite skills_taxonomy table. */
+const ALIGNMENT_STOPWORDS = new Set([
+  'and',
+  'the',
+  'for',
+  'with',
+  'you',
+  'your',
+  'our',
+  'are',
+  'from',
+  'into',
+  'that',
+  'this',
+  'have',
+  'has',
+  'will',
+  'can',
+  'all',
+  'using',
+  'use',
+  'used',
+  'years',
+  'year',
+  'experience',
+  'skills',
+  'strong',
+  'deep',
+  'solid',
+  'prior',
+  'hands',
+  'hands-on',
+  'knowledge',
+  'ability',
+  'building',
+  'work',
+  'working',
+  'proven',
+]);
+
+/** Seed curated taxonomy + full canonical SKILLS catalog into SQLite skills_taxonomy table. */
 export function seedTaxonomyIfEmpty(db: Db): void {
   const count = (db.prepare('SELECT COUNT(*) AS c FROM skills_taxonomy').get() as { c: number }).c;
-  if (count > 0) return;
+  if (count >= SKILLS.length) return;
 
   const insert = db.prepare(
-    `INSERT INTO skills_taxonomy (canonical_id, preferred_label, source, category, aliases_text)
+    `INSERT OR IGNORE INTO skills_taxonomy (canonical_id, preferred_label, source, category, aliases_text)
      VALUES (?, ?, ?, ?, ?)`,
   );
 
   const tx = db.transaction(() => {
     for (const skill of CURATED_SEED_SKILLS) {
       insert.run(skill.canonicalId, skill.preferredLabel, skill.source, skill.category, skill.aliases.join('|'));
+    }
+    const seededLabels = new Set(CURATED_SEED_SKILLS.map((s) => s.preferredLabel.toLowerCase()));
+    for (const s of SKILLS) {
+      if (seededLabels.has(s.name.toLowerCase())) continue;
+      const slug = s.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      insert.run(
+        `curated:${slug}`,
+        s.name,
+        'curated',
+        'Technical & Domain',
+        s.aliases.map((a) => a.toLowerCase()).join('|'),
+      );
     }
   });
   tx();
@@ -204,66 +256,72 @@ export function segmentJobRequirements(jdText: string): { mustHave: string[]; pr
       continue;
     }
 
-    if (/^[•*-]\s*/.test(line)) {
-      const clean = line.replace(/^[•*-]\s*/, '').trim();
-      if (clean.length > 3 && clean.length < 160) {
+    if (/^(?:[•*\-▪]|(?:\d+[.)]))\s+/.test(line)) {
+      const clean = line.replace(/^(?:[•*\-▪]|(?:\d+[.)]))\s+/, '').trim();
+      if (clean.length > 1 && clean.length < 180) {
         if (currentCategory === 'must-have') mustHave.push(clean);
         else preferred.push(clean);
       }
     }
   }
 
-  // Fallback: If no bulleted sections detected, extract common technical terms
+  // Fallback: Extract all canonical skills from the full catalog when no list items detected
   if (mustHave.length === 0 && preferred.length === 0) {
-    const commonTerms = [
-      'TypeScript',
-      'JavaScript',
-      'Python',
-      'Go',
-      'React',
-      'Node.js',
-      'Kubernetes',
-      'Docker',
-      'AWS',
-      'PostgreSQL',
-      'SQL',
-      'Terraform',
-      'CI/CD',
-    ];
-    for (const term of commonTerms) {
-      const re = new RegExp(`\\b${term}\\b`, 'i');
-      if (re.test(jdText)) {
-        mustHave.push(term);
-      }
-    }
+    const detected = skillsIn(jdText);
+    for (const skill of detected) mustHave.push(skill);
   }
 
   return { mustHave, preferred };
 }
 
-/** Look up synonyms and canonical forms in local skills_taxonomy. */
+/** Look up synonyms and canonical forms in local skills_taxonomy with boundary-safe matching. */
 export function lookupTaxonomyAliases(db: Db, term: string): { canonical: string; aliases: string[] } | null {
+  const clean = term.trim().toLowerCase();
+  if (!clean) return null;
+
   const row = db
     .prepare(
       `SELECT preferred_label, aliases_text
        FROM skills_taxonomy
-       WHERE LOWER(preferred_label) = LOWER(?) OR aliases_text LIKE '%' || ? || '%'
+       WHERE LOWER(preferred_label) = ?
+          OR ('|' || LOWER(aliases_text) || '|') LIKE '%|' || ? || '|%'
        LIMIT 1`,
     )
-    .get(term.toLowerCase(), term.toLowerCase()) as { preferred_label: string; aliases_text: string } | undefined;
+    .get(clean, clean) as { preferred_label: string; aliases_text: string } | undefined;
 
-  if (!row) return null;
-  return {
-    canonical: row.preferred_label,
-    aliases: row.aliases_text.split('|').map((a) => a.trim().toLowerCase()),
-  };
+  if (row) {
+    return {
+      canonical: row.preferred_label,
+      aliases: row.aliases_text.split('|').map((a) => a.trim().toLowerCase()),
+    };
+  }
+
+  // Sentence fallback: check if the requirement mentions any canonical skill from our catalog
+  const embeddedSkills = skillsIn(term);
+  for (const skill of embeddedSkills) {
+    const embeddedRow = db
+      .prepare('SELECT preferred_label, aliases_text FROM skills_taxonomy WHERE LOWER(preferred_label) = ? LIMIT 1')
+      .get(skill.toLowerCase()) as { preferred_label: string; aliases_text: string } | undefined;
+    if (embeddedRow) {
+      return {
+        canonical: embeddedRow.preferred_label,
+        aliases: embeddedRow.aliases_text.split('|').map((a) => a.trim().toLowerCase()),
+      };
+    }
+  }
+
+  return null;
 }
 
 /** Three-Tier Local Alignment Evaluation. */
 export function evaluateResumeAlignment(db: Db, resumeText: string, jdText: string): AlignmentResult {
   seedTaxonomyIfEmpty(db);
   const { mustHave, preferred } = segmentJobRequirements(jdText);
-  const resumeLower = resumeText.toLowerCase();
+  const resumeSkills = new Set(skillsIn(resumeText).map((s) => s.toLowerCase()));
+  const resumeLines = resumeText
+    .split(/[\n.]+/)
+    .map((l) => l.trim())
+    .filter((l) => l.length >= 6);
 
   const rubric: AlignmentRequirement[] = [];
 
@@ -273,9 +331,9 @@ export function evaluateResumeAlignment(db: Db, resumeText: string, jdText: stri
       const id = `${category}_${idx + 1}`;
       const itemLower = item.toLowerCase();
 
-      // Tier 1: Exact lexical match
-      const exactRegex = new RegExp(`\\b${escapeRegExp(itemLower)}\\b`, 'i');
-      if (exactRegex.test(resumeText) || resumeLower.includes(itemLower)) {
+      // Tier 1: Exact lexical match (whole-word boundary)
+      const exactRegex = new RegExp(`(?<![a-z0-9+#.])${escapeRegExp(itemLower)}(?![a-z0-9+#])`, 'i');
+      if (exactRegex.test(resumeText)) {
         rubric.push({
           id,
           term: item,
@@ -288,19 +346,33 @@ export function evaluateResumeAlignment(db: Db, resumeText: string, jdText: stri
         continue;
       }
 
-      // Tier 2: Taxonomy Synonym Lookup
+      // Tier 2: Taxonomy Synonym & Canonical Skill Lookup
       const tax = lookupTaxonomyAliases(db, item);
       let synonymMatch: string | null = null;
       let aliasMatched: string | null = null;
 
       if (tax) {
-        for (const alias of tax.aliases) {
-          const aliasRegex = new RegExp(`\\b${escapeRegExp(alias)}\\b`, 'i');
-          if (aliasRegex.test(resumeText) || resumeLower.includes(alias)) {
-            synonymMatch = tax.canonical;
-            aliasMatched = alias;
-            break;
+        if (resumeSkills.has(tax.canonical.toLowerCase())) {
+          synonymMatch = tax.canonical;
+          aliasMatched = tax.canonical;
+        } else {
+          for (const alias of tax.aliases) {
+            const aliasRegex = new RegExp(`(?<![a-z0-9+#.])${escapeRegExp(alias)}(?![a-z0-9+#])`, 'i');
+            if (aliasRegex.test(resumeText)) {
+              synonymMatch = tax.canonical;
+              aliasMatched = alias;
+              break;
+            }
           }
+        }
+      }
+
+      if (!synonymMatch) {
+        const itemSkills = skillsIn(item);
+        const matchedSkill = itemSkills.find((sk) => resumeSkills.has(sk.toLowerCase()));
+        if (matchedSkill) {
+          synonymMatch = matchedSkill;
+          aliasMatched = matchedSkill;
         }
       }
 
@@ -317,30 +389,44 @@ export function evaluateResumeAlignment(db: Db, resumeText: string, jdText: stri
         continue;
       }
 
-      // Tier 3: Contextual Semantic Embeddings & Overlap
-      const semanticScore = calculateSemanticScore(item, resumeText);
-      if (semanticScore >= 0.8) {
+      // Tier 3: Contextual Semantic Score against individual resume lines/bullets
+      let bestLineScore = 0;
+      let bestLineText: string | null = null;
+      for (const line of resumeLines) {
+        const score = calculateSemanticScore(item, line);
+        if (score > bestLineScore) {
+          bestLineScore = score;
+          bestLineText = line;
+        }
+      }
+      if (bestLineScore >= 0.72 && bestLineText) {
         rubric.push({
           id,
           term: item,
           category,
           status: 'PARTIAL_SEMANTIC',
-          matchedResumeText: `Semantic match (${Math.round(semanticScore * 100)}%)`,
+          matchedResumeText: `${bestLineText.slice(0, 72)} (${Math.round(bestLineScore * 100)}%)`,
           canonicalSkill: item,
           aliasUsed: null,
         });
         continue;
       }
 
-      const itemTokens = itemLower.match(/[a-z0-9+#.-]{3,}/g) ?? [];
-      const matchedToken = itemTokens.find((t) => resumeLower.includes(t));
-      if (matchedToken) {
+      // Meaningful non-stopword whole-word overlap
+      const itemTokens = (itemLower.match(/[a-z0-9+#.-]{3,}/g) ?? []).filter((t) => !ALIGNMENT_STOPWORDS.has(t));
+      const matchedTokens = itemTokens.filter((t) =>
+        new RegExp(`(?<![a-z0-9+#.])${escapeRegExp(t)}(?![a-z0-9+#])`, 'i').test(resumeText),
+      );
+      if (
+        matchedTokens.length > 0 &&
+        (itemTokens.length <= 2 || matchedTokens.length >= 2 || matchedTokens[0]!.length >= 6)
+      ) {
         rubric.push({
           id,
           term: item,
           category,
           status: 'PARTIAL_SEMANTIC',
-          matchedResumeText: matchedToken,
+          matchedResumeText: matchedTokens.join(', '),
           canonicalSkill: null,
           aliasUsed: null,
         });

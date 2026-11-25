@@ -1,5 +1,6 @@
 import type { DocumentCheck, DocumentReadinessReport } from '../../../api';
 import { Badge } from '../../../components/ui/badge';
+import { Link } from '../../../router';
 
 const statusLabel: Record<DocumentCheck['status'], string> = {
   PASS: 'Pass',
@@ -8,9 +9,9 @@ const statusLabel: Record<DocumentCheck['status'], string> = {
 };
 
 const statusClasses: Record<DocumentCheck['status'], string> = {
-  PASS: 'bg-teal-500/15 text-teal-600 dark:text-teal-400',
-  WARN: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-  FAIL: 'bg-red-500/15 text-red-600 dark:text-red-400',
+  PASS: 'bg-status-success-bg text-status-success-fg border border-status-success-border',
+  WARN: 'bg-status-warn-bg text-status-warn-fg border border-status-warn-border',
+  FAIL: 'bg-status-danger-bg text-status-danger-fg border border-status-danger-border',
 };
 
 /**
@@ -50,6 +51,14 @@ export function DocumentReadinessCard({ readiness }: { readiness: DocumentReadin
                 <span className="sr-only"> — {statusLabel[check.status]}</span>
               </strong>
               <p className="text-xs text-muted-foreground leading-relaxed">{check.explanation}</p>
+              {check.status !== 'PASS' && check.fixHref && (
+                <Link
+                  href={check.fixHref}
+                  className="inline-block text-xs font-medium text-primary hover:underline pt-0.5"
+                >
+                  Fix in Profile →
+                </Link>
+              )}
             </div>
           </div>
         ))}

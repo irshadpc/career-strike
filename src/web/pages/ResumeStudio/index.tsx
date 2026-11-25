@@ -14,6 +14,9 @@ import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
+import { useToast } from '../../components/ui/toast';
 import { Link } from '../../router';
 import { DocumentReadinessCard } from './-components/AtsScorecard';
 import { CanvasLenses, type StudioLens } from './-components/CanvasLenses';
@@ -22,9 +25,10 @@ import { StudioInspector } from './-components/StudioInspector';
 import { TailoredResumeEditor } from './-components/TailoredResumeEditor';
 import { VaultOutliner } from './-components/VaultOutliner';
 import { XyzBulletEditor } from './-components/XyzBulletEditor';
-import type { MasterBullet, MasterEntry } from './-schema/studio-types';
+import type { MasterBullet, MasterEntry, StudioVariant } from './-schema/studio-types';
 
 export function ResumeStudio() {
+  const { toast } = useToast();
   const [facts, setFacts] = useState<ProfileFact[] | null>(null);
   const [master, setMaster] = useState<MasterResumeDocument | null>(null);
   const [documentReadiness, setDocumentReadiness] = useState<DocumentReadinessReport | null>(null);
@@ -37,12 +41,24 @@ export function ResumeStudio() {
   const [variantText, setVariantText] = useState<string>('');
   const userEditedRef = useRef(false);
   const [savingVariant, setSavingVariant] = useState(false);
+  const [generatingTailored, setGeneratingTailored] = useState(false);
   const [variantSaveStatus, setVariantSaveStatus] = useState<string | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [viewMode, setViewMode] = useState<'master' | 'compare'>('master');
 
   // 3-Pane Studio Workspace State
   const [masterEntries, setMasterEntries] = useState<MasterEntry[]>([]);
+  const [vaultLoaded, setVaultLoaded] = useState(false);
+  const [studioVariants, setStudioVariants] = useState<StudioVariant[]>([]);
+  const [activeStudioVariantId, setActiveStudioVariantId] = useState<string>('master');
+  const [studioVariantName, setStudioVariantName] = useState<string>('Tailored Resume Variant');
+  const [pageFormat, setPageFormat] = useState<'LETTER' | 'A4'>('LETTER');
+  const [summaryOverride, setSummaryOverride] = useState<string>('');
+  const [matchedJdTerms, setMatchedJdTerms] = useState<string[]>([]);
+  const [missingMustHaves, setMissingMustHaves] = useState<string[]>([]);
+  const [tailoringStudio, setTailoringStudio] = useState(false);
+  const [confirmDeleteVariantId, setConfirmDeleteVariantId] = useState<string | null>(null);
+  const [savingStudioVariant, setSavingStudioVariant] = useState(false);
   const [selectedBullet, setSelectedBullet] = useState<MasterBullet | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<MasterEntry | null>(null);
   const [includedEntryIds, setIncludedEntryIds] = useState<Set<string>>(new Set());
@@ -50,23 +66,35 @@ export function ResumeStudio() {
   const [bulletOverrides, setBulletOverrides] = useState<Record<string, string>>({});
   const [leftTab, setLeftTab] = useState<'vault' | 'xyz'>('vault');
   const [activeLens, setActiveLens] = useState<StudioLens>('print');
+  const deepLinkAppliedRef = useRef(false);
 
-  const loadMasterVault = useCallback(async () => {
-    try {
-      const res = await api<{ entries: MasterEntry[] }>('/api/studio/master');
-      setMasterEntries(res.entries);
-      setIncludedEntryIds(new Set(res.entries.map((e) => e.id)));
-      const allBullets: string[] = [];
-      for (const e of res.entries) {
-        for (const b of e.bullets) {
-          allBullets.push(b.id);
+  const loadMasterVault = useCallback(
+    async (preserveSelection = false) => {
+      try {
+        const [res, variantsRes] = await Promise.all([
+          api<{ entries: MasterEntry[] }>('/api/studio/master'),
+          api<{ variants: StudioVariant[] }>('/api/studio/variants').catch(() => ({ variants: [] })),
+        ]);
+        setMasterEntries(res.entries);
+        setStudioVariants(variantsRes.variants);
+        if (!preserveSelection) {
+          setIncludedEntryIds(new Set(res.entries.map((e) => e.id)));
+          const allBullets: string[] = [];
+          for (const e of res.entries) {
+            for (const b of e.bullets) {
+              allBullets.push(b.id);
+            }
+          }
+          setIncludedBulletIds(new Set(allBullets));
         }
+      } catch {
+        toast({ variant: 'destructive', title: 'Could not load Master Vault entries' });
+      } finally {
+        setVaultLoaded(true);
       }
-      setIncludedBulletIds(new Set(allBullets));
-    } catch {
-      // ignore
-    }
-  }, []);
+    },
+    [toast],
+  );
 
   const loadBase = useCallback(async () => {
     try {
@@ -81,19 +109,43 @@ export function ResumeStudio() {
       setDocumentReadiness(masterRes.readiness);
       if (readinessRes?.readiness) setReadiness(readinessRes.readiness);
       setApplications(appsRes.applications);
-      if (!selectedAppId && appsRes.applications.length > 0) {
-        setSelectedAppId(appsRes.applications[0]!.id);
-      }
+      setSelectedAppId((prev) => prev || appsRes.applications[0]?.id || '');
       setLoadError(false);
     } catch {
       setLoadError(true);
     }
-  }, [selectedAppId]);
+  }, []);
 
   useEffect(() => {
     void loadBase();
-    void loadMasterVault();
+    void loadMasterVault(false);
   }, [loadBase, loadMasterVault]);
+
+  // Apply deep-link query parameters (?variantId=...&appId=...&mode=compare) once base data AND vault load
+  useEffect(() => {
+    if (deepLinkAppliedRef.current || !facts || !vaultLoaded) return;
+    deepLinkAppliedRef.current = true;
+    const params = new URLSearchParams(window.location.search);
+    const qMode = params.get('mode');
+    const qAppId = params.get('appId');
+    const qVariantId = params.get('variantId');
+    if (qAppId) setSelectedAppId(qAppId);
+    if (qMode === 'compare') setViewMode('compare');
+    if (qVariantId) {
+      const matchingStudio = studioVariants.find((v) => v.id === qVariantId);
+      if (matchingStudio) {
+        setActiveStudioVariantId(matchingStudio.id);
+        setStudioVariantName(matchingStudio.name);
+        setPageFormat(matchingStudio.pageFormat);
+        setSummaryOverride(matchingStudio.summaryOverride ?? '');
+        setIncludedEntryIds(new Set(matchingStudio.includedEntries.map((ie) => ie.entryId)));
+        setIncludedBulletIds(new Set(matchingStudio.includedEntries.flatMap((ie) => ie.includedBulletIds)));
+        setBulletOverrides(matchingStudio.bulletOverrides ?? {});
+      } else {
+        setViewMode('compare');
+      }
+    }
+  }, [facts, vaultLoaded, studioVariants]);
 
   useEffect(() => {
     if (!selectedAppId) {
@@ -101,6 +153,8 @@ export function ResumeStudio() {
       setPersonalization(null);
       return;
     }
+    userEditedRef.current = false;
+    setVariantSaveStatus(null);
     let cancelled = false;
     Promise.all([
       api<{ application: ApplicationView }>(`/api/applications/${encodeURIComponent(selectedAppId)}`),
@@ -215,6 +269,179 @@ export function ResumeStudio() {
     }));
   };
 
+  const handleResetBulletOverride = (bulletId: string) => {
+    setBulletOverrides((prev) => {
+      const next = { ...prev };
+      delete next[bulletId];
+      return next;
+    });
+  };
+
+  const buildIncludedEntriesPayload = () =>
+    masterEntries
+      .filter((e) => includedEntryIds.has(e.id))
+      .map((e) => ({
+        entryId: e.id,
+        includedBulletIds: e.bullets.filter((b) => includedBulletIds.has(b.id)).map((b) => b.id),
+      }));
+
+  const masterSkills = facts
+    .filter((f) => f.kind === 'skill' && f.approved)
+    .map((f) => String(f.value.name))
+    .sort((a, b) => a.localeCompare(b));
+  const masterLanguages = facts
+    .filter((f) => f.kind === 'language' && f.approved)
+    .map((f) => `${String(f.value.name)} (${String(f.value.level)})`);
+
+  const hasCustomSelections =
+    activeStudioVariantId !== 'master' ||
+    pageFormat !== 'LETTER' ||
+    summaryOverride.trim().length > 0 ||
+    Object.keys(bulletOverrides).length > 0 ||
+    includedEntryIds.size !== masterEntries.length ||
+    includedBulletIds.size !== masterEntries.reduce((sum, e) => sum + e.bullets.length, 0);
+
+  const saveCurrentStudioVariant = async (asNew = false): Promise<string> => {
+    setSavingStudioVariant(true);
+    try {
+      const res = await api<{ variant: StudioVariant }>('/api/studio/variants', {
+        method: 'POST',
+        body: {
+          id: !asNew && activeStudioVariantId !== 'master' ? activeStudioVariantId : undefined,
+          jobApplicationId: selectedAppId || null,
+          name: studioVariantName.trim() || 'Tailored Resume Variant',
+          pageFormat,
+          summaryOverride: summaryOverride.trim() || null,
+          includedEntries: buildIncludedEntriesPayload(),
+          bulletOverrides,
+        },
+      });
+      setActiveStudioVariantId(res.variant.id);
+      setStudioVariants((prev) => {
+        const rest = prev.filter((v) => v.id !== res.variant.id);
+        return [res.variant, ...rest];
+      });
+      toast({ variant: 'success', title: `Saved variant "${res.variant.name}"` });
+      return res.variant.id;
+    } finally {
+      setSavingStudioVariant(false);
+    }
+  };
+
+  const handleDeleteStudioVariant = async (id: string) => {
+    try {
+      await api(`/api/studio/variants/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      setStudioVariants((prev) => prev.filter((v) => v.id !== id));
+      setConfirmDeleteVariantId(null);
+      if (activeStudioVariantId === id) {
+        handleSelectStudioVariant('master');
+      }
+      toast({ variant: 'success', title: 'Variant deleted' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not delete variant' });
+    }
+  };
+
+  const handleTailorForSelectedJob = async () => {
+    if (!selectedAppId) return;
+    setTailoringStudio(true);
+    try {
+      const res = await api<{
+        tailored: {
+          includedEntries: { entryId: string; includedBulletIds: string[] }[];
+          summaryOverride: string | null;
+          matchedTerms: string[];
+          missingMustHaves: string[];
+          suggestedName: string;
+        };
+      }>('/api/studio/tailor', {
+        method: 'POST',
+        body: { applicationId: selectedAppId, targetPages: 1 },
+      });
+      setIncludedEntryIds(new Set(res.tailored.includedEntries.map((ie) => ie.entryId)));
+      setIncludedBulletIds(new Set(res.tailored.includedEntries.flatMap((ie) => ie.includedBulletIds)));
+      if (res.tailored.summaryOverride) setSummaryOverride(res.tailored.summaryOverride);
+      setStudioVariantName(res.tailored.suggestedName);
+      setMatchedJdTerms(res.tailored.matchedTerms);
+      setMissingMustHaves(res.tailored.missingMustHaves);
+      toast({
+        variant: 'success',
+        title: 'Tailored vault selection to job',
+        description: `${res.tailored.matchedTerms.length} matched skills emphasized.`,
+      });
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not tailor variant for job' });
+    } finally {
+      setTailoringStudio(false);
+    }
+  };
+
+  const handleSaveMasterBullet = async (bulletId: string, newText: string) => {
+    const res = await api<{ bullet: MasterBullet }>(`/api/studio/master/bullets/${encodeURIComponent(bulletId)}`, {
+      method: 'PATCH',
+      body: { rawText: newText },
+    });
+    setMasterEntries((prev) =>
+      prev.map((e) => ({
+        ...e,
+        bullets: e.bullets.map((b) => (b.id === bulletId ? res.bullet : b)),
+      })),
+    );
+    setSelectedBullet(res.bullet);
+    setBulletOverrides((prev) => {
+      const next = { ...prev };
+      delete next[bulletId];
+      return next;
+    });
+    toast({ variant: 'success', title: 'Updated Master Vault bullet' });
+  };
+
+  const ensureStudioVariantForExport = async (): Promise<string> => {
+    if (!hasCustomSelections) return 'master';
+    return saveCurrentStudioVariant(false);
+  };
+
+  const handleSelectStudioVariant = (id: string) => {
+    setActiveStudioVariantId(id);
+    setConfirmDeleteVariantId(null);
+    if (id === 'master') {
+      setStudioVariantName('Tailored Resume Variant');
+      setPageFormat('LETTER');
+      setSummaryOverride('');
+      setIncludedEntryIds(new Set(masterEntries.map((e) => e.id)));
+      setIncludedBulletIds(new Set(masterEntries.flatMap((e) => e.bullets.map((b) => b.id))));
+      setBulletOverrides({});
+      return;
+    }
+    const found = studioVariants.find((v) => v.id === id);
+    if (!found) return;
+    setStudioVariantName(found.name);
+    setPageFormat(found.pageFormat);
+    setSummaryOverride(found.summaryOverride ?? '');
+    setIncludedEntryIds(new Set(found.includedEntries.map((ie) => ie.entryId)));
+    setIncludedBulletIds(new Set(found.includedEntries.flatMap((ie) => ie.includedBulletIds)));
+    setBulletOverrides(found.bulletOverrides ?? {});
+  };
+
+  const handleGeneratePersonalization = async () => {
+    if (!selectedAppId) return;
+    setGeneratingTailored(true);
+    try {
+      const res = await api<{ personalization: PersonalizationView }>(
+        `/api/applications/${encodeURIComponent(selectedAppId)}/personalize`,
+        { method: 'POST' },
+      );
+      setPersonalization(res.personalization);
+      const match = res.personalization.variants.find((v) => v.kind === selectedVariantKind);
+      if (match) setVariantText(match.content);
+      toast({ variant: 'success', title: 'Generated tailored draft from verified facts' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not generate tailored draft' });
+    } finally {
+      setGeneratingTailored(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -280,15 +507,114 @@ export function ResumeStudio() {
       {viewMode === 'master' ? (
         <>
           {/* Export Panel */}
-          <ExportPanel />
+          <ExportPanel onEnsureStudioVariant={ensureStudioVariantForExport} />
 
           {/* 3-Pane Studio Workspace */}
           <section className="space-y-3" aria-label="3-Pane Studio Workspace">
-            <div className="flex items-center justify-between pb-1 border-b border-border">
+            <div className="flex items-center justify-between pb-2 border-b border-border flex-wrap gap-3">
               <h2 className="text-base font-semibold tracking-tight text-foreground m-0">
                 Studio Workspace: ATS X-Ray, Recruiter Simulation &amp; Master Vault
               </h2>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  aria-label="Active resume variant"
+                  value={activeStudioVariantId}
+                  onChange={(e) => handleSelectStudioVariant(e.target.value)}
+                  className="h-9 rounded-md border border-input bg-background px-2.5 text-xs text-foreground"
+                >
+                  <option value="master">Master Vault (All Entries)</option>
+                  {studioVariants.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} ({v.pageFormat})
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  value={studioVariantName}
+                  onChange={(e) => setStudioVariantName(e.target.value)}
+                  aria-label="Variant name"
+                  placeholder="Variant name"
+                  className="h-9 w-44 text-xs"
+                />
+                <select
+                  aria-label="Page format"
+                  value={pageFormat}
+                  onChange={(e) => setPageFormat(e.target.value === 'A4' ? 'A4' : 'LETTER')}
+                  className="h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground"
+                >
+                  <option value="LETTER">US Letter</option>
+                  <option value="A4">A4</option>
+                </select>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={savingStudioVariant || masterEntries.length === 0}
+                  onClick={() => void saveCurrentStudioVariant(false)}
+                >
+                  {savingStudioVariant ? 'Saving…' : 'Save Variant'}
+                </Button>
+                {activeStudioVariantId !== 'master' && (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={savingStudioVariant || masterEntries.length === 0}
+                      onClick={() => void saveCurrentStudioVariant(true)}
+                    >
+                      Save as New
+                    </Button>
+                    {confirmDeleteVariantId === activeStudioVariantId ? (
+                      <span className="inline-flex items-center gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => void handleDeleteStudioVariant(activeStudioVariantId)}
+                        >
+                          Delete?
+                        </Button>
+                        <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmDeleteVariantId(null)}>
+                          Cancel
+                        </Button>
+                      </span>
+                    ) : (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setConfirmDeleteVariantId(activeStudioVariantId)}
+                      >
+                        Delete Variant
+                      </Button>
+                    )}
+                  </>
+                )}
+                {applications.length > 0 && (
+                  <>
+                    <select
+                      aria-label="Target job application for 1-click tailoring"
+                      value={selectedAppId}
+                      onChange={(e) => setSelectedAppId(e.target.value)}
+                      className="h-9 rounded-md border border-input bg-background px-2 text-xs text-foreground max-w-[200px]"
+                    >
+                      {applications.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.title} ({a.employer})
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      disabled={!selectedAppId || tailoringStudio || masterEntries.length === 0}
+                      onClick={() => void handleTailorForSelectedJob()}
+                    >
+                      {tailoringStudio ? 'Tailoring…' : '1-Click Tailor for Job'}
+                    </Button>
+                  </>
+                )}
                 <Button
                   type="button"
                   variant="secondary"
@@ -299,11 +625,32 @@ export function ResumeStudio() {
                 </Button>
                 <Link
                   href="/profile"
-                  className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground px-3 py-1.5 transition-colors"
+                  className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-muted hover:text-foreground px-3 py-1.5 transition-colors"
                 >
                   Edit Facts in Profile
                 </Link>
               </div>
+            </div>
+
+            <div className="rounded-lg border border-border/70 bg-muted/20 p-3 space-y-2">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label htmlFor="studio-summary-override" className="text-xs font-medium text-foreground">
+                  Tailored Summary Override (optional)
+                </label>
+                {missingMustHaves.length > 0 && (
+                  <span className="text-[11px] text-status-warn-fg">
+                    JD Gaps in confirmed facts: {missingMustHaves.slice(0, 5).join(', ')}
+                  </span>
+                )}
+              </div>
+              <Textarea
+                id="studio-summary-override"
+                rows={2}
+                value={summaryOverride}
+                onChange={(e) => setSummaryOverride(e.target.value)}
+                placeholder="Write or auto-tailor a concise 2-3 sentence summary tailored to this role..."
+                className="text-xs bg-background"
+              />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start w-full max-w-full">
@@ -339,13 +686,17 @@ export function ResumeStudio() {
                     onSelectBullet={handleSelectBullet}
                     onToggleEntry={handleToggleEntry}
                     onToggleBullet={handleToggleBullet}
-                    onRefresh={() => void loadMasterVault()}
+                    onRefresh={() => void loadMasterVault(true)}
                   />
                 ) : (
                   <XyzBulletEditor
                     bullet={selectedBullet}
                     entry={selectedEntry}
+                    currentOverride={selectedBullet ? bulletOverrides[selectedBullet.id] : undefined}
                     onSaveOverride={handleSaveBulletOverride}
+                    onResetOverride={handleResetBulletOverride}
+                    onSaveMasterBullet={handleSaveMasterBullet}
+                    onBackToOutliner={() => setLeftTab('vault')}
                   />
                 )}
               </div>
@@ -360,6 +711,10 @@ export function ResumeStudio() {
                   bulletOverrides={bulletOverrides}
                   activeLens={activeLens}
                   onLensChange={setActiveLens}
+                  summaryOverride={summaryOverride || null}
+                  skills={masterSkills}
+                  languages={masterLanguages}
+                  matchedJdTerms={matchedJdTerms}
                 />
               </div>
 
@@ -367,9 +722,11 @@ export function ResumeStudio() {
               <div className="lg:col-span-3 min-w-0 w-full rounded-xl border border-border bg-card p-4 shadow-xs space-y-3">
                 <StudioInspector
                   entries={masterEntries}
+                  includedEntryIds={includedEntryIds}
                   includedBulletIds={includedBulletIds}
                   bulletOverrides={bulletOverrides}
                   applications={applications}
+                  onEnsureStudioVariant={ensureStudioVariantForExport}
                 />
               </div>
             </div>
@@ -451,9 +808,19 @@ export function ResumeStudio() {
                       Tailored Cover Letter
                     </Button>
                   </div>
+                  {!personalization && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={generatingTailored}
+                      onClick={() => void handleGeneratePersonalization()}
+                    >
+                      {generatingTailored ? 'Generating…' : 'Generate Tailored Draft'}
+                    </Button>
+                  )}
                   <Link
                     href={`/applications/${activeApp.id}`}
-                    className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground px-3 py-1.5 transition-colors"
+                    className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-muted hover:text-foreground px-3 py-1.5 transition-colors"
                   >
                     Open Full Application →
                   </Link>
@@ -479,7 +846,7 @@ export function ResumeStudio() {
                 </details>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {/* Left: Master Reference */}
                 <div className="bg-card border border-border rounded-xl p-5 shadow-xs">
                   <div className="flex justify-between items-center mb-3">
@@ -515,6 +882,8 @@ export function ResumeStudio() {
                   onDownload={() => downloadText(`tailored-${selectedVariantKind}.txt`, variantText)}
                 />
               </div>
+
+              {activeApp && activeVariant && <ExportPanel applicationId={activeApp.id} variantId={activeVariant.id} />}
             </>
           )}
         </section>

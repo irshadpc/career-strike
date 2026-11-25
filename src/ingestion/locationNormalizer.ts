@@ -212,14 +212,17 @@ export function backfillJobLocations(db: Db): number {
   const rows = db
     .prepare('SELECT id, location_text, remote_policy, country_code FROM jobs WHERE country_code IS NULL')
     .all() as { id: string; location_text: string | null; remote_policy: string; country_code: string | null }[];
+  if (rows.length === 0) return 0;
   const update = db.prepare(
     'UPDATE jobs SET country_code = ?, country_codes_json = ?, work_mode = ?, normalized_location = ? WHERE id = ?',
   );
   let updated = 0;
-  for (const row of rows) {
-    const norm = normalizeIngestedLocation(row.location_text, row.remote_policy as RemotePolicy);
-    update.run(norm.countryCode, JSON.stringify(norm.countryCodes), norm.workMode, norm.normalizedLocation, row.id);
-    updated += 1;
-  }
+  db.transaction(() => {
+    for (const row of rows) {
+      const norm = normalizeIngestedLocation(row.location_text, row.remote_policy as RemotePolicy);
+      update.run(norm.countryCode, JSON.stringify(norm.countryCodes), norm.workMode, norm.normalizedLocation, row.id);
+      updated += 1;
+    }
+  })();
   return updated;
 }

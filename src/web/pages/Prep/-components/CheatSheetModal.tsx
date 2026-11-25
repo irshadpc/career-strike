@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Prep as PrepData, ProfileFact } from '../../../api';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -14,6 +14,23 @@ export function CheatSheetModal({
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const prevFocus = document.activeElement as HTMLElement | null;
+    dialogRef.current?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      prevFocus?.focus?.();
+    };
+  }, [onClose]);
   const next = data.interviews.find((i) => i.outcome === 'pending');
   const postingTopics = data.topics.filter((t) => t.source === 'posting');
   const gaps = data.topics.filter((t) => t.gap);
@@ -74,7 +91,9 @@ export function CheatSheetModal({
       role="presentation"
     >
       <div
-        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-card text-card-foreground rounded-xl border border-border shadow-2xl p-6 sm:p-8 space-y-6"
+        ref={dialogRef}
+        tabIndex={-1}
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto bg-card text-card-foreground rounded-xl border border-border shadow-2xl p-6 sm:p-8 space-y-6 outline-none"
         role="dialog"
         aria-modal="true"
         aria-labelledby="cs-title"
@@ -97,10 +116,10 @@ export function CheatSheetModal({
           </div>
           <div className="flex gap-2 shrink-0">
             <Button type="button" size="sm" variant="secondary" onClick={handleCopy}>
-              {copied ? '✓ Copied' : '📋 Copy Brief'}
+              {copied ? 'Copied' : 'Copy Brief'}
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={() => window.print()}>
-              🖨️ Print
+              Print
             </Button>
             <Button type="button" size="sm" variant="ghost" onClick={onClose} aria-label="Close brief">
               ✕
@@ -168,7 +187,7 @@ export function CheatSheetModal({
           </div>
 
           <div className="rounded-lg border border-border/70 bg-card/60 p-4 space-y-3">
-            <h3 className="text-base font-semibold text-foreground">⭐ STAR Response Quick Guide</h3>
+            <h3 className="text-base font-semibold text-foreground">STAR Response Quick Guide</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div className="rounded-md border border-border/50 bg-background/50 p-3">
                 <strong className="text-foreground">S · Situation</strong>

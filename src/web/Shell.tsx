@@ -10,8 +10,10 @@ import {
   Home,
   Keyboard,
   Layers,
+  LayoutGrid,
   type LucideIcon,
   Mail,
+  Monitor,
   Moon,
   RefreshCw,
   Search,
@@ -22,9 +24,10 @@ import {
   User,
   Users,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { OmniboxModal } from './components/OmniboxModal';
 import { ShortcutsModal } from './components/ShortcutsModal';
+import { Loading } from './components/states';
 import { UpdateBanner } from './components/Updates';
 import { Button } from './components/ui/button';
 import { ToastProvider } from './components/ui/toast';
@@ -130,18 +133,23 @@ export function Shell() {
           Skip to content
         </a>
 
-        {/* Global Masthead & Omnibox Header */}
-        <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-          <header className="flex flex-col gap-3 px-5 py-3.5 bg-card/90 border border-border border-b-2 border-b-foreground/90 rounded-2xl shadow-xs backdrop-blur-md">
+        {/* Global Sticky Editorial Header & Navigation */}
+        <header className="sticky top-0 z-30 border-b border-border bg-surface/95 backdrop-blur-md">
+          <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-3">
             {/* Top Row: Brand + Omnibox + Actions */}
-            <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center justify-between gap-4 pb-2.5 flex-wrap">
               <div className="flex items-center gap-3">
-                <Link href="/" className="text-2xl font-bold font-serif text-foreground tracking-tight no-underline">
-                  Career <span className="text-primary italic font-medium">Strike</span>
+                <Link
+                  href="/"
+                  className="text-xl sm:text-2xl font-bold font-serif text-foreground tracking-tight no-underline"
+                >
+                  Career{' '}
+                  <span style={{ color: 'var(--color-brand-warm)' }} className="italic font-semibold">
+                    Strike
+                  </span>
                 </Link>
-                <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-sans font-medium bg-status-success-bg text-status-success-fg border border-status-success-border">
-                  <span className="w-1.5 h-1.5 rounded-full bg-status-success-fg animate-pulse" />
-                  Local &amp; Private
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider font-semibold bg-subtle text-ink-secondary border border-border">
+                  Local-First
                 </span>
               </div>
 
@@ -149,12 +157,13 @@ export function Shell() {
               <button
                 type="button"
                 onClick={() => setIsOmniboxOpen(true)}
-                className="hidden md:flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-muted/50 hover:bg-muted/80 border border-border text-xs text-muted-foreground transition-all duration-150 w-64 lg:w-80 shadow-2xs text-left group cursor-pointer"
+                className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-md bg-subtle/70 hover:bg-subtle border border-border text-xs text-muted-foreground transition-colors sm:w-56 lg:w-80 text-left group cursor-pointer"
                 title="Jump to jobs, skills, commands (⌘K)"
               >
                 <Search className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                <span className="flex-1 text-left truncate">Jump to jobs, skills, commands...</span>
-                <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-background border border-border shadow-2xs text-foreground font-semibold">
+                <span className="hidden md:inline flex-1 text-left truncate">Jump to jobs, skills, commands...</span>
+                <span className="md:hidden text-xs font-medium">Jump</span>
+                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-surface border border-border text-foreground font-semibold">
                   ⌘K
                 </kbd>
               </button>
@@ -164,35 +173,36 @@ export function Shell() {
                 <button
                   type="button"
                   onClick={() => setShowSpecialized(!showSpecialized)}
-                  className={`hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  aria-expanded={showSpecialized}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-colors cursor-pointer ${
                     showSpecialized
-                      ? 'bg-primary/10 text-primary font-semibold ring-1 ring-primary/20'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      ? 'bg-accent text-accent-fg border-transparent font-semibold'
+                      : 'border-border bg-surface text-foreground hover:bg-subtle'
                   }`}
-                  title="Toggle specialized career hubs (Contacts, STAR stories, Offers, Hired)"
+                  title="Toggle specialized tools (Contacts, STAR Vault, Offer Lab, Hired Mode, Compare, Sync Health)"
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-primary" />
-                  <span>Hubs</span>
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span>Tools</span>
                 </button>
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
+                  className="p-1.5 rounded-md border border-transparent text-muted-foreground hover:text-foreground hover:bg-subtle transition-colors cursor-pointer"
                   title={`Switch theme (current: ${theme})`}
                   aria-label={`Switch theme (current: ${theme})`}
                 >
                   {theme === 'dark' ? (
                     <Moon className="w-4 h-4 text-primary" />
                   ) : theme === 'light' ? (
-                    <Sun className="w-4 h-4 text-amber-500" />
+                    <Sun className="w-4 h-4 text-foreground" />
                   ) : (
-                    <Sparkles className="w-4 h-4 text-muted-foreground" />
+                    <Monitor className="w-4 h-4 text-muted-foreground" />
                   )}
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsShortcutsOpen(true)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors hidden sm:inline-flex cursor-pointer"
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-subtle transition-colors hidden sm:inline-flex cursor-pointer"
                   title="Keyboard shortcuts (?)"
                   aria-label="Keyboard shortcuts"
                 >
@@ -210,9 +220,9 @@ export function Shell() {
               </div>
             </div>
 
-            {/* Bottom Row: Primary Navigation Pills */}
-            <nav aria-label="Primary" className="w-full overflow-x-auto">
-              <ul className="flex items-center flex-wrap gap-1.5 m-0 p-0 list-none">
+            {/* Bottom Row: Clean Architectural Tab Strip */}
+            <nav aria-label="Primary" className="w-full overflow-x-auto border-t border-border/70">
+              <ul className="flex items-center flex-wrap gap-1 m-0 p-0 list-none">
                 {PRIMARY_NAV.map((item) => {
                   const active = isCurrent(item.href, path);
                   const Icon = item.icon;
@@ -221,24 +231,20 @@ export function Shell() {
                       <Link
                         href={item.href}
                         aria-current={active ? 'page' : undefined}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 no-underline ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-2 text-[13px] font-medium border-b-2 transition-colors no-underline -mb-px ${
                           active
-                            ? 'bg-primary/10 text-primary font-semibold shadow-2xs ring-1 ring-primary/20'
-                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
+                            ? 'border-primary text-primary font-semibold'
+                            : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                         }`}
                       >
-                        <Icon
-                          className={`w-3.5 h-3.5 shrink-0 ${
-                            active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                          }`}
-                        />
+                        <Icon className={`w-3.5 h-3.5 shrink-0 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
                         <span>{item.label}</span>
                       </Link>
                     </li>
                   );
                 })}
 
-                {/* Specialized Hub Pills if Toggled or on active route */}
+                {/* Specialized Tools Strip if Toggled or on active route */}
                 {SPECIALIZED_NAV.map((item) => {
                   const active = isCurrent(item.href, path);
                   if (!showSpecialized && !active) return null;
@@ -248,10 +254,10 @@ export function Shell() {
                       <Link
                         href={item.href}
                         aria-current={active ? 'page' : undefined}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 no-underline ${
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-2 text-[13px] font-medium border-b-2 transition-colors no-underline -mb-px ${
                           active
-                            ? 'bg-primary/10 text-primary font-semibold shadow-2xs ring-1 ring-primary/20'
-                            : 'text-foreground/80 hover:text-foreground hover:bg-muted/80 bg-muted/40'
+                            ? 'border-primary text-primary font-semibold'
+                            : 'border-transparent text-foreground/80 hover:text-foreground hover:border-border'
                         }`}
                       >
                         <Icon className="w-3.5 h-3.5 text-primary shrink-0" />
@@ -262,8 +268,8 @@ export function Shell() {
                 })}
               </ul>
             </nav>
-          </header>
-        </div>
+          </div>
+        </header>
 
         {/* Connection Outage Banner */}
         {connection === 'unavailable' && (
@@ -287,7 +293,9 @@ export function Shell() {
           className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 mt-6 outline-none pb-16 flex flex-col"
         >
           <UpdateBanner />
-          <Outlet />
+          <Suspense fallback={<Loading label="Loading view" />}>
+            <Outlet />
+          </Suspense>
         </main>
 
         {/* Footer */}

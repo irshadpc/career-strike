@@ -1,20 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { type ApplicationSummary, api, type ExportResult, type ExportVerification } from '../../../api';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Textarea } from '../../../components/ui/textarea';
-import type { AlignmentResult, MasterEntry } from '../-schema/studio-types';
+import type { AlignmentResult, MasterEntry, RoleBulletAudit } from '../-schema/studio-types';
 
 export function StudioInspector({
   entries,
+  includedEntryIds,
   includedBulletIds,
   bulletOverrides,
   applications,
+  onEnsureStudioVariant,
 }: {
   entries: MasterEntry[];
+  includedEntryIds: Set<string>;
   includedBulletIds: Set<string>;
   bulletOverrides: Record<string, string>;
   applications: ApplicationSummary[];
+  onEnsureStudioVariant?: () => Promise<string>;
 }) {
   const [activeTab, setActiveTab] = useState<'verify' | 'align' | 'impact'>('verify');
 
@@ -27,13 +31,22 @@ export function StudioInspector({
   const [selectedAppId, setSelectedAppId] = useState<string>(applications[0]?.id ?? '');
   const [customJdText, setCustomJdText] = useState<string>('');
   const [alignmentResult, setAlignmentResult] = useState<AlignmentResult | null>(null);
+  const [alignError, setAlignError] = useState<string | null>(null);
   const [aligning, setAligning] = useState(false);
+  const [impactAudit, setImpactAudit] = useState<RoleBulletAudit | null>(null);
+
+  useEffect(() => {
+    if (!selectedAppId && applications.length > 0) {
+      setSelectedAppId(applications[0]!.id);
+    }
+  }, [applications, selectedAppId]);
 
   const handleExport = async (format: 'pdf' | 'docx') => {
     setVerifyingFormat(format);
     setExportMessage(null);
     try {
-      const res = await api<ExportResult>(`/api/exports/master-resume/${format}`, {
+      const targetVariantId = onEnsureStudioVariant ? await onEnsureStudioVariant() : 'master';
+      const res = await api<ExportResult>(`/api/resume/${encodeURIComponent(targetVariantId)}/export/${format}`, {
         method: 'POST',
       });
       setVerification(res.verification);
@@ -66,10 +79,12 @@ export function StudioInspector({
 
   const handleRunAlignment = async () => {
     setAligning(true);
+    setAlignError(null);
     try {
-      // Gather resume text from included entries
+      // Gather resume text strictly from included entries & bullets
       const resumeParts: string[] = [];
       for (const e of entries) {
+        if (!includedEntryIds.has(e.id)) continue;
         resumeParts.push(`${e.title} at ${e.organization}`);
         for (const b of e.bullets) {
           if (includedBulletIds.has(b.id)) {
@@ -78,17 +93,43 @@ export function StudioInspector({
         }
       }
       const resumeText = resumeParts.join('\n');
+      if (!resumeText.trim()) {
+        setAlignError('Include at least one resume entry or bullet to analyze alignment.');
+        return;
+      }
 
       let jd = customJdText.trim();
       if (!jd && selectedAppId) {
-        const appRes = await api<{ application: { rawJobText?: string; title?: string } }>(
-          `/api/applications/${encodeURIComponent(selectedAppId)}`,
-        ).catch(() => null);
-        jd = appRes?.application?.rawJobText ?? appRes?.application?.title ?? '';
+        const app = applications.find((a) => a.id === selectedAppId);
+        if (app?.jobId) {
+          const jobRes = await api<{
+            job: {
+              title?: string;
+              description?: Array<{ type?: string; text?: string }>;
+              requirements?: {
+                skills?: Array<{ skill: string; importance: string }>;
+                urgency?: string[];
+                locationConstraints?: string[];
+              };
+            };
+          }>(`/api/jobs/${encodeURIComponent(app.jobId)}`).catch(() => null);
+          const descText = (jobRes?.job?.description ?? [])
+            .map((b) => b.text?.trim() ?? '')
+            .filter(Boolean)
+            .join('\n');
+          const reqSkills = (jobRes?.job?.requirements?.skills ?? [])
+            .map((s) => `${s.skill} (${s.importance})`)
+            .join(', ');
+          jd =
+            [jobRes?.job?.title ?? app.title, reqSkills ? `Requirements: ${reqSkills}` : '', descText]
+              .filter(Boolean)
+              .join('\n\n')
+              .trim() || `${app.title} at ${app.employer}`;
+        }
       }
 
       if (!jd) {
-        setExportMessage('Please select an application or paste a job description.');
+        setAlignError('Please select an application or paste a job description.');
         return;
       }
 
@@ -99,27 +140,71 @@ export function StudioInspector({
       setAlignmentResult(res.alignment);
     } catch {
       setAlignmentResult(null);
+      setAlignError('Could not evaluate job alignment. Ensure the local service is running.');
     } finally {
       setAligning(false);
     }
   };
 
-  // Derive Impact Scorecard metrics
-  const activeBullets: string[] = [];
-  for (const e of entries) {
-    for (const b of e.bullets) {
-      if (includedBulletIds.has(b.id)) {
-        activeBullets.push(bulletOverrides[b.id] ?? b.rawText);
-      }
+  // Derive Impact Scorecard metrics per-entry from included entries & bullets
+  const activeRoleBulletGroups = useMemo(() => {
+    const groups: string[][] = [];
+    for (const e of entries) {
+      if (!includedEntryIds.has(e.id)) continue;
+      const roleBullets = e.bullets
+        .filter((b) => includedBulletIds.has(b.id))
+        .map((b) => bulletOverrides[b.id] ?? b.rawText);
+      if (roleBullets.length > 0) groups.push(roleBullets);
     }
-  }
+    return groups;
+  }, [entries, includedEntryIds, includedBulletIds, bulletOverrides]);
 
-  const metricRegex = /\b\d+(?:\.\d+)?%|\$\s*\d+|\b\d+\s*(?:ms|mins?|hours?|days?|users?|engineers?|customers?)/i;
-  const quantifiedCount = activeBullets.filter((b) => metricRegex.test(b)).length;
-  const quantifiedRate = activeBullets.length > 0 ? Math.round((quantifiedCount / activeBullets.length) * 100) : 0;
+  const activeBullets = useMemo(() => activeRoleBulletGroups.flat(), [activeRoleBulletGroups]);
 
-  const clicheRegex = /\b(delve|spearheaded|leveraged|synergy|testament|pivotal|tapestry)\b/i;
-  const clicheCount = activeBullets.filter((b) => clicheRegex.test(b)).length;
+  useEffect(() => {
+    if (activeTab !== 'impact' || activeRoleBulletGroups.length === 0) {
+      if (activeRoleBulletGroups.length === 0) setImpactAudit(null);
+      return;
+    }
+    let cancelled = false;
+    Promise.all(
+      activeRoleBulletGroups.map((bullets) =>
+        api<{ audit: RoleBulletAudit }>('/api/studio/lint-bullet', {
+          method: 'POST',
+          body: { bullets },
+        }),
+      ),
+    )
+      .then((results) => {
+        if (cancelled) return;
+        const allBullets = results.flatMap((r) => r.audit.bullets);
+        const total = allBullets.length;
+        const quantified = allBullets.filter((b) => b.isQuantified).length;
+        const avgXyz = total > 0 ? Math.round(allBullets.reduce((sum, b) => sum + b.xyzScore, 0) / total) : 0;
+        const totalCliches = results.reduce((sum, r) => sum + r.audit.totalCliches, 0);
+        const hasVisualSymmetryTell = results.some((r) => r.audit.hasVisualSymmetryTell);
+        const duplicateVerbs = [...new Set(results.flatMap((r) => r.audit.duplicateVerbs ?? []))];
+        setImpactAudit({
+          bullets: allBullets,
+          averageXyzScore: avgXyz,
+          quantifiedRate: total > 0 ? quantified / total : 0,
+          totalCliches,
+          hasVisualSymmetryTell,
+          duplicateVerbs,
+          feedbackSummary: results.map((r) => r.audit.feedbackSummary).join(' '),
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setImpactAudit(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, activeRoleBulletGroups]);
+
+  const quantifiedRate = impactAudit ? Math.round(impactAudit.quantifiedRate * 100) : 0;
+  const quantifiedCount = impactAudit ? impactAudit.bullets.filter((b) => b.isQuantified).length : 0;
+  const clicheCount = impactAudit ? impactAudit.totalCliches : 0;
 
   return (
     <div className="space-y-4 text-xs">
@@ -202,34 +287,37 @@ export function StudioInspector({
                 </Badge>
               </div>
 
-              {verification.checks.map((check) => (
-                <div
-                  key={check.id}
-                  className={`p-2.5 rounded-lg border text-xs space-y-1 ${
-                    check.status === 'PASS'
-                      ? 'border-teal-500/30 bg-teal-500/5'
-                      : check.status === 'WARN'
-                        ? 'border-amber-500/30 bg-amber-500/5'
-                        : 'border-destructive/30 bg-destructive/5'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-foreground">{check.label}</span>
-                    <span
-                      className={`font-mono text-[10px] font-bold ${
-                        check.status === 'PASS'
-                          ? 'text-teal-600'
-                          : check.status === 'WARN'
-                            ? 'text-amber-600'
-                            : 'text-destructive'
-                      }`}
-                    >
-                      {check.status}
-                    </span>
+              {verification.checks.map((check) => {
+                const statusUpper = check.status.toUpperCase();
+                return (
+                  <div
+                    key={check.id}
+                    className={`p-2.5 rounded-lg border text-xs space-y-1 ${
+                      statusUpper === 'PASS'
+                        ? 'border-status-success-border bg-status-success-bg'
+                        : statusUpper === 'WARN'
+                          ? 'border-status-warn-border bg-status-warn-bg'
+                          : 'border-destructive/30 bg-destructive/5'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-foreground">{check.label}</span>
+                      <span
+                        className={`font-mono text-[10px] font-bold uppercase ${
+                          statusUpper === 'PASS'
+                            ? 'text-status-success-fg'
+                            : statusUpper === 'WARN'
+                              ? 'text-status-warn-fg'
+                              : 'text-destructive'
+                        }`}
+                      >
+                        {statusUpper}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">{check.explanation}</p>
                   </div>
-                  <p className="text-[11px] text-muted-foreground">{check.explanation}</p>
-                </div>
-              ))}
+                );
+              })}
 
               {verification.failures.length > 0 && (
                 <div className="p-2.5 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive text-[11px] space-y-1">
@@ -307,6 +395,15 @@ export function StudioInspector({
             </Button>
           </div>
 
+          {alignError && (
+            <p
+              role="alert"
+              className="text-[11px] text-status-danger-fg bg-status-danger-bg border border-status-danger-border p-2 rounded"
+            >
+              {alignError}
+            </p>
+          )}
+
           {alignmentResult && (
             <div className="space-y-3 pt-2 max-h-[calc(100vh-380px)] overflow-y-auto pr-1">
               {/* Score Badges */}
@@ -319,9 +416,9 @@ export function StudioInspector({
                   <span className="text-[10px] text-muted-foreground block">Preferred</span>
                   <strong className="text-sm font-mono text-foreground">{alignmentResult.preferredScore}%</strong>
                 </div>
-                <div className="p-2 rounded border border-teal-500/40 bg-teal-500/10">
-                  <span className="text-[10px] text-teal-700 dark:text-teal-300 block">Composite</span>
-                  <strong className="text-sm font-mono text-teal-700 dark:text-teal-300">
+                <div className="p-2 rounded border border-status-success-border bg-status-success-bg">
+                  <span className="text-[10px] text-status-success-fg block">Composite</span>
+                  <strong className="text-sm font-mono text-status-success-fg">
                     {alignmentResult.compositeScore}%
                   </strong>
                 </div>
@@ -329,8 +426,8 @@ export function StudioInspector({
 
               {/* Counterfactual Lift Queue */}
               {alignmentResult.counterfactualFixes.length > 0 && (
-                <div className="p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 space-y-1.5">
-                  <span className="font-semibold text-amber-700 dark:text-amber-400 text-xs block">
+                <div className="p-2.5 rounded-lg border border-status-warn-border bg-status-warn-bg space-y-1.5">
+                  <span className="font-semibold text-status-warn-fg text-xs block">
                     Counterfactual Priority Queue (Top Marginal Lifts):
                   </span>
                   <div className="space-y-1">
@@ -436,11 +533,24 @@ export function StudioInspector({
           </div>
 
           <div className="p-3 rounded-xl border border-border bg-muted/20 space-y-2">
-            <span className="font-semibold text-foreground text-xs block">Google XYZ Formula Adoption Rule</span>
+            <span className="font-semibold text-foreground text-xs block">
+              Google XYZ Formula Adoption{impactAudit ? ` · Avg ${impactAudit.averageXyzScore}/100` : ''}
+            </span>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
               Every bullet should answer: <em>"Accomplished [X] as measured by [Y] by doing [Z]"</em>. Use the Focused
               XYZ Editor in the left pane to audit duty openers and insert verified metrics.
             </p>
+            {impactAudit?.hasVisualSymmetryTell && (
+              <p className="text-[11px] text-status-warn-fg bg-status-warn-bg border border-status-warn-border p-2 rounded">
+                Visual symmetry warning: bullets have near-identical lengths (common AI output tell). Vary sentence
+                rhythm.
+              </p>
+            )}
+            {impactAudit?.duplicateVerbs && impactAudit.duplicateVerbs.length > 0 && (
+              <p className="text-[11px] text-status-warn-fg bg-status-warn-bg border border-status-warn-border p-2 rounded">
+                Repeated opening verbs: {impactAudit.duplicateVerbs.join(', ')}. Diversify action openers.
+              </p>
+            )}
           </div>
         </div>
       )}

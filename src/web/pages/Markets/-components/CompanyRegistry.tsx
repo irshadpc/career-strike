@@ -37,16 +37,23 @@ export function CompanyRegistry({ country }: { country: string }) {
   const [showForm, setShowForm] = useState(false);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string | null>(null);
 
+  const [debouncedQuery, setDebouncedQuery] = useState(query);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 250);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
   const load = useCallback(async () => {
     try {
       const params = new URLSearchParams({ limit: '200' });
-      if (query.trim()) params.set('q', query.trim());
+      if (debouncedQuery.trim()) params.set('q', debouncedQuery.trim());
       if (countryOnly && country) params.set('country', country);
       setData(await api<Payload>(`/api/company-registry?${params.toString()}`));
     } catch {
       setMessage('The company registry could not be loaded.');
     }
-  }, [country, countryOnly, query]);
+  }, [country, countryOnly, debouncedQuery]);
 
   useEffect(() => {
     void load();

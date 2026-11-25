@@ -14,7 +14,16 @@ import { api, type Disposition, type JobList, type JobSummary, type SettingsResp
 import { PageHeader } from '../../components/PageHeader';
 import { ErrorPanel, Loading } from '../../components/states';
 import { Button, buttonVariants } from '../../components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
+import { useToast } from '../../components/ui/toast';
 import { cn } from '../../helpers/cn';
 import { useResource } from '../../hooks/useResource';
 import { Link, useNavigateTo, useSearch } from '../../router';
@@ -96,16 +105,17 @@ export function Opportunities() {
   const searchForm = useForm<{ q: string }>({ defaultValues: { q: params.get('q') ?? '' } });
   const activeQuery = searchForm.watch('q');
   const [compare, setCompare] = useState<string[]>([]);
+  const { toast } = useToast();
   const [autopilotQueue, setAutopilotQueue] = useState<string[]>([]);
   const [focusCapRemaining, setFocusCapRemaining] = useState<number>(5);
   const [batchQueueing, setBatchQueueing] = useState(false);
-  const [reload, setReload] = useState(0);
+  const [_reload, setReload] = useState(0);
 
   useEffect(() => {
     api<{ remainingFocusCap: number }>('/api/autopilot/queue')
       .then((r) => setFocusCapRemaining(r.remainingFocusCap))
       .catch(() => {});
-  }, [reload]);
+  }, []);
 
   const toggleAutopilot = (id: string) => {
     setAutopilotQueue((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -122,15 +132,25 @@ export function Opportunities() {
       setAutopilotQueue([]);
       navigate('/autopilot');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to queue jobs for Autopilot.');
+      toast({
+        variant: 'destructive',
+        title: 'Could not queue jobs for Autopilot',
+        description: err instanceof Error ? err.message : undefined,
+      });
     } finally {
       setBatchQueueing(false);
     }
   };
   const [viewTab, setViewTab] = useState<'all' | 'collections' | 'shortlist'>('all');
   const [savingLoop, setSavingLoop] = useState(false);
+  const [loopDialogOpen, setLoopDialogOpen] = useState(false);
+  const [loopNameInput, setLoopNameInput] = useState('');
+  const openSaveLoopDialog = () => {
+    setLoopNameInput(params.get('q')?.trim() || 'My search loop');
+    setLoopDialogOpen(true);
+  };
   const saveCurrentFilterAsLoop = async (): Promise<void> => {
-    const name = window.prompt('Name this search loop', params.get('q')?.trim() || 'My search loop');
+    const name = loopNameInput.trim();
     if (!name) return;
     setSavingLoop(true);
     try {
@@ -146,7 +166,7 @@ export function Opportunities() {
       await api('/api/saved-searches', {
         method: 'POST',
         body: {
-          name: name.trim(),
+          name,
           skills,
           countryCodes: country ? [country] : [],
           cities: params.get('city') ? [params.get('city')!.trim()] : [],
@@ -154,9 +174,14 @@ export function Opportunities() {
           minMatchScore: null,
         },
       });
-      window.alert("Search loop saved. Net-new matches will appear in Today's Shortlist on Home.");
+      setLoopDialogOpen(false);
+      toast({
+        variant: 'success',
+        title: 'Search loop saved',
+        description: "Net-new matches will appear in Today's Shortlist on Home.",
+      });
     } catch {
-      window.alert('Could not save search loop.');
+      toast({ variant: 'destructive', title: 'Could not save search loop' });
     } finally {
       setSavingLoop(false);
     }
@@ -206,7 +231,7 @@ export function Opportunities() {
         ?.split(',')
         .map((s) => s.trim().toLowerCase())
         .filter(Boolean) ?? [],
-    [search],
+    [params],
   );
   const skillMode = (params.get('skillMode') as 'any' | 'all') || 'any';
   const excludedSkills = useMemo(
@@ -216,7 +241,7 @@ export function Opportunities() {
         ?.split(',')
         .map((s) => s.trim().toLowerCase())
         .filter(Boolean) ?? [],
-    [search],
+    [params],
   );
 
   const activeFilters =
@@ -242,7 +267,7 @@ export function Opportunities() {
     return () => {
       cancelled = true;
     };
-  }, [search, limit, reload]);
+  }, [search, limit]);
 
   const update = (key: string, value: string): void => {
     const p = new URLSearchParams(search);
@@ -311,7 +336,7 @@ export function Opportunities() {
               disabled={syncing}
               className="text-xs"
             >
-              {syncing ? 'Syncing…' : '⚡ Auto-sync markets'}
+              {syncing ? 'Syncing…' : 'Auto-sync markets'}
             </Button>
             <Link
               href="/opportunities/new"
@@ -331,14 +356,59 @@ export function Opportunities() {
 
       {syncMessage && (
         <div
-          className="my-3 p-3 rounded-lg border border-teal-500/30 bg-teal-50 dark:bg-teal-950/20 text-teal-900 dark:text-teal-200 text-xs shadow-xs"
+          className="my-3 p-3 rounded-lg border border-status-success-border bg-status-success-bg text-status-success-fg text-xs"
           role="status"
         >
-          {syncMessage}
+          {syncMessage}{' '}
+          <Link href="/opportunities/sources" className="underline font-medium ml-1">
+            Monitor board fetch status →
+          </Link>
         </div>
       )}
 
-      <details className="my-4 rounded-lg border border-border bg-card shadow-xs">
+      {/* Guided Get-Jobs & Apply Playbook Strip */}
+      <section
+        aria-label="How to build your job list and apply"
+        className="my-4 p-4 rounded-lg border border-border bg-card flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+      >
+        <div className="space-y-1">
+          <h2 className="text-sm font-semibold text-foreground m-0">
+            Build your verified job feed &amp; start applying
+          </h2>
+          <p className="text-xs text-muted-foreground m-0">
+            Sync curated company boards from your markets, add any company ATS board, or paste a posting link directly.
+            Then shortlist, tailor your CV, and apply with human review.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap shrink-0">
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => void handleSyncTargets()}
+            disabled={syncing}
+            className="text-xs"
+          >
+            {syncing ? 'Syncing Boards…' : 'Sync & Fetch Target Boards'}
+          </Button>
+          <Link href="/markets" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-xs')}>
+            Pick Target Markets
+          </Link>
+          <Link
+            href="/opportunities/sources"
+            className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-xs')}
+          >
+            Manage Boards
+          </Link>
+          <Link
+            href="/opportunities/new"
+            className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'text-xs')}
+          >
+            + Add Posting URL
+          </Link>
+        </div>
+      </section>
+
+      <details className="my-4 rounded-lg border border-border bg-card">
         <summary className="cursor-pointer px-4 py-2 text-sm font-medium text-foreground select-none">
           Market focus &amp; official searches
         </summary>
@@ -392,7 +462,7 @@ export function Opportunities() {
         <div className="ml-auto">
           <button
             type="button"
-            onClick={() => void saveCurrentFilterAsLoop()}
+            onClick={openSaveLoopDialog}
             disabled={savingLoop}
             className="px-3 py-1.5 rounded-md text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-50"
             title="Save the current filters as a loop for Today's Shortlist"
@@ -546,7 +616,7 @@ export function Opportunities() {
             <>
               <TopMatchSpotlight jobs={list.data.jobs} />
               {list.data.jobs.length === 0 ? (
-                <EmptyHint filtered={filtered} />
+                <EmptyHint filtered={filtered} syncing={syncing} onSync={() => void handleSyncTargets()} />
               ) : (
                 <>
                   <p className="result-count text-xs text-muted-foreground my-2" role="status" aria-live="polite">
@@ -579,34 +649,7 @@ export function Opportunities() {
                   )}
                 </>
               )}
-              {compare.length > 0 && (
-                <div
-                  className="compare-bar fixed bottom-4 right-4 z-40 p-4 bg-card border border-border rounded-xl shadow-lg flex items-center gap-4"
-                  role="region"
-                  aria-label="Comparison"
-                >
-                  <span className="text-xs font-semibold text-foreground">
-                    {compare.length} of {MAX_COMPARE} selected for comparison
-                  </span>
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/opportunities/compare?ids=${compare.join(',')}`}
-                      className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'text-xs')}
-                      aria-disabled={compare.length < 2}
-                    >
-                      Compare {compare.length < 2 ? '(pick at least 2)' : 'now'}
-                    </Link>
-                    <button
-                      type="button"
-                      className="quiet text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
-                      onClick={() => setCompare([])}
-                    >
-                      Clear
-                    </button>
-                  </div>
-                </div>
-              )}
-              {autopilotQueue.length > 0 &&
+              {(compare.length > 0 || autopilotQueue.length > 0) &&
                 (() => {
                   const selectedJobs =
                     list.state === 'ready' ? list.data.jobs.filter((j) => autopilotQueue.includes(j.id)) : [];
@@ -618,42 +661,79 @@ export function Opportunities() {
 
                   return (
                     <div
-                      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 p-4 bg-card/95 backdrop-blur-md border border-border rounded-2xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 max-w-2xl w-[calc(100%-2rem)] mx-auto animate-in slide-in-from-bottom-3 duration-200"
+                      className="fixed bottom-4 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-40 p-3.5 bg-card/95 backdrop-blur-md border border-border rounded-2xl shadow-xl flex flex-col gap-3 max-w-3xl sm:w-[min(48rem,calc(100vw-2rem))]"
                       role="region"
-                      aria-label="Autopilot Queue Selection"
+                      aria-label="Selection Actions"
                     >
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                      {compare.length > 0 && (
+                        <div className="compare-bar flex flex-wrap items-center justify-between gap-3">
                           <span className="text-xs font-semibold text-foreground">
-                            Queue {autopilotQueue.length} selected · {focusCapRemaining} focus slots left
+                            {compare.length} of {MAX_COMPARE} selected for comparison
                           </span>
+                          <div className="flex items-center gap-2">
+                            {compare.length < 2 ? (
+                              <Button type="button" size="sm" disabled className="text-xs">
+                                Compare (pick at least 2)
+                              </Button>
+                            ) : (
+                              <Link
+                                href={`/opportunities/compare?ids=${compare.join(',')}`}
+                                className={cn(buttonVariants({ variant: 'default', size: 'sm' }), 'text-xs')}
+                              >
+                                Compare now
+                              </Link>
+                            )}
+                            <button
+                              type="button"
+                              className="quiet text-xs font-medium text-muted-foreground hover:text-foreground cursor-pointer"
+                              onClick={() => setCompare([])}
+                            >
+                              Clear
+                            </button>
+                          </div>
                         </div>
-                        {duplicateCompanies.length > 0 && (
-                          <p className="text-[11px] text-amber-600 dark:text-amber-400 m-0 leading-tight">
-                            ⚠️ Note: Multiple roles selected at {duplicateCompanies.map(([c]) => c).join(', ')}. Career
-                            Strike suggests 1 per company.
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Button
-                          size="sm"
-                          disabled={batchQueueing || autopilotQueue.length > focusCapRemaining}
-                          onClick={() => void handleQueueAutopilot()}
-                          className="text-xs gap-1.5 shadow-xs"
+                      )}
+                      {autopilotQueue.length > 0 && (
+                        <div
+                          className={cn(
+                            'flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3',
+                            compare.length > 0 && 'pt-2.5 border-t border-border/60',
+                          )}
                         >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>Queue for Autopilot →</span>
-                        </Button>
-                        <button
-                          type="button"
-                          className="text-xs text-muted-foreground hover:text-foreground font-medium cursor-pointer"
-                          onClick={() => setAutopilotQueue([])}
-                        >
-                          Clear
-                        </button>
-                      </div>
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <Sparkles className="w-4 h-4 text-primary shrink-0" />
+                              <span className="text-xs font-semibold text-foreground">
+                                Queue {autopilotQueue.length} selected · {focusCapRemaining} focus slots left
+                              </span>
+                            </div>
+                            {duplicateCompanies.length > 0 && (
+                              <p className="text-[11px] text-status-warn-fg m-0 leading-tight">
+                                Note: Multiple roles selected at {duplicateCompanies.map(([c]) => c).join(', ')}. Career
+                                Strike suggests 1 per company.
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button
+                              size="sm"
+                              disabled={batchQueueing || autopilotQueue.length > focusCapRemaining}
+                              onClick={() => void handleQueueAutopilot()}
+                              className="text-xs gap-1.5 shadow-xs"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>{batchQueueing ? 'Queueing…' : 'Queue for Autopilot →'}</span>
+                            </Button>
+                            <button
+                              type="button"
+                              className="text-xs text-muted-foreground hover:text-foreground font-medium cursor-pointer"
+                              onClick={() => setAutopilotQueue([])}
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -739,6 +819,45 @@ export function Opportunities() {
         onClose={() => setPeekJob(null)}
         onDisposition={(id, d) => void handleDisposition(id, d)}
       />
+
+      <Dialog open={loopDialogOpen} onOpenChange={setLoopDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save search loop</DialogTitle>
+            <DialogDescription>
+              Net-new opportunities matching your current filters will appear in Today&apos;s Shortlist on Home.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void saveCurrentFilterAsLoop();
+            }}
+            className="space-y-4"
+          >
+            <div className="space-y-1.5">
+              <label htmlFor="search-loop-name" className="text-xs font-medium text-foreground block">
+                Search loop name
+              </label>
+              <Input
+                id="search-loop-name"
+                value={loopNameInput}
+                onChange={(e) => setLoopNameInput(e.target.value)}
+                placeholder="e.g. Staff Platform Remote"
+                required
+              />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setLoopDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={savingLoop || !loopNameInput.trim()}>
+                {savingLoop ? 'Saving…' : 'Save loop'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -760,25 +879,35 @@ function filterLabel(key: FilterKey): string {
   }[key];
 }
 
-function EmptyHint({ filtered }: { filtered: boolean }) {
+function EmptyHint({ filtered, syncing, onSync }: { filtered: boolean; syncing: boolean; onSync: () => void }) {
   if (filtered)
     return (
-      <p className="text-sm text-muted-foreground italic my-6 text-center">
-        Try clearing a filter or searching for something broader.
-      </p>
+      <div className="my-6 rounded-lg border border-dashed border-border bg-card p-6 text-center space-y-2">
+        <p className="text-sm text-foreground font-medium m-0">No opportunities match your active filters.</p>
+        <p className="text-xs text-muted-foreground m-0">Try clearing filters or broadening your search terms above.</p>
+      </div>
     );
   return (
-    <p className="text-sm text-muted-foreground italic my-6 text-center">
-      Nothing here yet.{' '}
-      <Link href="/opportunities/sources" className="text-primary hover:underline">
-        Monitor a job board
-      </Link>{' '}
-      or{' '}
-      <Link href="/opportunities/new" className="text-primary hover:underline">
-        add a job you found
-      </Link>
-      .
-    </p>
+    <div className="my-6 rounded-lg border border-border bg-card p-6 space-y-3">
+      <div className="space-y-1">
+        <h3 className="text-base font-semibold text-foreground m-0">Your job feed is empty — build it in seconds</h3>
+        <p className="text-xs text-muted-foreground m-0 max-w-2xl">
+          Sync curated company boards from your selected markets, add any Greenhouse/Lever/Ashby company board, or paste
+          a job posting URL directly.
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" size="sm" disabled={syncing} onClick={onSync}>
+          {syncing ? 'Syncing Boards…' : 'Sync & Fetch Target Boards'}
+        </Button>
+        <Link href="/opportunities/sources" className={cn(buttonVariants({ variant: 'outline', size: 'sm' }))}>
+          Monitor a job board
+        </Link>
+        <Link href="/opportunities/new" className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }))}>
+          Add a job you found
+        </Link>
+      </div>
+    </div>
   );
 }
 

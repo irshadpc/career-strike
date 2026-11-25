@@ -10,20 +10,34 @@ import { CheatSheetModal } from './-components/CheatSheetModal';
 import { KnowledgeStudioSection } from './-components/KnowledgeStudioSection';
 import { CONFIDENCE, Topic } from './-components/Topic';
 
+export interface PrepStarStory {
+  id: string;
+  competency: string;
+  title: string;
+  situation: string;
+  task: string;
+  action: string;
+  result: string;
+  reuseCount: number;
+}
+
 export function Prep({ applicationId }: { applicationId: string }) {
   const [data, setData] = useState<PrepData | null>(null);
   const [facts, setFacts] = useState<ProfileFact[]>([]);
+  const [starStories, setStarStories] = useState<PrepStarStory[]>([]);
   const [error, setError] = useState(false);
   const [showCheatSheet, setShowCheatSheet] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [prepRes, profileRes] = await Promise.all([
+      const [prepRes, profileRes, starRes] = await Promise.all([
         api<PrepData>(`/api/applications/${encodeURIComponent(applicationId)}/prep`),
         api<{ facts: ProfileFact[] }>('/api/profile').catch(() => ({ facts: [] })),
+        api<{ stories: PrepStarStory[] }>('/api/star-stories').catch(() => ({ stories: [] })),
       ]);
       setData(prepRes);
       setFacts(profileRes.facts ?? []);
+      setStarStories(starRes.stories ?? []);
       setError(false);
     } catch {
       setError(true);
@@ -60,7 +74,7 @@ export function Prep({ applicationId }: { applicationId: string }) {
         actions={
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => setShowCheatSheet(true)}>
-              📋 1-Page Interview Brief
+              1-Page Interview Brief
             </Button>
             {next && (
               <Button
@@ -76,14 +90,12 @@ export function Prep({ applicationId }: { applicationId: string }) {
                 }
                 title="Add to calendar (.ics)"
               >
-                📅 Add to Calendar (.ics)
+                Add to Calendar (.ics)
               </Button>
             )}
           </div>
         }
       />
-
-      <KnowledgeStudioSection />
 
       <section className="rounded-xl border border-border bg-card p-6 shadow-xs mb-6" aria-labelledby="posting-topics">
         <h2 id="posting-topics" className="text-lg font-semibold tracking-tight text-foreground mb-4">
@@ -101,6 +113,7 @@ export function Prep({ applicationId }: { applicationId: string }) {
               topic={t}
               applicationId={data.application.id}
               facts={facts}
+              starStories={starStories}
               onLogged={(d) => setData(d)}
             />
           ))}
@@ -121,11 +134,14 @@ export function Prep({ applicationId }: { applicationId: string }) {
               topic={t}
               applicationId={data.application.id}
               facts={facts}
+              starStories={starStories}
               onLogged={(d) => setData(d)}
             />
           ))}
         </ul>
       </section>
+
+      <KnowledgeStudioSection />
 
       {data.sessions.length > 0 && (
         <section className="rounded-xl border border-border bg-card p-6 shadow-xs mb-6" aria-labelledby="history-title">

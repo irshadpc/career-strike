@@ -76,17 +76,15 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
 
   if (loading) {
     return (
-      <div className="p-4 text-center text-sm text-neutral-500 dark:text-neutral-400">
-        Preparing application rehearsal workbench...
-      </div>
+      <div className="p-4 text-center text-sm text-muted-foreground">Preparing application rehearsal workbench...</div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="p-4 rounded-md border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 text-sm">
-        <p className="text-rose-600 dark:text-rose-400 font-medium">Rehearsal unavailable</p>
-        <p className="text-neutral-600 dark:text-neutral-400 mt-1">{error ?? 'No rehearsal data returned.'}</p>
+      <div className="p-4 rounded-md border border-border bg-muted/30 text-sm">
+        <p className="text-destructive font-medium">Rehearsal unavailable</p>
+        <p className="text-muted-foreground mt-1">{error ?? 'No rehearsal data returned.'}</p>
         <Button variant="outline" size="sm" className="mt-3" onClick={loadRehearsal}>
           Retry
         </Button>
@@ -98,24 +96,15 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
 
   const statusBadge =
     readinessSummary.overallStatus === 'READY' ? (
-      <Badge
-        variant="outline"
-        className="bg-emerald-100 text-emerald-900 border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800"
-      >
+      <Badge variant="outline" className="bg-status-success-bg text-status-success-fg border-status-success-border">
         Ready for Candidate Approval
       </Badge>
     ) : readinessSummary.overallStatus === 'NEEDS_ATTENTION' ? (
-      <Badge
-        variant="outline"
-        className="bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800"
-      >
+      <Badge variant="outline" className="bg-status-warn-bg text-status-warn-fg border-status-warn-border">
         Review Warnings
       </Badge>
     ) : (
-      <Badge
-        variant="outline"
-        className="bg-rose-100 text-rose-950 border-rose-400 dark:bg-rose-950 dark:text-rose-100 dark:border-rose-800"
-      >
+      <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
         Submission Blocked
       </Badge>
     );
@@ -132,16 +121,15 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
           <CardDescription>{readinessSummary.advisory}</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 text-xs text-neutral-700 dark:text-neutral-300 border-t border-neutral-100 dark:border-neutral-800 pt-3">
+          <div className="flex gap-4 text-xs text-muted-foreground border-t border-border pt-3">
             <span>
-              Passed:{' '}
-              <strong className="text-emerald-800 dark:text-emerald-300">{readinessSummary.passingCount}</strong>
+              Passed: <strong className="text-status-success-fg">{readinessSummary.passingCount}</strong>
             </span>
             <span>
-              Warnings: <strong className="text-amber-800 dark:text-amber-300">{readinessSummary.warningCount}</strong>
+              Warnings: <strong className="text-status-warn-fg">{readinessSummary.warningCount}</strong>
             </span>
             <span>
-              Blockers: <strong className="text-rose-800 dark:text-rose-300">{readinessSummary.failingCount}</strong>
+              Blockers: <strong className="text-destructive">{readinessSummary.failingCount}</strong>
             </span>
           </div>
         </CardContent>
@@ -156,26 +144,26 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+          <div className="divide-y divide-border">
             {checklist.map((item) => (
               <div key={item.id} className="py-2.5 flex items-start justify-between gap-3 text-xs">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-neutral-900 dark:text-neutral-100">{item.title}</span>
-                    <span className="text-[10px] text-neutral-600 dark:text-neutral-400 uppercase tracking-wider font-medium">
+                    <span className="font-semibold text-foreground">{item.title}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
                       {item.category}
                     </span>
                   </div>
-                  <p className="text-neutral-700 dark:text-neutral-300 mt-0.5">{item.detail}</p>
+                  <p className="text-muted-foreground mt-0.5">{item.detail}</p>
                   {item.actionRequired && (
-                    <p className="text-amber-900 dark:text-amber-300 font-medium mt-1">Action: {item.actionRequired}</p>
+                    <p className="text-status-warn-fg font-medium mt-1">Action: {item.actionRequired}</p>
                   )}
                 </div>
                 <div>
                   {item.status === 'PASS' && (
                     <Badge
                       variant="outline"
-                      className="bg-emerald-100 text-emerald-900 border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800 text-[10px]"
+                      className="bg-status-success-bg text-status-success-fg border-status-success-border text-[10px]"
                     >
                       PASS
                     </Badge>
@@ -183,7 +171,7 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
                   {item.status === 'WARN' && (
                     <Badge
                       variant="outline"
-                      className="bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800 text-[10px]"
+                      className="bg-status-warn-bg text-status-warn-fg border-status-warn-border text-[10px]"
                     >
                       WARN
                     </Badge>
@@ -191,7 +179,7 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
                   {item.status === 'FAIL' && (
                     <Badge
                       variant="outline"
-                      className="bg-rose-100 text-rose-950 border-rose-400 dark:bg-rose-950 dark:text-rose-100 dark:border-rose-800 text-[10px]"
+                      className="bg-destructive/10 text-destructive border-destructive/30 text-[10px]"
                     >
                       FAIL
                     </Badge>
@@ -213,29 +201,25 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
         </CardHeader>
         <CardContent>
           {rehearsalItems.length === 0 ? (
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
+            <p className="text-xs text-muted-foreground">
               No custom screening questions detected for this application.
             </p>
           ) : (
             <div className="space-y-3">
               {rehearsalItems.map((item) => (
-                <div
-                  key={item.fieldKey}
-                  className="p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/50 text-xs"
-                >
+                <div key={item.fieldKey} className="p-3 rounded-lg border border-border bg-muted/30 text-xs">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="font-medium text-neutral-900 dark:text-neutral-100">
-                      {item.label}{' '}
-                      {item.required && <span className="text-rose-600 dark:text-rose-400 font-bold">*</span>}
+                    <span className="font-medium text-foreground">
+                      {item.label} {item.required && <span className="text-destructive font-bold">*</span>}
                     </span>
                     <Badge
                       variant="outline"
                       className={`text-[10px] ${
                         item.status === 'READY'
-                          ? 'bg-emerald-100 text-emerald-900 border-emerald-400 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-800'
+                          ? 'bg-status-success-bg text-status-success-fg border-status-success-border'
                           : item.status === 'ATTENTION_NEEDED'
-                            ? 'bg-amber-100 text-amber-900 border-amber-400 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-800'
-                            : 'bg-neutral-100 text-neutral-800 border-neutral-300 dark:bg-neutral-800 dark:text-neutral-200'
+                            ? 'bg-status-warn-bg text-status-warn-fg border-status-warn-border'
+                            : 'bg-muted text-foreground border-border'
                       }`}
                     >
                       {item.status === 'READY'
@@ -245,12 +229,12 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
                           : 'Optional Blank'}
                     </Badge>
                   </div>
-                  <div className="bg-white dark:bg-neutral-950 p-2 rounded border border-neutral-200 dark:border-neutral-800 font-mono text-[11px] text-neutral-900 dark:text-neutral-100">
-                    {item.draftValue ?? <span className="text-neutral-600 dark:text-neutral-400 italic">Empty</span>}
+                  <div className="bg-background p-2 rounded border border-border font-mono text-[11px] text-foreground">
+                    {item.draftValue ?? <span className="text-muted-foreground italic">Empty</span>}
                   </div>
-                  <p className="text-neutral-700 dark:text-neutral-300 mt-1.5 text-[11px]">{item.rehearsalNotes}</p>
+                  <p className="text-muted-foreground mt-1.5 text-[11px]">{item.rehearsalNotes}</p>
                   {item.potentialGapsOrContradictions.length > 0 && (
-                    <div className="mt-1 text-rose-800 dark:text-rose-300 text-[11px] font-medium">
+                    <div className="mt-1 text-destructive text-[11px] font-medium">
                       {item.potentialGapsOrContradictions.join(' ')}
                     </div>
                   )}
@@ -262,8 +246,8 @@ export function RehearsalWorkbench({ applicationId }: { applicationId: string })
       </Card>
 
       {/* Zero Autonomous Submission Policy Notice */}
-      <div className="p-3 rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-100/70 dark:bg-neutral-900/70 text-xs text-neutral-700 dark:text-neutral-300">
-        <p className="font-semibold text-neutral-900 dark:text-neutral-100 mb-1">Candidate-Controlled Submissions</p>
+      <div className="p-3 rounded-lg border border-border bg-muted/40 text-xs text-muted-foreground">
+        <p className="font-semibold text-foreground mb-1">Candidate-Controlled Submissions</p>
         <p>{policyNotice.statement}</p>
       </div>
     </div>

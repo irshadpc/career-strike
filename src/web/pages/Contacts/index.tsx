@@ -30,6 +30,9 @@ export function Contacts() {
   const [importing, setImporting] = useState(false);
   const [draftTone, setDraftTone] = useState<'close_peer' | 'dormant' | 'hiring_manager'>('close_peer');
   const [draftContact, setDraftContact] = useState<Contact | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', title: '', company: '', email: '', notes: '' });
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -105,6 +108,40 @@ export function Contacts() {
     }
   };
 
+  const saveEditContact = async (id: string) => {
+    if (!editForm.name.trim()) return;
+    try {
+      await api(`/api/contacts/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        body: {
+          name: editForm.name.trim(),
+          title: editForm.title.trim() || null,
+          company: editForm.company.trim() || null,
+          email: editForm.email.trim() || null,
+          notes: editForm.notes.trim() || null,
+        },
+      });
+      setEditingId(null);
+      toast({ variant: 'success', title: 'Contact updated' });
+      void load();
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not update contact' });
+    }
+  };
+
+  const logInteraction = async (contact: Contact) => {
+    try {
+      await api(`/api/contacts/${encodeURIComponent(contact.id)}/interactions`, {
+        method: 'POST',
+        body: { kind: 'message', note: `Outreach (${draftTone.replace('_', ' ')})` },
+      });
+      toast({ variant: 'success', title: `Logged outreach with ${contact.name}` });
+      void load();
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not log interaction' });
+    }
+  };
+
   const filtered = (contacts ?? []).filter((c) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
@@ -139,6 +176,7 @@ export function Contacts() {
               <div className="flex gap-2">
                 <input
                   type="text"
+                  aria-label="Company name for warm path lookup"
                   value={warmCompany}
                   onChange={(e) => setWarmCompany(e.target.value)}
                   placeholder="Company name (e.g. Acme Corp)"
@@ -151,7 +189,10 @@ export function Contacts() {
               {warmResults.length > 0 && (
                 <ul className="space-y-2 p-0 m-0 list-none">
                   {warmResults.map((c) => (
-                    <li key={c.id} className="p-3 rounded-md bg-teal-500/5 border border-teal-500/30 text-xs">
+                    <li
+                      key={c.id}
+                      className="p-3 rounded-md bg-status-success-bg/50 border border-status-success-border text-xs"
+                    >
                       <strong className="text-foreground">{c.name}</strong>
                       {c.title && <span className="text-muted-foreground"> · {c.title}</span>}
                       {c.company && <span className="text-muted-foreground"> @ {c.company}</span>}
@@ -173,6 +214,7 @@ export function Contacts() {
                 <h2 className="text-base font-bold text-foreground m-0">Contacts ({filtered.length})</h2>
                 <input
                   type="search"
+                  aria-label="Search contacts"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search name, company, title"
@@ -180,37 +222,142 @@ export function Contacts() {
                 />
               </div>
               {filtered.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">No contacts yet.</p>
+                <div className="text-sm text-muted-foreground italic space-y-2">
+                  <p className="m-0">{query.trim() ? `No contacts match "${query.trim()}".` : 'No contacts yet.'}</p>
+                  {query.trim() && (
+                    <Button type="button" size="sm" variant="outline" onClick={() => setQuery('')}>
+                      Clear search
+                    </Button>
+                  )}
+                </div>
               ) : (
                 <ul className="divide-y divide-border/60 text-sm">
                   {filtered.map((c) => (
-                    <li key={c.id} className="py-2.5 flex flex-wrap items-start justify-between gap-2">
-                      <div className="space-y-0.5">
-                        <p className="m-0 font-medium text-foreground">{c.name}</p>
-                        <p className="m-0 text-xs text-muted-foreground">
-                          {[c.title, c.company].filter(Boolean).join(' · ') || '—'}
-                        </p>
-                        {c.email && <p className="m-0 text-xs text-muted-foreground">{c.email}</p>}
-                        {c.lastContactAt && (
-                          <p className="m-0 text-[10px] text-muted-foreground">Last contact {c.lastContactAt}</p>
-                        )}
+                    <li key={c.id} className="py-2.5 space-y-2">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div className="space-y-0.5">
+                          <p className="m-0 font-medium text-foreground">{c.name}</p>
+                          <p className="m-0 text-xs text-muted-foreground">
+                            {[c.title, c.company].filter(Boolean).join(' · ') || '—'}
+                          </p>
+                          {c.email && <p className="m-0 text-xs text-muted-foreground">{c.email}</p>}
+                          {c.lastContactAt && (
+                            <p className="m-0 text-[10px] text-muted-foreground">Last contact {c.lastContactAt}</p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <Button size="sm" variant="ghost" className="text-xs" onClick={() => setDraftContact(c)}>
+                            Draft outreach
+                          </Button>
+                          <Button size="sm" variant="ghost" className="text-xs" onClick={() => void logInteraction(c)}>
+                            Log contact
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-xs"
+                            onClick={() => {
+                              if (editingId === c.id) {
+                                setEditingId(null);
+                              } else {
+                                setEditingId(c.id);
+                                setEditForm({
+                                  name: c.name,
+                                  title: c.title ?? '',
+                                  company: c.company ?? '',
+                                  email: c.email ?? '',
+                                  notes: c.notes ?? '',
+                                });
+                              }
+                            }}
+                          >
+                            {editingId === c.id ? 'Close' : 'Edit'}
+                          </Button>
+                          {confirmRemoveId === c.id ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="text-xs"
+                                onClick={async () => {
+                                  try {
+                                    await api(`/api/contacts/${c.id}`, { method: 'DELETE' });
+                                    setConfirmRemoveId(null);
+                                    toast({ variant: 'success', title: `Removed ${c.name}` });
+                                    void load();
+                                  } catch {
+                                    toast({ variant: 'destructive', title: 'Could not remove contact' });
+                                  }
+                                }}
+                              >
+                                Delete?
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-xs"
+                                onClick={() => setConfirmRemoveId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            </span>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-xs text-muted-foreground"
+                              onClick={() => setConfirmRemoveId(c.id)}
+                            >
+                              Remove
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex gap-1.5">
-                        <Button size="sm" variant="ghost" className="text-xs" onClick={() => setDraftContact(c)}>
-                          Draft outreach
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs text-muted-foreground"
-                          onClick={async () => {
-                            await api(`/api/contacts/${c.id}`, { method: 'DELETE' }).catch(() => {});
-                            void load();
+                      {editingId === c.id && (
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            void saveEditContact(c.id);
                           }}
+                          className="p-3 rounded-lg bg-muted/20 border border-border grid grid-cols-1 sm:grid-cols-2 gap-2"
                         >
-                          Remove
-                        </Button>
-                      </div>
+                          <input
+                            aria-label="Edit contact name"
+                            value={editForm.name}
+                            onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                            required
+                            placeholder="Name"
+                            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                          />
+                          <input
+                            aria-label="Edit contact title"
+                            value={editForm.title}
+                            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                            placeholder="Title"
+                            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                          />
+                          <input
+                            aria-label="Edit contact company"
+                            value={editForm.company}
+                            onChange={(e) => setEditForm({ ...editForm, company: e.target.value })}
+                            placeholder="Company"
+                            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                          />
+                          <input
+                            aria-label="Edit contact email"
+                            type="email"
+                            value={editForm.email}
+                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            placeholder="Email"
+                            className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+                          />
+                          <div className="sm:col-span-2 flex justify-end gap-2">
+                            <Button type="submit" size="sm">
+                              Save changes
+                            </Button>
+                          </div>
+                        </form>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -225,34 +372,40 @@ export function Contacts() {
               <form onSubmit={(e) => void addContact(e)} className="space-y-2">
                 <input
                   name="name"
+                  aria-label="Contact name"
                   required
                   placeholder="Name"
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                 />
                 <input
                   name="title"
+                  aria-label="Contact title"
                   placeholder="Title"
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                 />
                 <input
                   name="company"
+                  aria-label="Contact company"
                   placeholder="Company"
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                 />
                 <input
                   name="email"
+                  aria-label="Contact email"
                   type="email"
                   placeholder="Email"
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                 />
                 <input
                   name="linkedinUrl"
+                  aria-label="Contact LinkedIn URL"
                   type="url"
                   placeholder="LinkedIn URL"
                   className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                 />
                 <textarea
                   name="notes"
+                  aria-label="Contact notes"
                   placeholder="Notes"
                   rows={2}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"

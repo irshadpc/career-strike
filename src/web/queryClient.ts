@@ -4,7 +4,7 @@ import { QueryClient } from '@tanstack/react-query';
 // for "offline"), and failures surface immediately with a "Try again" rather than silent retries.
 export const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { networkMode: 'always', retry: false, refetchOnWindowFocus: false, staleTime: 0 },
+    queries: { networkMode: 'always', retry: false, refetchOnWindowFocus: false, staleTime: 0, gcTime: 300_000 },
     mutations: { networkMode: 'always', retry: false },
   },
 });

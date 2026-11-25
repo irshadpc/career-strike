@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, getSkillFacets, type SkillFacet } from '../../../api';
-import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { useToast } from '../../../components/ui/toast';
 import { cn } from '../../../helpers/cn';
 
 interface ProfileResponse {
@@ -127,6 +127,8 @@ export function SkillFilterBar({
     onSkillsChange([], 'any', []);
   };
 
+  const { toast } = useToast();
+
   const handleApplyProfileSkills = async () => {
     setLoadingProfile(true);
     try {
@@ -135,7 +137,10 @@ export function SkillFilterBar({
         .filter((f) => f.kind === 'skill' && f.approved && f.value.name)
         .map((f) => f.value.name!.toLowerCase());
 
-      if (confirmedNames.length === 0) return;
+      if (confirmedNames.length === 0) {
+        toast({ title: 'No confirmed skills yet', description: 'Confirm skills in Profile to filter by them.' });
+        return;
+      }
 
       // Find matching facets by slug or label
       const matchedSlugs: string[] = [];
@@ -154,9 +159,14 @@ export function SkillFilterBar({
 
       if (matchedSlugs.length > 0) {
         onSkillsChange(matchedSlugs, 'any', excludedSkills);
+      } else {
+        toast({
+          title: 'No matching skills in current view',
+          description: 'None of your confirmed skills match these filters.',
+        });
       }
     } catch {
-      // Profile load failed or unauthenticated
+      toast({ variant: 'destructive', title: 'Could not load profile skills' });
     } finally {
       setLoadingProfile(false);
     }
@@ -185,7 +195,7 @@ export function SkillFilterBar({
             className="text-xs h-7 px-2.5 font-medium"
             title="Load your confirmed profile skills as active filter chips"
           >
-            {loadingProfile ? 'Loading profile…' : '⚡ My Profile Skills'}
+            {loadingProfile ? 'Loading profile…' : 'My Profile Skills'}
           </Button>
 
           {/* ANY / ALL Segmented Toggle */}
@@ -266,7 +276,7 @@ export function SkillFilterBar({
                     <button
                       type="button"
                       onClick={() => addSkill(f.slug)}
-                      className="px-2 py-0.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-medium text-[11px] border border-emerald-500/30 transition-colors"
+                      className="px-2 py-0.5 rounded bg-status-success-bg hover:bg-status-success-bg/80 text-status-success-fg font-medium text-[11px] border border-status-success-border transition-colors"
                       title={`Match roles requiring ${f.label}`}
                     >
                       + Require
@@ -274,7 +284,7 @@ export function SkillFilterBar({
                     <button
                       type="button"
                       onClick={() => addExcludedSkill(f.slug)}
-                      className="px-2 py-0.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 font-medium text-[11px] border border-rose-500/30 transition-colors"
+                      className="px-2 py-0.5 rounded bg-status-danger-bg hover:bg-status-danger-bg/80 text-status-danger-fg font-medium text-[11px] border border-status-danger-border transition-colors"
                       title={`Exclude roles requiring ${f.label}`}
                     >
                       - Exclude
@@ -295,13 +305,13 @@ export function SkillFilterBar({
             return (
               <span
                 key={slug}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 border border-emerald-500/30 shadow-2xs"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-semibold bg-status-success-bg text-status-success-fg border border-status-success-border"
               >
                 <span>{label}</span>
                 <button
                   type="button"
                   onClick={() => removeSkill(slug)}
-                  className="ml-0.5 hover:text-emerald-950 dark:hover:text-emerald-100 rounded-full focus:outline-none"
+                  className="ml-0.5 hover:opacity-75 rounded-full focus:outline-none"
                   aria-label={`Remove ${label}`}
                 >
                   ×

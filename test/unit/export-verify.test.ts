@@ -5,6 +5,8 @@ import { buildMasterDocx } from '../../src/career/docx-export.js';
 import { verifyExport } from '../../src/career/export-verify.js';
 import { buildMasterResume } from '../../src/career/master-resume.js';
 import { openDb } from '../../src/store/db.js';
+import { setSetting } from '../../src/store/settings.js';
+import { extractDocumentText } from '../../src/vault/text-extraction.js';
 import { tempDir } from '../helpers.js';
 
 describe('export-verify engine', () => {
@@ -123,5 +125,29 @@ describe('export-verify engine', () => {
     const sizeCheck = verification.checks.find((c) => c.id === 'size_and_assets');
     expect(sizeCheck?.status).toBe('FAIL');
     expect(verification.failures).toContain('File size exceeds 2.5 MB cap.');
+  });
+
+  it('does not duplicate candidate name or summary in DOCX export', async () => {
+    const db = openDb(path.join(tempDir(), 'export-dedup.db'));
+    try {
+      setSetting(db, 'identity.fullName', 'Jordan Example', 'test');
+      setSetting(db, 'identity.summary', 'Distinct summary token XYZ123 for deduplication check.', 'test');
+      const master = buildMasterResume(db);
+      const bytes = await buildMasterDocx(master);
+      const verification = await verifyExport({
+        format: 'docx',
+        bytes,
+        expected: { text: master.content, fields: ['Jordan Example'] },
+      });
+      expect(verification.passed).toBe(true);
+      const extracted = await extractDocumentText(
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        bytes,
+      );
+      const occurrences = (extracted?.text ?? '').split('Distinct summary token XYZ123').length - 1;
+      expect(occurrences).toBe(1);
+    } finally {
+      db.close();
+    }
   });
 });

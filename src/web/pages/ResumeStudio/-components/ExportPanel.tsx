@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { api, type ExportResult, type ExportVerification, type ParserReport } from '../../../api';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -16,22 +16,35 @@ function VerificationDetails({ v }: { v: ExportVerification | null }) {
   if (!v) return null;
   return (
     <div className="mt-2 text-xs space-y-1.5">
-      {v.checks.map((c) => (
-        <div
-          key={c.id}
-          className={`p-2 rounded border ${c.status === 'PASS' ? 'border-teal-500/30 bg-teal-500/5' : c.status === 'WARN' ? 'border-amber-500/30 bg-amber-500/5' : 'border-destructive/30 bg-destructive/5'}`}
-        >
-          <span className="font-semibold text-foreground">{c.label}</span>{' '}
-          <span
-            className={
-              c.status === 'PASS' ? 'text-teal-600' : c.status === 'WARN' ? 'text-amber-600' : 'text-destructive'
-            }
+      {v.checks.map((c) => {
+        const statusUpper = c.status.toUpperCase();
+        return (
+          <div
+            key={c.id}
+            className={`p-2 rounded border ${
+              statusUpper === 'PASS'
+                ? 'border-status-success-border bg-status-success-bg'
+                : statusUpper === 'WARN'
+                  ? 'border-status-warn-border bg-status-warn-bg'
+                  : 'border-destructive/30 bg-destructive/5'
+            }`}
           >
-            {c.status}
-          </span>
-          <span className="text-muted-foreground block mt-0.5">{c.explanation}</span>
-        </div>
-      ))}
+            <span className="font-semibold text-foreground">{c.label}</span>{' '}
+            <span
+              className={`font-mono text-[10px] font-bold uppercase ${
+                statusUpper === 'PASS'
+                  ? 'text-status-success-fg'
+                  : statusUpper === 'WARN'
+                    ? 'text-status-warn-fg'
+                    : 'text-destructive'
+              }`}
+            >
+              {statusUpper}
+            </span>
+            <span className="text-muted-foreground block mt-0.5">{c.explanation}</span>
+          </div>
+        );
+      })}
       {v.warnings.length > 0 && (
         <ul className="list-disc pl-4 text-amber-800 dark:text-amber-300 space-y-0.5">
           {v.warnings.map((w: string, i: number) => (
@@ -50,13 +63,22 @@ function VerificationDetails({ v }: { v: ExportVerification | null }) {
   );
 }
 
-export function ExportPanel({ applicationId, variantId }: { applicationId?: string; variantId?: string }) {
+export function ExportPanel({
+  applicationId,
+  variantId,
+  onEnsureStudioVariant,
+}: {
+  applicationId?: string;
+  variantId?: string;
+  onEnsureStudioVariant?: () => Promise<string>;
+}) {
   const [verifications, setVerifications] = useState<Record<'pdf' | 'docx', ExportVerification | null>>({
     pdf: null,
     docx: null,
   });
   const [messages, setMessages] = useState<Record<'pdf' | 'docx', string | null>>({ pdf: null, docx: null });
   const [legacyReports, setLegacyReports] = useState<ParserReport[] | null>(null);
+  const [loadingReports, setLoadingReports] = useState(false);
   const [busy, setBusy] = useState<'pdf' | 'docx' | null>(null);
 
   const legacyBase =
@@ -65,26 +87,45 @@ export function ExportPanel({ applicationId, variantId }: { applicationId?: stri
       : '/api/documents/master';
 
   const loadLegacyReports = useCallback(async () => {
+    setLoadingReports(true);
     try {
       const res = await api<{ reports: ParserReport[] }>(`${legacyBase}/parser-report`);
       setLegacyReports(res.reports);
     } catch {
       setLegacyReports(null);
+    } finally {
+      setLoadingReports(false);
     }
   }, [legacyBase]);
-
-  useEffect(() => {
-    void loadLegacyReports();
-  }, [loadLegacyReports]);
 
   const statusBadge = (v: ExportVerification) =>
     v.passed ? <Badge variant="teal">Verified</Badge> : <Badge variant="destructive">Needs review</Badge>;
 
   const generate = async (format: 'pdf' | 'docx') => {
     setBusy(format);
-    setMessages({ ...messages, [format]: null });
+    setMessages((prev) => ({ ...prev, [format]: null }));
     try {
-      const res = await api<ExportResult>(`/api/exports/master-resume/${format}`, {
+      if (applicationId && variantId) {
+        const res = await fetch(`${legacyBase}/export?format=${format}`);
+        if (!res.ok) throw new Error('EXPORT_FAILED');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `tailored-document-${new Date().toISOString().slice(0, 10)}.${format}`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(url);
+        setMessages((prev) => ({
+          ...prev,
+          [format]: `Downloaded tailored ${format.toUpperCase()} export.`,
+        }));
+        void loadLegacyReports();
+        return;
+      }
+      const targetVariantId = onEnsureStudioVariant ? await onEnsureStudioVariant() : 'master';
+      const res = await api<ExportResult>(`/api/resume/${encodeURIComponent(targetVariantId)}/export/${format}`, {
         method: 'POST',
       });
       const verification = res.verification;
@@ -112,7 +153,6 @@ export function ExportPanel({ applicationId, variantId }: { applicationId?: stri
             ? `Generated ${res.filename as string}. Round-trip verification passed: ${verification.warnings.length > 0 ? `${verification.warnings.length} advisory warning(s).` : 'clean.'}`
             : `Generated ${res.filename as string}, but the local verification found issues. Inspect the report below.`,
       }));
-      void loadLegacyReports();
     } catch {
       setMessages((prev) => ({
         ...prev,
@@ -150,16 +190,15 @@ export function ExportPanel({ applicationId, variantId }: { applicationId?: stri
         >
           {busy === 'docx' ? 'Generating…' : 'Export DOCX'}
         </Button>
-        {legacyReports && (
-          <a
-            href={legacyBase}
-            className="inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent h-9 px-3"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Legacy plain-text export
-          </a>
-        )}
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => void loadLegacyReports()}
+          disabled={loadingReports}
+        >
+          {loadingReports ? 'Checking Parser…' : 'Check Parser Recall'}
+        </Button>
       </div>
 
       {messages.pdf && (

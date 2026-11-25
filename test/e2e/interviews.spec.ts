@@ -56,19 +56,19 @@ test('schedule an interview for a submitted application and practise what the po
   await page.getByRole('button', { name: 'Add interview' }).click();
   await expect(page.getByText('Interviewing', { exact: true })).toBeVisible();
   await expect(page.getByTestId('interviews')).toContainText('Technical interview');
-  await expect(page.getByRole('button', { name: '📅 .ics' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '.ics calendar' })).toBeVisible();
 
   // Check Follow-Up Studio
-  await expect(page.getByRole('heading', { level: 3, name: '✉️ Professional Follow-Up Studio' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 3, name: 'Follow-Up & Outreach Studio' })).toBeVisible();
   await page.getByRole('tab', { name: 'Thank You' }).click();
   await expect(page.locator('.outreach-preview-box')).toContainText('Thank you');
 
   await page.getByRole('link', { name: 'Prepare for interviews' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Get ready for Synthetic Labs' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '📅 Add to Calendar (.ics)' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add to Calendar (.ics)' })).toBeVisible();
 
   // Open 1-Page Interview Brief
-  await page.getByRole('button', { name: '📋 1-Page Interview Brief' }).click();
+  await page.getByRole('button', { name: '1-Page Interview Brief' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('dialog')).toContainText('STAR Response Quick Guide');
   await page.getByRole('button', { name: 'Close brief' }).click();
@@ -79,8 +79,8 @@ test('schedule an interview for a submitted application and practise what the po
   await expect(rust).toContainText('Posting: “Rust services in production”');
 
   // Verify STAR story assistant
-  await rust.getByRole('button', { name: /Use STAR Story Framework/ }).click();
-  await rust.getByRole('button', { name: '✍️ Insert STAR Outline into Notes' }).click();
+  await rust.getByRole('button', { name: /STAR Story Framework/ }).click();
+  await rust.getByRole('button', { name: 'Insert STAR Outline into Notes' }).click();
   await expect(rust.getByLabel('Notes (optional)')).toHaveValue(/S: \[Situation/);
 
   await expect(page.locator('[data-topic="behavioral"]')).toBeVisible();

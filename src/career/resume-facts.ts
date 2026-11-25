@@ -39,13 +39,19 @@ const SECTION_HEADERS = [
   'about',
   'profile',
   'objective',
+  'career summary',
+  'professional summary',
   'experience',
   'work experience',
   'professional experience',
+  'work history',
   'employment',
+  'employment history',
   'education',
+  'education & certifications',
   'certifications',
   'certificates',
+  'licenses & certifications',
   'languages',
   'skills',
   'core skills',
@@ -53,6 +59,10 @@ const SECTION_HEADERS = [
   'technical strengths',
   'domains',
   'projects',
+  'key projects',
+  'verified projects & achievements',
+  'achievements',
+  'publications',
   'contact',
   'contact information',
 ];
@@ -93,44 +103,70 @@ function sectionLines(text: string, names: string[]): string[] {
 }
 
 function parseDateRange(s: string): { start: number | null; end: number | null } {
-  const parts = s.split(/[–—]/);
+  const cleaned = s.replace(/[()]/g, '').trim();
+  const parts = cleaned.split(/\s*[–—]\s*/);
   if (parts.length >= 2) {
     return { start: parseYear(parts[0]), end: parseYear(parts.slice(1).join('-')) };
   }
-  // handle hyphen ranges like "2018 - 2019"
-  const hyphenParts = s.split(/\s-\s/);
+  // handle hyphen ranges like "2018 - 2019" or "Jan 2020 - Present"
+  const hyphenParts = cleaned.split(/\s+-\s+|(?<=\d{4})-(?=\d{4}|present|current|ongoing)/i);
   if (hyphenParts.length >= 2) {
     return { start: parseYear(hyphenParts[0]), end: parseYear(hyphenParts.slice(1).join('-')) };
   }
-  return { start: parseYear(s), end: null };
+  return { start: parseYear(cleaned), end: null };
 }
 
-const MONTHS = /jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|present|current|ongoing/i;
+const MONTHS =
+  /\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?|present|current|ongoing)\b/i;
+
+function isLikelyDateRange(line: string): boolean {
+  const cleaned = line.trim();
+  if (!/\b(19|20)\d{2}\b/.test(cleaned)) return false;
+  if (cleaned.length > 64) return false;
+  return (
+    MONTHS.test(cleaned) ||
+    /[–—]/.test(cleaned) ||
+    /\s-\s/.test(cleaned) ||
+    /\b(19|20)\d{2}\s*-\s*(?:(19|20)\d{2}|present|current|ongoing)\b/i.test(cleaned)
+  );
+}
 
 export function extractResumeRoles(text: string): ResumeRole[] {
-  const lines = sectionLines(text, ['experience', 'work experience', 'professional experience', 'employment']);
+  const lines = sectionLines(text, [
+    'experience',
+    'work experience',
+    'professional experience',
+    'work history',
+    'employment',
+    'employment history',
+  ]);
   if (lines.length === 0) return [];
   const roles: ResumeRole[] = [];
   let employer: string | null = null;
   let title: string | null = null;
   let startYear: number | null = null;
   let endYear: number | null = null;
+  let pendingStartYear: number | null = null;
+  let pendingEndYear: number | null = null;
   let bullets: string[] = [];
 
   const flush = () => {
     if (title) {
-      const sy = startYear ?? new Date().getUTCFullYear();
+      const sy = startYear ?? pendingStartYear ?? new Date().getUTCFullYear();
+      const ey = startYear !== null ? endYear : pendingEndYear;
       roles.push({
         title: title.slice(0, 150),
         employer: employer ? employer.slice(0, 150) : null,
         startYear: sy,
-        endYear: endYear,
-        summary: bullets.length ? bullets.join(' ').slice(0, 2000) : null,
+        endYear: ey,
+        summary: bullets.length ? bullets.join('\n').slice(0, 2000) : null,
       });
     }
     title = null;
     startYear = null;
     endYear = null;
+    pendingStartYear = null;
+    pendingEndYear = null;
     bullets = [];
   };
 
@@ -141,45 +177,85 @@ export function extractResumeRoles(text: string): ResumeRole[] {
       bullets.push(line.replace(/^[•\-*]\s*/, '').trim());
       continue;
     }
-    // Date range line (check first)
-    const isDateLine =
-      MONTHS.test(line) &&
-      /\d{4}/.test(line) &&
-      (/[–—]/.test(line) || /\s-\s/.test(line) || /present|current|ongoing/i.test(line));
-    if (isDateLine) {
+
+    // Master-resume style: "Title — Employer (2020 – Present)"
+    const emDashRoleMatch = line.match(/^(.+?)\s+[—–]\s+(.+?)(?:\s*\(([^)]+)\))?$/);
+    if (emDashRoleMatch) {
+      const left = emDashRoleMatch[1]!.trim();
+      const right = emDashRoleMatch[2]!.trim();
+      const paren = emDashRoleMatch[3]?.trim() ?? '';
+      if (paren && isLikelyDateRange(paren)) {
+        flush();
+        title = left;
+        employer = right;
+        const dr = parseDateRange(paren);
+        startYear = dr.start;
+        endYear = dr.end;
+        continue;
+      }
+      if (isLikelyDateRange(right)) {
+        flush();
+        title = left;
+        const dr = parseDateRange(right);
+        startYear = dr.start;
+        endYear = dr.end;
+        continue;
+      }
+    }
+
+    // Date range line
+    if (isLikelyDateRange(line)) {
       const dr = parseDateRange(line);
       if (dr.start) {
         if (title && startYear === null) {
           startYear = dr.start;
           endYear = dr.end;
+        } else if (!title) {
+          pendingStartYear = dr.start;
+          pendingEndYear = dr.end;
         }
       }
       continue;
     }
+
     // Employer header line with pipe
     const pipeMatch = line.match(/^(.+?)\s*\|\s*(.+)$/);
     if (pipeMatch) {
       const left = pipeMatch[1]!.trim();
       const right = pipeMatch[2]!.trim();
-      const rightIsDate = MONTHS.test(right) && /\d{4}/.test(right);
+      const rightIsDate = isLikelyDateRange(right);
       const rightIsLocation =
-        /india|usa|uk|remote|kerala|ernakulam|eranakulam|california|london/i.test(right) && !MONTHS.test(right);
+        /\b(?:remote|hybrid|onsite|usa|uk|india|canada|germany|singapore|australia|uae|japan|london|berlin|san francisco|new york|bangalore|bengaluru|california|seattle|austin|toronto|sydney)\b/i.test(
+          right,
+        ) && !rightIsDate;
       flush();
       employer = left;
       if (!rightIsDate && !rightIsLocation) {
-        // right is a title
         title = right;
-      } else {
-        // try parse date from right
+      } else if (rightIsDate) {
         const dr = parseDateRange(right);
-        if (dr.start && title && startYear === null) {
-          startYear = dr.start;
-          endYear = dr.end;
+        if (dr.start) {
+          pendingStartYear = dr.start;
+          pendingEndYear = dr.end;
         }
       }
       continue;
     }
-    // Otherwise treat as a title (new role under current employer)
+
+    // "Title at Company"
+    const atMatch = line.match(/^(.+?)\s+at\s+([A-Z][^,]{1,80})$/);
+    if (atMatch && !line.endsWith('.')) {
+      flush();
+      title = atMatch[1]!.trim();
+      employer = atMatch[2]!.trim();
+      continue;
+    }
+
+    // Otherwise treat as a title (new role under current employer) or continuation bullet if already in a role with bullets
+    if (title && bullets.length > 0 && line.length > 70) {
+      bullets.push(line);
+      continue;
+    }
     flush();
     title = line;
   }

@@ -11,6 +11,7 @@ import { Button } from '../../../components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../components/ui/form';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
+import { useToast } from '../../../components/ui/toast';
 import { type DraftFormValues, draftSchema } from '../-schema/outreach';
 
 const selectClass =
@@ -25,6 +26,7 @@ export function DraftForm({
   applications: ApplicationSummary[];
   onSaved: (draft: OutreachDraft) => void;
 }) {
+  const { toast } = useToast();
   const form = useForm<DraftFormValues>({
     resolver: zodResolver(draftSchema),
     defaultValues: {
@@ -40,34 +42,42 @@ export function DraftForm({
   const purpose = useWatch({ control: form.control, name: 'purpose' });
 
   const applyTemplate = async (): Promise<void> => {
-    const { template } = await api<{ template: { subject: string | null; body: string } }>(
-      `/api/outreach/template?purpose=${encodeURIComponent(purpose)}&contactId=${encodeURIComponent(contactId)}`,
-    );
-    form.setValue('subject', template.subject ?? '');
-    form.setValue('body', template.body);
+    try {
+      const { template } = await api<{ template: { subject: string | null; body: string } }>(
+        `/api/outreach/template?purpose=${encodeURIComponent(purpose)}&contactId=${encodeURIComponent(contactId)}`,
+      );
+      form.setValue('subject', template.subject ?? '');
+      form.setValue('body', template.body);
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not load template' });
+    }
   };
 
   const submit = async (values: DraftFormValues): Promise<void> => {
-    const { draft } = await api<{ draft: OutreachDraft }>('/api/outreach', {
-      method: 'POST',
-      body: {
+    try {
+      const { draft } = await api<{ draft: OutreachDraft }>('/api/outreach', {
+        method: 'POST',
+        body: {
+          contactId: values.contactId,
+          applicationId: values.applicationId || null,
+          channel: values.channel,
+          purpose: values.purpose,
+          subject: values.subject || null,
+          body: values.body,
+        },
+      });
+      form.reset({
         contactId: values.contactId,
-        applicationId: values.applicationId || null,
+        applicationId: '',
         channel: values.channel,
         purpose: values.purpose,
-        subject: values.subject || null,
-        body: values.body,
-      },
-    });
-    form.reset({
-      contactId: values.contactId,
-      applicationId: '',
-      channel: values.channel,
-      purpose: values.purpose,
-      subject: '',
-      body: '',
-    });
-    onSaved(draft);
+        subject: '',
+        body: '',
+      });
+      onSaved(draft);
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not save outreach draft' });
+    }
   };
 
   return (

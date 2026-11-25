@@ -137,18 +137,21 @@ export function HiredMode() {
             <input
               value={planDraft.jobTitle}
               onChange={(e) => setPlanDraft({ ...planDraft, jobTitle: e.target.value })}
+              aria-label="Job title"
               placeholder="Job title"
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
             />
             <input
               value={planDraft.company}
               onChange={(e) => setPlanDraft({ ...planDraft, company: e.target.value })}
+              aria-label="Company"
               placeholder="Company"
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
             />
             <Textarea
               value={planDraft.days30}
               onChange={(e) => setPlanDraft({ ...planDraft, days30: e.target.value })}
+              aria-label="Days 1-30 goals"
               placeholder="Days 1–30: orient & learn"
               rows={2}
               className="text-xs"
@@ -156,6 +159,7 @@ export function HiredMode() {
             <Textarea
               value={planDraft.days60}
               onChange={(e) => setPlanDraft({ ...planDraft, days60: e.target.value })}
+              aria-label="Days 31-60 goals"
               placeholder="Days 31–60: apply & contribute"
               rows={2}
               className="text-xs"
@@ -163,6 +167,7 @@ export function HiredMode() {
             <Textarea
               value={planDraft.days90}
               onChange={(e) => setPlanDraft({ ...planDraft, days90: e.target.value })}
+              aria-label="Days 61-90 goals"
               placeholder="Days 61–90: own & deliver"
               rows={2}
               className="text-xs"
@@ -170,6 +175,7 @@ export function HiredMode() {
             <Textarea
               value={planDraft.stakeholders}
               onChange={(e) => setPlanDraft({ ...planDraft, stakeholders: e.target.value })}
+              aria-label="Key stakeholders"
               placeholder="Key stakeholders (10–15 people)"
               rows={2}
               className="text-xs"
@@ -177,6 +183,7 @@ export function HiredMode() {
             <Textarea
               value={planDraft.questions}
               onChange={(e) => setPlanDraft({ ...planDraft, questions: e.target.value })}
+              aria-label="Open questions log"
               placeholder="Open questions log"
               rows={2}
               className="text-xs"
@@ -263,6 +270,7 @@ export function HiredMode() {
               <input
                 value={bragDraft.competency}
                 onChange={(e) => setBragDraft({ ...bragDraft, competency: e.target.value })}
+                aria-label="Competency"
                 placeholder="Competency"
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
               />
@@ -270,12 +278,14 @@ export function HiredMode() {
             <input
               value={bragDraft.title}
               onChange={(e) => setBragDraft({ ...bragDraft, title: e.target.value })}
+              aria-label="Win title"
               placeholder="Win title"
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
             />
             <Textarea
               value={bragDraft.impact}
               onChange={(e) => setBragDraft({ ...bragDraft, impact: e.target.value })}
+              aria-label="Quantified impact"
               placeholder="Quantified impact"
               rows={2}
               className="text-xs"

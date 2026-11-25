@@ -14,13 +14,15 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { api } from '../../api';
+import { api, type SettingsResponse } from '../../api';
+import { ErrorPanel } from '../../components/states';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Textarea } from '../../components/ui/textarea';
+import { useToast } from '../../components/ui/toast';
 import { Link } from '../../router';
 
 export interface PendingQuestion {
@@ -79,9 +81,20 @@ export interface AutopilotQueueResponse {
 }
 
 export function Autopilot() {
+  const { toast } = useToast();
   const [data, setData] = useState<AutopilotQueueResponse | null>(null);
   const [answers, setAnswers] = useState<AnswerVaultItem[]>([]);
+  const [identity, setIdentity] = useState<{ fullName: string; email: string; phone: string; linkedin: string }>({
+    fullName: '',
+    email: '',
+    phone: '',
+    linkedin: '',
+  });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [savingVaultAnswer, setSavingVaultAnswer] = useState(false);
+  const [confirmDeleteAnswerId, setConfirmDeleteAnswerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'queue' | 'vault' | 'receipts'>('queue');
 
   // Quick question form state per item id
@@ -99,14 +112,24 @@ export function Autopilot() {
 
   const loadData = useCallback(async () => {
     try {
-      const [queueRes, answersRes] = await Promise.all([
+      const [queueRes, answersRes, settingsRes] = await Promise.all([
         api<AutopilotQueueResponse>('/api/autopilot/queue'),
         api<{ answers: AnswerVaultItem[] }>('/api/autopilot/answers'),
+        api<SettingsResponse>('/api/settings').catch(() => null),
       ]);
       setData(queueRes);
       setAnswers(answersRes.answers);
+      if (settingsRes?.settings) {
+        setIdentity({
+          fullName: String(settingsRes.settings['identity.fullName'] ?? '').trim(),
+          email: String(settingsRes.settings['identity.email'] ?? '').trim(),
+          phone: String(settingsRes.settings['identity.phone'] ?? '').trim(),
+          linkedin: String(settingsRes.settings['candidate.linkedinUrl'] ?? '').trim(),
+        });
+      }
+      setLoadError(null);
     } catch (err) {
-      console.error('Failed to load autopilot data:', err);
+      setLoadError(err instanceof Error ? err.message : 'Failed to load Autopilot queue.');
     } finally {
       setLoading(false);
     }
@@ -116,7 +139,15 @@ export function Autopilot() {
     void loadData();
   }, [loadData]);
 
-  const handleCopy = (text: string, key: string) => {
+  const handleCopy = (text: string, key: string, fieldLabel: string) => {
+    if (!text) {
+      toast({
+        variant: 'destructive',
+        title: `No ${fieldLabel} configured`,
+        description: 'Set it in Profile or Settings before copying into an application portal.',
+      });
+      return;
+    }
     void navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
@@ -126,30 +157,46 @@ export function Autopilot() {
     const answer = questionAnswers[item.id];
     if (answer === undefined || answer === '') return;
     const persist = saveAsDefault[item.id] !== false;
-
+    setBusyId(item.id);
     try {
       await api<{ ok: boolean; item: AutopilotQueueItem }>(`/api/autopilot/${item.id}/answer`, {
         method: 'POST',
         body: { answer, saveAsDefault: persist },
       });
+      toast({ variant: 'success', title: 'Screening answer saved' });
       await loadData();
     } catch (err) {
-      console.error('Failed to submit answer:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Could not save answer',
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setBusyId(null);
     }
   };
 
   const handleAdvanceToReady = async (itemId: string) => {
+    setBusyId(itemId);
     try {
       await api<{ ok: boolean }>(`/api/autopilot/${itemId}/fill`, {
         method: 'POST',
       });
+      toast({ variant: 'success', title: 'Fields filled — ready for your final review' });
       await loadData();
     } catch (err) {
-      console.error('Failed to advance fill:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Could not advance application',
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setBusyId(null);
     }
   };
 
   const handleMarkSent = async (item: AutopilotQueueItem) => {
+    setBusyId(item.id);
     try {
       await api<{ ok: boolean }>(`/api/autopilot/${item.id}/mark-sent`, {
         method: 'POST',
@@ -158,15 +205,23 @@ export function Autopilot() {
           resumeSnapshotId: item.resumeSnapshotId || 'snap_verified',
         },
       });
+      toast({ variant: 'success', title: `Tracked ${item.companyName} as Applied` });
       await loadData();
     } catch (err) {
-      console.error('Failed to mark sent:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Could not mark sent',
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setBusyId(null);
     }
   };
 
   const handleCreateAnswer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newKey || !newLabel || !newValue) return;
+    setSavingVaultAnswer(true);
     try {
       await api<{ ok: boolean }>('/api/autopilot/answers', {
         method: 'POST',
@@ -181,18 +236,34 @@ export function Autopilot() {
       setNewKey('');
       setNewLabel('');
       setNewValue('');
+      toast({ variant: 'success', title: 'Saved answer to vault' });
       await loadData();
     } catch (err) {
-      console.error('Failed to create answer:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Could not save answer',
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setSavingVaultAnswer(false);
     }
   };
 
   const handleDeleteAnswer = async (answerId: string) => {
+    setBusyId(answerId);
     try {
       await api<{ ok: boolean }>(`/api/autopilot/answers/${answerId}`, { method: 'DELETE' });
+      setConfirmDeleteAnswerId(null);
+      toast({ variant: 'success', title: 'Removed saved answer' });
       await loadData();
     } catch (err) {
-      console.error('Failed to delete answer:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Could not delete answer',
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setBusyId(null);
     }
   };
 
@@ -286,6 +357,8 @@ export function Autopilot() {
         )}
       </div>
 
+      {loadError && <ErrorPanel message={loadError} onRetry={() => void loadData()} />}
+
       {/* Tabs Layout */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="space-y-6">
         <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -326,7 +399,7 @@ export function Autopilot() {
             </Button>
             <Link
               href="/opportunities"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-foreground text-background hover:bg-foreground/90 transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md bg-accent text-accent-fg hover:bg-accent-hover transition-colors no-underline"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Pick Roles</span>
@@ -464,6 +537,29 @@ export function Autopilot() {
                             No
                           </button>
                         </div>
+                      ) : item.pendingQuestion.answerType === 'select' &&
+                        item.pendingQuestion.options &&
+                        item.pendingQuestion.options.length > 0 ? (
+                        <div className="space-y-1.5">
+                          <select
+                            aria-label={item.pendingQuestion.questionLabel}
+                            value={String(questionAnswers[item.id] ?? '')}
+                            onChange={(e) =>
+                              setQuestionAnswers((prev) => ({
+                                ...prev,
+                                [item.id]: e.target.value,
+                              }))
+                            }
+                            className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <option value="">Select an answer…</option>
+                            {item.pendingQuestion.options.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       ) : (
                         <div className="space-y-1.5">
                           <Textarea
@@ -581,53 +677,62 @@ export function Autopilot() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                         <button
                           type="button"
-                          onClick={() => handleCopy('Candidate Name', `name_${item.id}`)}
+                          onClick={() => handleCopy(identity.fullName, `name_${item.id}`, 'Full Name')}
                           className="flex items-center justify-between p-2 rounded-md bg-background border border-border hover:bg-muted text-xs font-medium text-foreground transition-colors cursor-pointer"
                         >
-                          <span className="truncate">Full Name</span>
+                          <span className="truncate">{identity.fullName || 'Full Name (unset)'}</span>
                           {copiedKey === `name_${item.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-status-success-fg" />
+                            <Check className="w-3.5 h-3.5 text-status-success-fg shrink-0" />
                           ) : (
-                            <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />
+                            <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                           )}
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleCopy('candidate@example.com', `email_${item.id}`)}
+                          onClick={() => handleCopy(identity.email, `email_${item.id}`, 'Email')}
                           className="flex items-center justify-between p-2 rounded-md bg-background border border-border hover:bg-muted text-xs font-medium text-foreground transition-colors cursor-pointer"
                         >
-                          <span className="truncate">Email</span>
+                          <span className="truncate">{identity.email || 'Email (unset)'}</span>
                           {copiedKey === `email_${item.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-status-success-fg" />
+                            <Check className="w-3.5 h-3.5 text-status-success-fg shrink-0" />
                           ) : (
-                            <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />
+                            <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                           )}
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleCopy('+1 (555) 019-2834', `phone_${item.id}`)}
+                          onClick={() => handleCopy(identity.phone, `phone_${item.id}`, 'Phone')}
                           className="flex items-center justify-between p-2 rounded-md bg-background border border-border hover:bg-muted text-xs font-medium text-foreground transition-colors cursor-pointer"
                         >
-                          <span className="truncate">Phone</span>
+                          <span className="truncate">{identity.phone || 'Phone (unset)'}</span>
                           {copiedKey === `phone_${item.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-status-success-fg" />
+                            <Check className="w-3.5 h-3.5 text-status-success-fg shrink-0" />
                           ) : (
-                            <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />
+                            <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                           )}
                         </button>
                         <button
                           type="button"
-                          onClick={() => handleCopy('https://linkedin.com/in/candidate', `li_${item.id}`)}
+                          onClick={() => handleCopy(identity.linkedin, `li_${item.id}`, 'LinkedIn URL')}
                           className="flex items-center justify-between p-2 rounded-md bg-background border border-border hover:bg-muted text-xs font-medium text-foreground transition-colors cursor-pointer"
                         >
-                          <span className="truncate">LinkedIn</span>
+                          <span className="truncate">{identity.linkedin ? 'LinkedIn' : 'LinkedIn (unset)'}</span>
                           {copiedKey === `li_${item.id}` ? (
-                            <Check className="w-3.5 h-3.5 text-status-success-fg" />
+                            <Check className="w-3.5 h-3.5 text-status-success-fg shrink-0" />
                           ) : (
-                            <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground" />
+                            <ClipboardCopy className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                           )}
                         </button>
                       </div>
+                      {(!identity.fullName || !identity.email) && (
+                        <p className="text-[11px] text-status-warn-fg m-0">
+                          Complete your contact details in{' '}
+                          <Link href="/settings#group-identity" className="underline font-medium">
+                            Settings
+                          </Link>{' '}
+                          to enable 1-click Copy-Fill.
+                        </p>
+                      )}
 
                       <div className="flex items-center justify-between pt-2 border-t border-border/60">
                         {item.applyUrl ? (
@@ -644,9 +749,14 @@ export function Autopilot() {
                           <span />
                         )}
 
-                        <Button size="sm" onClick={() => void handleMarkSent(item)} className="text-xs gap-1.5">
+                        <Button
+                          size="sm"
+                          disabled={busyId === item.id}
+                          onClick={() => void handleMarkSent(item)}
+                          className="text-xs gap-1.5"
+                        >
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Mark Sent & Track as Applied</span>
+                          <span>{busyId === item.id ? 'Saving…' : 'Mark Sent & Track as Applied'}</span>
                         </Button>
                       </div>
                     </div>
@@ -670,6 +780,7 @@ export function Autopilot() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <Input
                   placeholder="Question Key (e.g. notice_period)"
+                  aria-label="Question key"
                   value={newKey}
                   onChange={(e) => setNewKey(e.target.value)}
                   className="text-xs"
@@ -677,6 +788,7 @@ export function Autopilot() {
                 />
                 <Input
                   placeholder="Question Label (e.g. Notice Period)"
+                  aria-label="Question label"
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
                   className="text-xs"
@@ -684,6 +796,7 @@ export function Autopilot() {
                 />
                 <Input
                   placeholder="Answer Value (e.g. 30 days)"
+                  aria-label="Answer value"
                   value={newValue}
                   onChange={(e) => setNewValue(e.target.value)}
                   className="text-xs"
@@ -707,9 +820,9 @@ export function Autopilot() {
                     </label>
                   ))}
                 </div>
-                <Button type="submit" size="sm" className="text-xs gap-1.5">
+                <Button type="submit" size="sm" disabled={savingVaultAnswer} className="text-xs gap-1.5">
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Save to Vault</span>
+                  <span>{savingVaultAnswer ? 'Saving…' : 'Save to Vault'}</span>
                 </Button>
               </div>
             </form>
@@ -740,14 +853,32 @@ export function Autopilot() {
                     <p className="text-xs text-muted-foreground m-0 truncate">{ans.questionLabel}</p>
                     <p className="text-sm font-semibold text-foreground m-0 pt-1">{ans.answerValue}</p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleDeleteAnswer(ans.id)}
-                    className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors cursor-pointer"
-                    title="Delete answer"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {confirmDeleteAnswerId === ans.id ? (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        disabled={busyId === ans.id}
+                        onClick={() => void handleDeleteAnswer(ans.id)}
+                      >
+                        Delete
+                      </Button>
+                      <Button type="button" size="sm" variant="ghost" onClick={() => setConfirmDeleteAnswerId(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteAnswerId(ans.id)}
+                      className="p-2 rounded-md text-muted-foreground hover:text-destructive hover:bg-muted transition-colors cursor-pointer"
+                      title="Delete answer"
+                      aria-label={`Delete saved answer ${ans.questionLabel}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </Card>
               ))}
             </div>
@@ -813,12 +944,20 @@ export function Autopilot() {
                       <span className="text-[10px] text-muted-foreground font-mono truncate max-w-[150px]">
                         {receipt.resumeSnapshotId}
                       </span>
-                      <Link
-                        href={`/jobs/${item.jobId}`}
-                        className="text-[11px] font-sans font-medium text-primary hover:underline flex items-center gap-1"
-                      >
-                        <span>View Job →</span>
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <Link
+                          href="/applications"
+                          className="text-[11px] font-sans font-medium text-foreground hover:underline"
+                        >
+                          Applications →
+                        </Link>
+                        <Link
+                          href={`/jobs/${item.jobId}`}
+                          className="text-[11px] font-sans font-medium text-primary hover:underline flex items-center gap-1"
+                        >
+                          <span>View Job →</span>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 );
@@ -830,3 +969,5 @@ export function Autopilot() {
     </div>
   );
 }
+
+export default Autopilot;

@@ -156,6 +156,11 @@ export function buildServer({
   app.decorateRequest('principal', null);
   app.addHook('onClose', async () => {
     await tasks.cancelAll();
+    const [{ recyclePdfEngine }, { recycleBrowser }] = await Promise.all([
+      import('../career/pdf-export.js'),
+      import('../resume/pdfExporter.js'),
+    ]);
+    await Promise.all([recyclePdfEngine(), recycleBrowser()]);
   });
 
   const boundPort = (): number => {

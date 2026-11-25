@@ -79,16 +79,25 @@ export function ImapSyncPanel() {
 
   const toggle = async (enabled: boolean) => {
     if (!settings) return;
-    await api('/api/imap', {
-      method: 'PUT',
-      body: { ...settings, allowlist: settings.allowlist, enabled },
-    }).catch(() => {});
-    void load();
+    try {
+      await api('/api/imap', {
+        method: 'PUT',
+        body: { ...settings, allowlist: settings.allowlist, enabled },
+      });
+      toast({ variant: 'success', title: enabled ? 'IMAP sync enabled' : 'IMAP sync disabled' });
+      void load();
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not update IMAP sync status' });
+    }
   };
 
   if (error) return <ErrorPanel message="IMAP settings could not be loaded." onRetry={() => void load()} />;
   if (settings === null && !error && draft.host === '') {
-    // still loading
+    return (
+      <section className="rounded-xl border border-border bg-card p-6 shadow-xs mb-6" data-setting="imap.config">
+        <p className="text-sm text-muted-foreground m-0">Loading IMAP settings…</p>
+      </section>
+    );
   }
 
   return (
@@ -103,6 +112,7 @@ export function ImapSyncPanel() {
           value={draft.host}
           onChange={(e) => setDraft({ ...draft, host: e.target.value })}
           placeholder="IMAP host (e.g. imap.gmail.com)"
+          aria-label="IMAP host"
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         />
         <input
@@ -110,12 +120,14 @@ export function ImapSyncPanel() {
           value={draft.port}
           onChange={(e) => setDraft({ ...draft, port: Number(e.target.value) })}
           placeholder="Port"
+          aria-label="IMAP port"
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         />
         <input
           value={draft.username}
           onChange={(e) => setDraft({ ...draft, username: e.target.value })}
           placeholder="Username"
+          aria-label="IMAP username"
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         />
         <input
@@ -123,6 +135,7 @@ export function ImapSyncPanel() {
           value={draft.password}
           onChange={(e) => setDraft({ ...draft, password: e.target.value })}
           placeholder="Password / app password"
+          aria-label="IMAP password"
           className="h-9 rounded-md border border-input bg-background px-3 text-sm"
         />
       </div>
@@ -130,6 +143,7 @@ export function ImapSyncPanel() {
         value={draft.allowlist}
         onChange={(e) => setDraft({ ...draft, allowlist: e.target.value })}
         placeholder="Allowed sender domains (comma-separated, e.g. greenhouse.io,lever.co)"
+        aria-label="Allowed sender domains"
         className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm mb-3"
       />
       <div className="flex gap-2 items-center flex-wrap">

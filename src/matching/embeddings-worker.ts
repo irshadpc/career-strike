@@ -39,9 +39,60 @@ const DOMAIN_CLUSTERS: Record<string, string[]> = {
   'relational database': ['postgresql', 'postgres', 'mysql', 'mariadb', 'sqlite', 'rdbms', 'sql'],
 };
 
+const STOPWORDS = new Set([
+  'and',
+  'the',
+  'for',
+  'with',
+  'you',
+  'your',
+  'our',
+  'are',
+  'was',
+  'were',
+  'from',
+  'into',
+  'that',
+  'this',
+  'have',
+  'has',
+  'had',
+  'will',
+  'can',
+  'all',
+  'not',
+  'but',
+  'using',
+  'use',
+  'used',
+  'years',
+  'year',
+  'experience',
+  'skills',
+  'strong',
+  'deep',
+  'solid',
+  'prior',
+  'hands',
+  'building',
+  'work',
+  'working',
+]);
+
+function phrasePattern(phrase: string): RegExp {
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+');
+  return new RegExp(`(?<![a-z0-9+#.])${escaped}(?![a-z0-9+#])`, 'i');
+}
+
+const COMPILED_CLUSTERS = Object.entries(DOMAIN_CLUSTERS).map(([clusterKey, members]) => ({
+  patterns: [phrasePattern(clusterKey), ...members.map(phrasePattern)],
+}));
+
 // Word tokenization and normalization
 function tokenize(text: string): string[] {
-  return (text.toLowerCase().match(/[a-z0-9+#.-]{2,}/g) ?? []).map((t) => t.replace(/^[.-]+|[.-]+$/g, ''));
+  return (text.toLowerCase().match(/[a-z0-9+#.-]{2,}/g) ?? [])
+    .map((t) => t.replace(/^[.-]+|[.-]+$/g, ''))
+    .filter((t) => t.length >= 2 && !STOPWORDS.has(t));
 }
 
 // Compute cosine similarity between two numeric vectors
@@ -64,14 +115,20 @@ export function cosineSimilarity(a: Float32Array | number[], b: Float32Array | n
 export function calculateSemanticScore(query: string, candidate: string): number {
   const qLower = query.toLowerCase().trim();
   const cLower = candidate.toLowerCase().trim();
+  if (!qLower || !cLower) return 0;
 
   if (qLower === cLower) return 1.0;
-  if (cLower.includes(qLower) || qLower.includes(cLower)) return 0.95;
+  if (
+    (qLower.length >= 4 && phrasePattern(qLower).test(cLower)) ||
+    (cLower.length >= 4 && phrasePattern(cLower).test(qLower))
+  ) {
+    return 0.95;
+  }
 
-  // Domain cluster match (e.g. payment authentication <-> 3DS / ACS / Passkey)
-  for (const [clusterKey, members] of Object.entries(DOMAIN_CLUSTERS)) {
-    const qMatchesCluster = qLower.includes(clusterKey) || members.some((m) => qLower.includes(m));
-    const cMatchesCluster = cLower.includes(clusterKey) || members.some((m) => cLower.includes(m));
+  // Domain cluster match (e.g. payment authentication <-> 3DS / ACS / Passkey) with word boundaries
+  for (const cluster of COMPILED_CLUSTERS) {
+    const qMatchesCluster = cluster.patterns.some((p) => p.test(qLower));
+    const cMatchesCluster = cluster.patterns.some((p) => p.test(cLower));
 
     if (qMatchesCluster && cMatchesCluster) {
       return 0.88;

@@ -1,29 +1,30 @@
-import { createRootRoute, createRoute, createRouter, notFound } from '@tanstack/react-router';
-import type { ReactNode } from 'react';
-import { Activity } from './pages/Activity';
-import { AddJob } from './pages/AddJob';
-import { ApplicationPage } from './pages/ApplicationPage';
-import { Applications } from './pages/Applications';
-import { Autopilot } from './pages/Autopilot';
-import { Compare } from './pages/Compare';
-import { Contacts } from './pages/Contacts';
-import { HiredMode } from './pages/HiredMode';
+import { createRootRoute, createRoute, createRouter, lazyRouteComponent, notFound } from '@tanstack/react-router';
+import { ErrorPanel } from './components/states';
 import { Home } from './pages/Home';
-import { ImapSync } from './pages/ImapSync';
-import { Insights } from './pages/Insights';
-import { JobPage } from './pages/JobPage';
-import { Markets } from './pages/Markets';
-import { NotFound } from './pages/NotFound';
-import { Offers } from './pages/Offers';
-import { Opportunities } from './pages/Opportunities';
-import { Outreach } from './pages/Outreach';
-import { Prep } from './pages/Prep';
-import { Profile } from './pages/Profile';
-import { ResumeStudio } from './pages/ResumeStudio';
 import { Settings } from './pages/Settings';
-import { Sources } from './pages/Sources';
-import { StarVault } from './pages/StarVault';
 import { Shell } from './Shell';
+
+const Activity = lazyRouteComponent(() => import('./pages/Activity'));
+const AddJob = lazyRouteComponent(() => import('./pages/AddJob'));
+const ApplicationPage = lazyRouteComponent(() => import('./pages/ApplicationPage'));
+const Applications = lazyRouteComponent(() => import('./pages/Applications'));
+const Autopilot = lazyRouteComponent(() => import('./pages/Autopilot'));
+const Compare = lazyRouteComponent(() => import('./pages/Compare'));
+const Contacts = lazyRouteComponent(() => import('./pages/Contacts'));
+const HiredMode = lazyRouteComponent(() => import('./pages/HiredMode'));
+const ImapSync = lazyRouteComponent(() => import('./pages/ImapSync'));
+const Insights = lazyRouteComponent(() => import('./pages/Insights'));
+const JobPage = lazyRouteComponent(() => import('./pages/JobPage'));
+const Markets = lazyRouteComponent(() => import('./pages/Markets'));
+const NotFound = lazyRouteComponent(() => import('./pages/NotFound'));
+const Offers = lazyRouteComponent(() => import('./pages/Offers'));
+const Opportunities = lazyRouteComponent(() => import('./pages/Opportunities'));
+const Outreach = lazyRouteComponent(() => import('./pages/Outreach'));
+const Prep = lazyRouteComponent(() => import('./pages/Prep'));
+const Profile = lazyRouteComponent(() => import('./pages/Profile'));
+const ResumeStudio = lazyRouteComponent(() => import('./pages/ResumeStudio'));
+const Sources = lazyRouteComponent(() => import('./pages/Sources'));
+const StarVault = lazyRouteComponent(() => import('./pages/StarVault'));
 
 // The dashboard route tree. Record ids are opaque slugs; anything else is "not found" rather
 // than a request to the API.
@@ -32,9 +33,18 @@ const requireId = ({ params }: { params: { id: string } }): void => {
   if (!ID.test(params.id)) throw notFound();
 };
 
-const rootRoute = createRootRoute({ component: Shell, notFoundComponent: NotFound });
+const rootRoute = createRootRoute({
+  component: Shell,
+  notFoundComponent: NotFound,
+  errorComponent: () => (
+    <ErrorPanel
+      message="This view could not be loaded while offline or restarting."
+      onRetry={() => window.location.reload()}
+    />
+  ),
+});
 
-const page = (path: string, component: () => ReactNode) =>
+const page = (path: string, component: typeof Home | ReturnType<typeof lazyRouteComponent>) =>
   createRoute({ getParentRoute: () => rootRoute, path, component });
 
 const jobRoute = createRoute({

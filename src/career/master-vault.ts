@@ -1,5 +1,9 @@
 import { randomBytes } from 'node:crypto';
+import { skillsIn } from '../matching/skills.js';
 import type { Db } from '../store/db.js';
+import { getSettings } from '../store/settings.js';
+import { lintBullet } from './bullet-linter.js';
+import { listEvidence } from './evidence.js';
 import { listFacts } from './profile.js';
 
 export interface MasterBullet {
@@ -180,6 +184,20 @@ export function addMasterEntry(
   };
 }
 
+function analyzeBulletMetadata(rawText: string): {
+  metrics: string[];
+  skills: string[];
+  xyzScore: number;
+} {
+  const lint = lintBullet(rawText);
+  const skills = skillsIn(rawText);
+  return {
+    metrics: lint.metrics,
+    skills,
+    xyzScore: lint.xyzScore,
+  };
+}
+
 export function addMasterBullet(
   db: Db,
   entryId: string,
@@ -195,6 +213,12 @@ export function addMasterBullet(
 ): MasterBullet {
   const id = bullet.id ?? idGen('mbullet');
   const now = new Date().toISOString();
+  const analyzed = analyzeBulletMetadata(bullet.rawText);
+  const verifiedMetrics =
+    bullet.verifiedMetrics && bullet.verifiedMetrics.length > 0 ? bullet.verifiedMetrics : analyzed.metrics;
+  const canonicalSkillIds =
+    bullet.canonicalSkillIds && bullet.canonicalSkillIds.length > 0 ? bullet.canonicalSkillIds : analyzed.skills;
+  const xyzScore = bullet.xyzScore !== undefined ? bullet.xyzScore : analyzed.xyzScore;
   db.prepare(
     `INSERT INTO master_bullets (id, entry_id, raw_text, verified_metrics_json, canonical_skill_ids_json, scope_level, xyz_score, star_story_id, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -202,10 +226,10 @@ export function addMasterBullet(
     id,
     entryId,
     bullet.rawText,
-    JSON.stringify(bullet.verifiedMetrics ?? []),
-    JSON.stringify(bullet.canonicalSkillIds ?? []),
+    JSON.stringify(verifiedMetrics),
+    JSON.stringify(canonicalSkillIds),
     bullet.scopeLevel ?? 'individual',
-    bullet.xyzScore ?? 0,
+    xyzScore,
     bullet.starStoryId ?? null,
     now,
   );
@@ -213,13 +237,146 @@ export function addMasterBullet(
     id,
     entryId,
     rawText: bullet.rawText,
-    verifiedMetrics: bullet.verifiedMetrics ?? [],
-    canonicalSkillIds: bullet.canonicalSkillIds ?? [],
+    verifiedMetrics,
+    canonicalSkillIds,
     scopeLevel: bullet.scopeLevel ?? 'individual',
-    xyzScore: bullet.xyzScore ?? 0,
+    xyzScore,
     starStoryId: bullet.starStoryId ?? null,
     updatedAt: now,
   };
+}
+
+export function updateMasterEntry(
+  db: Db,
+  id: string,
+  patch: Partial<{
+    entryType: 'experience' | 'project' | 'education' | 'certification';
+    organization: string;
+    title: string;
+    location: string | null;
+    startDate: string | null;
+    endDate: string | null;
+    isCurrent: boolean;
+    sortOrder: number;
+  }>,
+): MasterEntry | null {
+  const existing = listMasterEntries(db).find((e) => e.id === id);
+  if (!existing) return null;
+  const now = new Date().toISOString();
+  const next = {
+    entryType: patch.entryType ?? existing.entryType,
+    organization: patch.organization ?? existing.organization,
+    title: patch.title ?? existing.title,
+    location: patch.location !== undefined ? patch.location : existing.location,
+    startDate: patch.startDate !== undefined ? patch.startDate : existing.startDate,
+    endDate: patch.endDate !== undefined ? patch.endDate : existing.endDate,
+    isCurrent: patch.isCurrent !== undefined ? patch.isCurrent : existing.isCurrent,
+    sortOrder: patch.sortOrder ?? existing.sortOrder,
+  };
+  db.prepare(
+    `UPDATE master_entries
+     SET entry_type = ?, organization = ?, title = ?, location = ?, start_date = ?, end_date = ?, is_current = ?, sort_order = ?, updated_at = ?
+     WHERE id = ?`,
+  ).run(
+    next.entryType,
+    next.organization,
+    next.title,
+    next.location,
+    next.startDate,
+    next.endDate,
+    next.isCurrent ? 1 : 0,
+    next.sortOrder,
+    now,
+    id,
+  );
+  return {
+    ...existing,
+    ...next,
+    updatedAt: now,
+  };
+}
+
+export function updateMasterBullet(
+  db: Db,
+  id: string,
+  patch: Partial<{
+    rawText: string;
+    scopeLevel: 'individual' | 'team' | 'org';
+    starStoryId: string | null;
+  }>,
+): MasterBullet | null {
+  const row = db
+    .prepare(
+      `SELECT id, entry_id AS entryId, raw_text AS rawText, verified_metrics_json AS verifiedMetricsJson,
+              canonical_skill_ids_json AS canonicalSkillIdsJson, scope_level AS scopeLevel,
+              xyz_score AS xyzScore, star_story_id AS starStoryId, updated_at AS updatedAt
+       FROM master_bullets WHERE id = ?`,
+    )
+    .get(id) as
+    | {
+        id: string;
+        entryId: string;
+        rawText: string;
+        verifiedMetricsJson: string;
+        canonicalSkillIdsJson: string;
+        scopeLevel: 'individual' | 'team' | 'org';
+        xyzScore: number;
+        starStoryId: string | null;
+        updatedAt: string;
+      }
+    | undefined;
+  if (!row) return null;
+
+  const now = new Date().toISOString();
+  const nextText = patch.rawText !== undefined ? patch.rawText : row.rawText;
+  const analyzed = patch.rawText !== undefined ? analyzeBulletMetadata(nextText) : null;
+  const verifiedMetrics = analyzed ? analyzed.metrics : (JSON.parse(row.verifiedMetricsJson || '[]') as string[]);
+  const canonicalSkillIds = analyzed ? analyzed.skills : (JSON.parse(row.canonicalSkillIdsJson || '[]') as string[]);
+  const xyzScore = analyzed ? analyzed.xyzScore : row.xyzScore;
+  const scopeLevel = patch.scopeLevel ?? row.scopeLevel ?? 'individual';
+  const starStoryId = patch.starStoryId !== undefined ? patch.starStoryId : row.starStoryId;
+
+  db.prepare(
+    `UPDATE master_bullets
+     SET raw_text = ?, verified_metrics_json = ?, canonical_skill_ids_json = ?, scope_level = ?, xyz_score = ?, star_story_id = ?, updated_at = ?
+     WHERE id = ?`,
+  ).run(
+    nextText,
+    JSON.stringify(verifiedMetrics),
+    JSON.stringify(canonicalSkillIds),
+    scopeLevel,
+    xyzScore,
+    starStoryId,
+    now,
+    id,
+  );
+
+  return {
+    id: row.id,
+    entryId: row.entryId,
+    rawText: nextText,
+    verifiedMetrics,
+    canonicalSkillIds,
+    scopeLevel,
+    xyzScore,
+    starStoryId,
+    updatedAt: now,
+  };
+}
+
+export function reorderMasterEntries(db: Db, orderedIds: string[]): void {
+  const now = new Date().toISOString();
+  const stmt = db.prepare('UPDATE master_entries SET sort_order = ?, updated_at = ? WHERE id = ?');
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    orderedIds.forEach((id, idx) => {
+      stmt.run(idx, now, id);
+    });
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
 }
 
 export function deleteMasterEntry(db: Db, id: string): boolean {
@@ -230,14 +387,29 @@ export function deleteMasterBullet(db: Db, id: string): boolean {
   return db.prepare('DELETE FROM master_bullets WHERE id = ?').run(id).changes > 0;
 }
 
-/** Sync existing profile facts into master entries so the Vault is pre-populated. */
-export function syncMasterFromProfile(db: Db): { entriesCreated: number; bulletsCreated: number } {
-  const facts = listFacts(db);
-  const existingCount = (db.prepare('SELECT COUNT(*) AS c FROM master_entries').get() as { c: number }).c;
-  if (existingCount > 0) return { entriesCreated: 0, bulletsCreated: 0 };
+/** Sync existing profile facts and confirmed evidence into master entries. */
+export function syncMasterFromProfile(
+  db: Db,
+  options: { mergeNew?: boolean } = {},
+): { entriesCreated: number; bulletsCreated: number } {
+  const existingEntries = listMasterEntries(db);
+  if (existingEntries.length > 0 && !options.mergeNew) {
+    return { entriesCreated: 0, bulletsCreated: 0 };
+  }
 
+  const facts = listFacts(db);
+  const evidence = listEvidence(db, { confirmedOnly: true });
+  const existingKeys = new Set(
+    existingEntries.map((e) => `${e.entryType}|${e.title.trim().toLowerCase()}|${e.organization.trim().toLowerCase()}`),
+  );
+
+  const existingBulletTexts = new Set(
+    existingEntries.flatMap((e) => e.bullets.map((b) => b.rawText.trim().toLowerCase())),
+  );
+  const roleFactToEntryId = new Map<string, string>();
   let entriesCreated = 0;
   let bulletsCreated = 0;
+  let nextOrder = existingEntries.length;
 
   for (const fact of facts) {
     if (fact.kind === 'role') {
@@ -248,56 +420,198 @@ export function syncMasterFromProfile(db: Db): { entriesCreated: number; bullets
         endYear: number | null;
         summary: string | null;
       };
+      const org = v.employer ?? 'Independent / Consulting';
+      const key = `experience|${v.title.trim().toLowerCase()}|${org.trim().toLowerCase()}`;
+      const existingMatch = existingEntries.find(
+        (e) => `${e.entryType}|${e.title.trim().toLowerCase()}|${e.organization.trim().toLowerCase()}` === key,
+      );
+      if (existingMatch) {
+        roleFactToEntryId.set(fact.id, existingMatch.id);
+        continue;
+      }
+      if (existingKeys.has(key)) continue;
+      existingKeys.add(key);
+
       const entry = addMasterEntry(db, {
         entryType: 'experience',
         title: v.title,
-        organization: v.employer ?? 'Independent / Consulting',
+        organization: org,
         location: null,
         startDate: v.startYear ? `${v.startYear}-01` : null,
         endDate: v.endYear ? `${v.endYear}-12` : null,
         isCurrent: v.endYear === null,
-        sortOrder: entriesCreated,
+        sortOrder: nextOrder++,
       });
+      roleFactToEntryId.set(fact.id, entry.id);
       entriesCreated += 1;
       if (v.summary) {
         for (const line of v.summary.split('\n')) {
           const trimmed = line.replace(/^[•*-]\s*/, '').trim();
-          if (trimmed) {
+          if (trimmed && !existingBulletTexts.has(trimmed.toLowerCase())) {
             addMasterBullet(db, entry.id, { rawText: trimmed });
+            existingBulletTexts.add(trimmed.toLowerCase());
             bulletsCreated += 1;
           }
         }
       }
     } else if (fact.kind === 'education') {
       const v = fact.value as { qualification: string; institution: string | null; year: number | null };
+      const org = v.institution ?? 'Accredited Institution';
+      const key = `education|${v.qualification.trim().toLowerCase()}|${org.trim().toLowerCase()}`;
+      if (existingKeys.has(key)) continue;
+      existingKeys.add(key);
+
       addMasterEntry(db, {
         entryType: 'education',
         title: v.qualification,
-        organization: v.institution ?? 'Accredited Institution',
+        organization: org,
         location: null,
         startDate: null,
         endDate: v.year ? `${v.year}` : null,
         isCurrent: false,
-        sortOrder: entriesCreated,
+        sortOrder: nextOrder++,
       });
       entriesCreated += 1;
     } else if (fact.kind === 'certification') {
       const v = fact.value as { name: string; issuer: string | null; year: number | null };
+      const org = v.issuer ?? 'Issuing Body';
+      const key = `certification|${v.name.trim().toLowerCase()}|${org.trim().toLowerCase()}`;
+      if (existingKeys.has(key)) continue;
+      existingKeys.add(key);
+
       addMasterEntry(db, {
         entryType: 'certification',
         title: v.name,
-        organization: v.issuer ?? 'Issuing Body',
+        organization: org,
         location: null,
         startDate: null,
         endDate: v.year ? `${v.year}` : null,
         isCurrent: false,
-        sortOrder: entriesCreated,
+        sortOrder: nextOrder++,
       });
       entriesCreated += 1;
     }
   }
 
+  for (const ev of evidence) {
+    if (ev.kind === 'project') {
+      const title = String(ev.value.name ?? 'Project').trim();
+      const org = 'Verified Project';
+      const key = `project|${title.toLowerCase()}|${org.toLowerCase()}`;
+      if (existingKeys.has(key)) continue;
+      existingKeys.add(key);
+
+      const entry = addMasterEntry(db, {
+        entryType: 'project',
+        title,
+        organization: org,
+        location: null,
+        startDate: null,
+        endDate: null,
+        isCurrent: false,
+        sortOrder: nextOrder++,
+      });
+      entriesCreated += 1;
+      const summary = typeof ev.value.summary === 'string' ? ev.value.summary.trim() : '';
+      if (summary && !existingBulletTexts.has(summary.toLowerCase())) {
+        addMasterBullet(db, entry.id, { rawText: summary });
+        existingBulletTexts.add(summary.toLowerCase());
+        bulletsCreated += 1;
+      }
+    } else if (ev.kind === 'achievement') {
+      const text = typeof ev.value.text === 'string' ? ev.value.text.trim() : '';
+      if (!text || existingBulletTexts.has(text.toLowerCase())) continue;
+      const linkedRoleId = typeof ev.value.roleFactId === 'string' ? ev.value.roleFactId : null;
+      let targetEntryId = linkedRoleId ? roleFactToEntryId.get(linkedRoleId) : undefined;
+      if (!targetEntryId) {
+        const key = 'project|key achievements|verified highlights';
+        const existingHighlights = listMasterEntries(db).find(
+          (e) => `${e.entryType}|${e.title.toLowerCase()}|${e.organization.toLowerCase()}` === key,
+        );
+        if (existingHighlights) {
+          targetEntryId = existingHighlights.id;
+        } else if (!existingKeys.has(key)) {
+          existingKeys.add(key);
+          const created = addMasterEntry(db, {
+            entryType: 'project',
+            title: 'Key Achievements',
+            organization: 'Verified Highlights',
+            location: null,
+            startDate: null,
+            endDate: null,
+            isCurrent: false,
+            sortOrder: nextOrder++,
+          });
+          entriesCreated += 1;
+          targetEntryId = created.id;
+        }
+      }
+      if (targetEntryId) {
+        addMasterBullet(db, targetEntryId, { rawText: text });
+        existingBulletTexts.add(text.toLowerCase());
+        bulletsCreated += 1;
+      }
+    }
+  }
+
   return { entriesCreated, bulletsCreated };
+}
+
+export function listResumeVariants(db: Db, jobApplicationId?: string | null): ResumeVariant[] {
+  const rows = (
+    jobApplicationId
+      ? db
+          .prepare(
+            `SELECT id, job_application_id AS jobApplicationId, name, template_id AS templateId,
+                    page_format AS pageFormat, summary_override AS summaryOverride,
+                    included_entries_json AS includedEntriesJson, bullet_overrides_json AS bulletOverridesJson,
+                    design_tokens_json AS designTokensJson, created_at AS createdAt, updated_at AS updatedAt
+             FROM resume_variants
+             WHERE job_application_id = ?
+             ORDER BY updated_at DESC, created_at DESC`,
+          )
+          .all(jobApplicationId)
+      : db
+          .prepare(
+            `SELECT id, job_application_id AS jobApplicationId, name, template_id AS templateId,
+                    page_format AS pageFormat, summary_override AS summaryOverride,
+                    included_entries_json AS includedEntriesJson, bullet_overrides_json AS bulletOverridesJson,
+                    design_tokens_json AS designTokensJson, created_at AS createdAt, updated_at AS updatedAt
+             FROM resume_variants
+             ORDER BY updated_at DESC, created_at DESC`,
+          )
+          .all()
+  ) as {
+    id: string;
+    jobApplicationId: string | null;
+    name: string;
+    templateId: string;
+    pageFormat: 'LETTER' | 'A4';
+    summaryOverride: string | null;
+    includedEntriesJson: string;
+    bulletOverridesJson: string;
+    designTokensJson: string;
+    createdAt: string;
+    updatedAt: string;
+  }[];
+
+  return rows.map((r) => ({
+    id: r.id,
+    jobApplicationId: r.jobApplicationId,
+    name: r.name,
+    templateId: r.templateId || 'classic-single-col',
+    pageFormat: r.pageFormat === 'A4' ? 'A4' : 'LETTER',
+    summaryOverride: r.summaryOverride,
+    includedEntries: JSON.parse(r.includedEntriesJson || '[]') as IncludedEntrySelection[],
+    bulletOverrides: JSON.parse(r.bulletOverridesJson || '{}') as Record<string, string>,
+    designTokens: JSON.parse(r.designTokensJson || '{}') as Record<string, unknown>,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  }));
+}
+
+export function deleteResumeVariant(db: Db, id: string): boolean {
+  return db.prepare('DELETE FROM resume_variants WHERE id = ?').run(id).changes > 0;
 }
 
 /** Save or update a copy-on-write variant overlay. */
@@ -475,7 +789,7 @@ export function recordResumeSnapshot(
     snapshot.fileSizeBytes,
     snapshot.sha256,
     JSON.stringify(snapshot.resolvedPayload),
-    JSON.stringify(snapshot.atsAuditReport),
+    snapshot.atsAuditReport ? JSON.stringify(snapshot.atsAuditReport) : '{}',
     snapshot.jdAlignment ? JSON.stringify(snapshot.jdAlignment) : null,
     now,
   );
@@ -492,5 +806,130 @@ export function recordResumeSnapshot(
     atsAuditReport: snapshot.atsAuditReport,
     jdAlignment: snapshot.jdAlignment ?? null,
     createdAt: now,
+  };
+}
+
+export interface TailorVariantSuggestion {
+  includedEntries: IncludedEntrySelection[];
+  summaryOverride: string | null;
+  matchedTerms: string[];
+  missingMustHaves: string[];
+}
+
+const TAILOR_STOPWORDS = new Set([
+  'with',
+  'that',
+  'this',
+  'from',
+  'have',
+  'will',
+  'your',
+  'youre',
+  'their',
+  'about',
+  'work',
+  'team',
+  'role',
+  'experience',
+  'years',
+  'strong',
+  'ability',
+  'skills',
+  'build',
+  'building',
+]);
+
+/** Rank Master Vault entries & bullets against a target JD without fabricating facts. */
+export function tailorMasterVariantForJd(
+  db: Db,
+  input: { jdText: string; targetPages?: 1 | 2 },
+): TailorVariantSuggestion {
+  const entries = listMasterEntries(db);
+  const facts = listFacts(db, { approvedOnly: true });
+  const settings = getSettings(db);
+  const targetPages = input.targetPages ?? 1;
+  const maxBulletsPerRole = targetPages === 1 ? 5 : 8;
+
+  const jdSkills = skillsIn(input.jdText);
+  const jdSkillSet = new Set(jdSkills.map((s) => s.toLowerCase()));
+  const jdWords = new Set(
+    (input.jdText.toLowerCase().match(/[a-z0-9+.#-]{4,}/g) ?? []).filter((w) => !TAILOR_STOPWORDS.has(w)),
+  );
+
+  const matchedSet = new Set<string>();
+  const approvedSkillNames = facts.filter((f) => f.kind === 'skill').map((f) => String(f.value.name));
+  for (const s of approvedSkillNames) {
+    if (jdSkillSet.has(s.toLowerCase())) matchedSet.add(s);
+  }
+
+  const includedEntries: IncludedEntrySelection[] = [];
+  for (const entry of entries) {
+    if (entry.entryType === 'education' || entry.entryType === 'certification') {
+      includedEntries.push({
+        entryId: entry.id,
+        includedBulletIds: entry.bullets.map((b) => b.id),
+      });
+      continue;
+    }
+
+    const scoredBullets = entry.bullets.map((b) => {
+      const bSkills = b.canonicalSkillIds.length > 0 ? b.canonicalSkillIds : skillsIn(b.rawText);
+      let skillHits = 0;
+      for (const s of bSkills) {
+        if (jdSkillSet.has(s.toLowerCase())) {
+          skillHits += 1;
+          matchedSet.add(s);
+        }
+      }
+      const lower = b.rawText.toLowerCase();
+      let wordHits = 0;
+      for (const w of jdWords) {
+        if (lower.includes(w)) wordHits += 1;
+      }
+      const score = skillHits * 25 + Math.min(wordHits, 6) * 6 + b.xyzScore * 0.25 + (entry.isCurrent ? 10 : 0);
+      return { id: b.id, score };
+    });
+
+    scoredBullets.sort((a, b) => b.score - a.score);
+    const chosen =
+      scoredBullets.length <= maxBulletsPerRole
+        ? scoredBullets.map((b) => b.id)
+        : scoredBullets.filter((b, idx) => idx < 2 || (b.score > 15 && idx < maxBulletsPerRole)).map((b) => b.id);
+
+    includedEntries.push({
+      entryId: entry.id,
+      includedBulletIds: chosen,
+    });
+  }
+
+  const matchedTerms = [...matchedSet];
+  const matchedLower = new Set(matchedTerms.map((t) => t.toLowerCase()));
+  const missingMustHaves = jdSkills.filter((s) => !matchedLower.has(s.toLowerCase()));
+
+  const baseSummary =
+    typeof settings['identity.summary'] === 'string' && settings['identity.summary'].trim()
+      ? settings['identity.summary'].trim()
+      : null;
+  let summaryOverride: string | null = baseSummary;
+  if (baseSummary && matchedTerms.length > 0) {
+    const missingFromSummary = matchedTerms.filter((t) => !baseSummary.toLowerCase().includes(t.toLowerCase()));
+    summaryOverride =
+      missingFromSummary.length > 0
+        ? `${baseSummary} Core strengths: ${missingFromSummary.slice(0, 6).join(', ')}.`
+        : baseSummary;
+  } else if (!baseSummary) {
+    const latestRole = entries.find((e) => e.entryType === 'experience');
+    if (latestRole || matchedTerms.length > 0) {
+      const rolePart = latestRole ? `${latestRole.title} (${latestRole.organization})` : 'Software Engineer';
+      const skillsPart = matchedTerms.length > 0 ? ` specializing in ${matchedTerms.slice(0, 6).join(', ')}` : '';
+      summaryOverride = `${rolePart}${skillsPart}.`;
+    }
+  }
+
+  return {
+    includedEntries,
+    summaryOverride,
+    matchedTerms,
+    missingMustHaves,
   };
 }

@@ -118,7 +118,7 @@ export function EvidenceSection({
       {conflicts.length > 0 && (
         <div
           role="alert"
-          className="mb-4 rounded-lg border border-amber-500/40 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-900 dark:text-amber-200"
+          className="mb-4 rounded-lg border border-status-warn-border bg-status-warn-bg p-3 text-xs text-status-warn-fg"
         >
           <strong className="block mb-1">
             {conflicts.length} possible evidence conflict{conflicts.length === 1 ? '' : 's'}
@@ -149,9 +149,13 @@ export function EvidenceSection({
                       type="button"
                       size="sm"
                       onClick={async () => {
-                        await api(`/api/profile/evidence/${item.id}/confirm`, { method: 'POST' });
-                        setStatus(`Confirmed ${describeEvidence(item)}.`);
-                        onChange();
+                        try {
+                          await api(`/api/profile/evidence/${item.id}/confirm`, { method: 'POST' });
+                          setStatus(`Confirmed ${describeEvidence(item)}.`);
+                          onChange();
+                        } catch {
+                          setStatus(`Could not confirm ${describeEvidence(item)}.`);
+                        }
                       }}
                     >
                       Confirm<span className="sr-only"> evidence</span>
@@ -166,9 +170,13 @@ export function EvidenceSection({
                     variant="ghost"
                     size="sm"
                     onClick={async () => {
-                      await api(`/api/profile/evidence/${item.id}`, { method: 'DELETE' });
-                      setStatus(`Removed ${describeEvidence(item)}.`);
-                      onChange();
+                      try {
+                        await api(`/api/profile/evidence/${item.id}`, { method: 'DELETE' });
+                        setStatus(`Removed ${describeEvidence(item)}.`);
+                        onChange();
+                      } catch {
+                        setStatus(`Could not remove ${describeEvidence(item)}.`);
+                      }
                     }}
                   >
                     {item.confirmed ? 'Remove' : 'Discard'}

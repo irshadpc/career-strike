@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { ApiError, type ApplicationView, api, type FollowUp } from '../../../api';
 import { Button } from '../../../components/ui/button';
-import { Form, FormControl, FormField, FormItem, FormLabel } from '../../../components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../components/ui/form';
 import { Input } from '../../../components/ui/input';
 import { formatDate } from '../../../format';
 import { type FollowUpFormValues, followUpSchema } from '../-schema/application';
@@ -89,6 +89,7 @@ export function FollowUps({ view, onChange }: { view: ApplicationView; onChange:
                 <FormControl>
                   <Input id="fu-note" placeholder="e.g. email the recruiter" className="h-8 text-xs" {...field} />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -104,6 +105,7 @@ export function FollowUps({ view, onChange }: { view: ApplicationView; onChange:
                 <FormControl>
                   <Input id="fu-due" type="date" className="h-8 text-xs" {...field} />
                 </FormControl>
+                <FormMessage />
               </FormItem>
             )}
           />

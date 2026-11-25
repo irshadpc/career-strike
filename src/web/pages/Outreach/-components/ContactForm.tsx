@@ -5,28 +5,38 @@ import { Button } from '../../../components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../../components/ui/form';
 import { Input } from '../../../components/ui/input';
 import { Textarea } from '../../../components/ui/textarea';
+import { useToast } from '../../../components/ui/toast';
 import { type ContactFormValues, contactSchema } from '../-schema/outreach';
 
 export function ContactForm({ onSaved }: { onSaved: (contact: ProfessionalContact) => void }) {
+  const { toast } = useToast();
   const form = useForm<ContactFormValues>({
     resolver: zodResolver(contactSchema),
     defaultValues: { name: '', employer: '', roleTitle: '', profileUrl: '', email: '', notes: '' },
   });
 
   const submit = async (values: ContactFormValues): Promise<void> => {
-    const { contact } = await api<{ contact: ProfessionalContact }>('/api/outreach/contacts', {
-      method: 'POST',
-      body: {
-        name: values.name,
-        employer: values.employer || null,
-        roleTitle: values.roleTitle || null,
-        profileUrl: values.profileUrl || null,
-        email: values.email || null,
-        notes: values.notes || null,
-      },
-    });
-    form.reset();
-    onSaved(contact);
+    try {
+      const { contact } = await api<{ contact: ProfessionalContact }>('/api/outreach/contacts', {
+        method: 'POST',
+        body: {
+          name: values.name,
+          employer: values.employer || null,
+          roleTitle: values.roleTitle || null,
+          profileUrl: values.profileUrl || null,
+          email: values.email || null,
+          notes: values.notes || null,
+        },
+      });
+      form.reset();
+      onSaved(contact);
+    } catch {
+      toast({
+        variant: 'destructive',
+        title: 'Could not save contact',
+        description: 'Check your inputs and try again.',
+      });
+    }
   };
 
   return (

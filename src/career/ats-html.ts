@@ -67,7 +67,6 @@ function parse(master: MasterResumeDocument): { name: string; sections: { title:
       continue;
     }
     if (!line.trim()) {
-      flush();
       continue;
     }
     if (current) current.content += `${line}\n`;
@@ -82,26 +81,39 @@ export function buildMasterHtml(master: MasterResumeDocument): string {
   const title = name || 'Resume';
   const sectionHtml = sections
     .map((s) => {
-      // Detect bullet lists (lines starting with •) → ul; otherwise paragraphs.
       const lines = s.content
         .split('\n')
-        .filter(Boolean)
-        .map((l) => l.trim());
-      const bullets = lines.filter((l) => l.startsWith('•'));
-      const paras = lines.filter((l) => !l.startsWith('•'));
+        .map((l) => l.trim())
+        .filter(Boolean);
       let out = `<h2>${esc(s.title)}</h2>\n`;
-      if (bullets.length) {
-        out += `<ul>\n${bullets.map((b) => `<li>${esc(b.replace(/^•\s*/, ''))}</li>`).join('\n')}\n</ul>\n`;
-      } else {
-        for (const p of paras) out += `<p>${esc(p)}</p>\n`;
+      let inList = false;
+      for (const l of lines) {
+        if (l.startsWith('•')) {
+          if (!inList) {
+            out += '<ul>\n';
+            inList = true;
+          }
+          out += `<li>${esc(l.replace(/^•\s*/, ''))}</li>\n`;
+        } else {
+          if (inList) {
+            out += '</ul>\n';
+            inList = false;
+          }
+          if (s.title === 'Professional Experience' && /^.+?\s+—\s+.+?\([^)]*\)$/.test(l)) {
+            out += `<h3>${esc(l)}</h3>\n`;
+          } else {
+            out += `<p>${esc(l)}</p>\n`;
+          }
+        }
       }
+      if (inList) out += '</ul>\n';
       return block(out);
     })
     .join('');
 
   // Contact block: email + phone + external links, in DOM reading order.
   const identity = master.identity;
-  const contact = [identity.email, identity.phone].filter((v): v is string => !!v);
+  const contact = [identity.email, identity.phone, identity.linkedin].filter((v): v is string => !!v);
 
   return `<!doctype html>
 <html lang="en">
@@ -137,7 +149,7 @@ export function buildMasterHtml(master: MasterResumeDocument): string {
   @page { size: letter; margin: 0.75in; }
   @media print {
     body { background: #fff; }
-    .page { page-break-after: always; padding: 0; }
+    .page { padding: 0; }
     h2, h3 { break-after: avoid !important; }
     li { break-inside: avoid !important; }
   }

@@ -3,6 +3,7 @@ import { api } from '../../../api';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
 import { Input } from '../../../components/ui/input';
+import { useToast } from '../../../components/ui/toast';
 import type { MasterBullet, MasterEntry } from '../-schema/studio-types';
 
 export function VaultOutliner({
@@ -24,6 +25,7 @@ export function VaultOutliner({
   onToggleBullet: (bulletId: string) => void;
   onRefresh: () => void;
 }) {
+  const { toast } = useToast();
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [newEntryType, setNewEntryType] = useState<'experience' | 'project' | 'education' | 'certification'>(
     'experience',
@@ -36,7 +38,38 @@ export function VaultOutliner({
   const [newIsCurrent, setNewIsCurrent] = useState(false);
   const [addingBulletForEntryId, setAddingBulletForEntryId] = useState<string | null>(null);
   const [newBulletText, setNewBulletText] = useState('');
+  const [confirmDeleteEntryId, setConfirmDeleteEntryId] = useState<string | null>(null);
+  const [confirmDeleteBulletId, setConfirmDeleteBulletId] = useState<string | null>(null);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editOrg, setEditOrg] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [editIsCurrent, setEditIsCurrent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncFromProfile = async () => {
+    setSyncing(true);
+    try {
+      const res = await api<{ entriesCreated: number; bulletsCreated: number }>('/api/studio/master/sync', {
+        method: 'POST',
+      });
+      onRefresh();
+      toast({
+        variant: 'success',
+        title:
+          res.entriesCreated > 0
+            ? `Synced ${res.entriesCreated} new profile item(s)`
+            : 'Master Vault is up to date with Profile',
+      });
+    } catch {
+      toast({ variant: 'destructive', title: 'Could not sync from Profile' });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const handleCreateEntry = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +95,9 @@ export function VaultOutliner({
       setNewEndDate('');
       setShowAddEntry(false);
       onRefresh();
+      toast({ variant: 'success', title: 'Added entry to Master Vault' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Failed to add entry' });
     } finally {
       setSubmitting(false);
     }
@@ -78,20 +114,24 @@ export function VaultOutliner({
       setNewBulletText('');
       setAddingBulletForEntryId(null);
       onRefresh();
+      toast({ variant: 'success', title: 'Added bullet' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Failed to add bullet' });
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDeleteEntry = async (entryId: string) => {
-    if (!window.confirm('Delete this entry from your master career vault?')) return;
     try {
       await api(`/api/studio/master/entries/${encodeURIComponent(entryId)}`, {
         method: 'DELETE',
       });
+      setConfirmDeleteEntryId(null);
       onRefresh();
+      toast({ variant: 'success', title: 'Entry deleted' });
     } catch {
-      // silent
+      toast({ variant: 'destructive', title: 'Failed to delete entry' });
     }
   };
 
@@ -100,9 +140,68 @@ export function VaultOutliner({
       await api(`/api/studio/master/bullets/${encodeURIComponent(bulletId)}`, {
         method: 'DELETE',
       });
+      setConfirmDeleteBulletId(null);
+      onRefresh();
+      toast({ variant: 'success', title: 'Bullet deleted' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Failed to delete bullet' });
+    }
+  };
+
+  const handleStartEditEntry = (entry: MasterEntry) => {
+    setEditingEntryId(entry.id);
+    setEditOrg(entry.organization);
+    setEditTitle(entry.title);
+    setEditLocation(entry.location ?? '');
+    setEditStartDate(entry.startDate ?? '');
+    setEditEndDate(entry.endDate ?? '');
+    setEditIsCurrent(entry.isCurrent);
+  };
+
+  const handleSaveEditEntry = async (entryId: string) => {
+    if (!editOrg.trim() || !editTitle.trim()) return;
+    setSubmitting(true);
+    try {
+      await api(`/api/studio/master/entries/${encodeURIComponent(entryId)}`, {
+        method: 'PATCH',
+        body: {
+          organization: editOrg.trim(),
+          title: editTitle.trim(),
+          location: editLocation.trim() || null,
+          startDate: editStartDate.trim() || null,
+          endDate: editIsCurrent ? null : editEndDate.trim() || null,
+          isCurrent: editIsCurrent,
+        },
+      });
+      setEditingEntryId(null);
+      onRefresh();
+      toast({ variant: 'success', title: 'Updated entry' });
+    } catch {
+      toast({ variant: 'destructive', title: 'Failed to update entry' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleMoveEntry = async (sectionEntries: MasterEntry[], entryId: string, dir: -1 | 1) => {
+    const idx = sectionEntries.findIndex((e) => e.id === entryId);
+    const swapIdx = idx + dir;
+    if (idx < 0 || swapIdx < 0 || swapIdx >= sectionEntries.length) return;
+    const targetA = sectionEntries[idx]!;
+    const targetB = sectionEntries[swapIdx]!;
+    const allIds = entries.map((e) => {
+      if (e.id === targetA.id) return targetB.id;
+      if (e.id === targetB.id) return targetA.id;
+      return e.id;
+    });
+    try {
+      await api('/api/studio/master/reorder', {
+        method: 'POST',
+        body: { orderedIds: allIds },
+      });
       onRefresh();
     } catch {
-      // silent
+      toast({ variant: 'destructive', title: 'Could not reorder entries' });
     }
   };
 
@@ -115,16 +214,27 @@ export function VaultOutliner({
 
   return (
     <div className="space-y-4 text-xs">
-      <div className="flex items-center justify-between pb-2 border-b border-border">
+      <div className="flex items-center justify-between gap-2 pb-2 border-b border-border flex-wrap">
         <div>
           <span className="font-semibold text-foreground text-sm">Master Vault Outliner</span>
           <p className="text-muted-foreground text-[11px]">
             Check/uncheck entries or individual bullets to compose variants.
           </p>
         </div>
-        <Button type="button" size="sm" variant="secondary" onClick={() => setShowAddEntry(!showAddEntry)}>
-          {showAddEntry ? 'Cancel' : '+ Add Entry'}
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={syncing}
+            onClick={() => void handleSyncFromProfile()}
+          >
+            {syncing ? 'Syncing…' : 'Sync Profile'}
+          </Button>
+          <Button type="button" size="sm" variant="secondary" onClick={() => setShowAddEntry(!showAddEntry)}>
+            {showAddEntry ? 'Cancel' : '+ Add Entry'}
+          </Button>
+        </div>
       </div>
 
       {showAddEntry && (
@@ -187,17 +297,19 @@ export function VaultOutliner({
               />
             </div>
           </div>
-          <div className="flex gap-2 items-center pt-1">
+          <div className="flex gap-2 items-center pt-1 flex-wrap">
             <Input
               value={newStartDate}
               onChange={(e) => setNewStartDate(e.target.value)}
               placeholder="Start (e.g. 2021)"
+              aria-label="Start date"
               className="h-7 text-xs w-28"
             />
             <Input
               value={newEndDate}
               onChange={(e) => setNewEndDate(e.target.value)}
               placeholder="End (e.g. 2024)"
+              aria-label="End date"
               disabled={newIsCurrent}
               className="h-7 text-xs w-28"
             />
@@ -230,7 +342,7 @@ export function VaultOutliner({
                 <span className="text-[9px] bg-muted px-1.5 py-0.2 rounded-full">{sectionEntries.length}</span>
               </div>
               <div className="space-y-2">
-                {sectionEntries.map((entry) => {
+                {sectionEntries.map((entry, idx) => {
                   const isEntryIncluded = includedEntryIds.has(entry.id);
                   return (
                     <div
@@ -260,6 +372,39 @@ export function VaultOutliner({
                           </div>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
+                          {sectionEntries.length > 1 && (
+                            <>
+                              <button
+                                type="button"
+                                disabled={idx === 0}
+                                onClick={() => void handleMoveEntry(sectionEntries, entry.id, -1)}
+                                className="text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-30 px-0.5"
+                                aria-label={`Move ${entry.title} up`}
+                                title="Move up"
+                              >
+                                ↑
+                              </button>
+                              <button
+                                type="button"
+                                disabled={idx === sectionEntries.length - 1}
+                                onClick={() => void handleMoveEntry(sectionEntries, entry.id, 1)}
+                                className="text-[10px] text-muted-foreground hover:text-foreground disabled:opacity-30 px-0.5"
+                                aria-label={`Move ${entry.title} down`}
+                                title="Move down"
+                              >
+                                ↓
+                              </button>
+                            </>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              editingEntryId === entry.id ? setEditingEntryId(null) : handleStartEditEntry(entry)
+                            }
+                            className="text-[10px] text-muted-foreground hover:text-foreground px-1 py-0.5"
+                          >
+                            {editingEntryId === entry.id ? 'Close' : 'Edit'}
+                          </button>
                           <button
                             type="button"
                             onClick={() =>
@@ -269,16 +414,101 @@ export function VaultOutliner({
                           >
                             + Bullet
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => void handleDeleteEntry(entry.id)}
-                            className="text-[10px] text-muted-foreground hover:text-destructive px-1 py-0.5"
-                            title="Delete entry"
-                          >
-                            ×
-                          </button>
+                          {confirmDeleteEntryId === entry.id ? (
+                            <span className="inline-flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => void handleDeleteEntry(entry.id)}
+                                className="text-[10px] font-semibold text-destructive hover:underline px-1 py-0.5"
+                              >
+                                Delete?
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteEntryId(null)}
+                                className="text-[10px] text-muted-foreground hover:text-foreground px-1 py-0.5"
+                              >
+                                Cancel
+                              </button>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteEntryId(entry.id)}
+                              className="text-[10px] text-muted-foreground hover:text-destructive px-1 py-0.5"
+                              title="Delete entry"
+                              aria-label={`Delete ${entry.title}`}
+                            >
+                              ×
+                            </button>
+                          )}
                         </div>
                       </div>
+
+                      {editingEntryId === entry.id && (
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            void handleSaveEditEntry(entry.id);
+                          }}
+                          className="mt-2 p-2.5 rounded border border-border bg-muted/20 space-y-2"
+                        >
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <Input
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              aria-label="Edit entry title"
+                              placeholder="Title"
+                              className="h-7 text-xs"
+                              required
+                            />
+                            <Input
+                              value={editOrg}
+                              onChange={(e) => setEditOrg(e.target.value)}
+                              aria-label="Edit entry organization"
+                              placeholder="Organization"
+                              className="h-7 text-xs"
+                              required
+                            />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <Input
+                              value={editLocation}
+                              onChange={(e) => setEditLocation(e.target.value)}
+                              aria-label="Edit entry location"
+                              placeholder="Location"
+                              className="h-7 text-xs flex-1 min-w-[90px]"
+                            />
+                            <Input
+                              value={editStartDate}
+                              onChange={(e) => setEditStartDate(e.target.value)}
+                              aria-label="Edit start date"
+                              placeholder="Start"
+                              className="h-7 text-xs w-20"
+                            />
+                            <Input
+                              value={editEndDate}
+                              onChange={(e) => setEditEndDate(e.target.value)}
+                              aria-label="Edit end date"
+                              placeholder="End"
+                              disabled={editIsCurrent}
+                              className="h-7 text-xs w-20"
+                            />
+                            <label className="flex items-center gap-1 text-[11px] cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={editIsCurrent}
+                                onChange={(e) => setEditIsCurrent(e.target.checked)}
+                                className="rounded"
+                              />
+                              Present
+                            </label>
+                            <Button type="submit" size="sm" disabled={submitting} className="ml-auto">
+                              Save
+                            </Button>
+                          </div>
+                        </form>
+                      )}
 
                       {/* Add bullet inline */}
                       {addingBulletForEntryId === entry.id && (
@@ -287,6 +517,7 @@ export function VaultOutliner({
                             value={newBulletText}
                             onChange={(e) => setNewBulletText(e.target.value)}
                             placeholder="Accomplished [X] as measured by [Y] by doing [Z]..."
+                            aria-label={`New bullet for ${entry.title}`}
                             className="h-7 text-xs flex-1"
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
@@ -343,17 +574,40 @@ export function VaultOutliner({
                                     XYZ {bullet.xyzScore}
                                   </Badge>
                                 )}
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    void handleDeleteBullet(bullet.id);
-                                  }}
-                                  className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive text-[10px] px-1"
-                                  title="Delete bullet"
-                                >
-                                  ×
-                                </button>
+                                {confirmDeleteBulletId === bullet.id ? (
+                                  <span
+                                    className="inline-flex items-center gap-1 shrink-0"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleDeleteBullet(bullet.id)}
+                                      className="text-[10px] font-semibold text-destructive hover:underline px-1"
+                                    >
+                                      Delete?
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setConfirmDeleteBulletId(null)}
+                                      className="text-[10px] text-muted-foreground hover:text-foreground px-1"
+                                    >
+                                      No
+                                    </button>
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setConfirmDeleteBulletId(bullet.id);
+                                    }}
+                                    className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 text-muted-foreground hover:text-destructive text-[10px] px-1"
+                                    title="Delete bullet"
+                                    aria-label="Delete bullet"
+                                  >
+                                    ×
+                                  </button>
+                                )}
                               </li>
                             );
                           })}

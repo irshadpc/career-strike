@@ -11,21 +11,24 @@ let idleTimer: ReturnType<typeof setTimeout> | null = null;
 const CDP_ARGS = ['--no-sandbox', '--disable-dev-shm-usage', '--font-render-hinting=none'];
 
 export async function acquireBrowser(): Promise<Browser> {
-  browserPromise ??= (async () => {
-    for (const channel of ['chrome', undefined] as const) {
-      try {
-        browser = await chromium.launch({
-          channel,
-          args: CDP_ARGS,
-          headless: true,
-        });
-        return browser;
-      } catch {
-        browser = null;
+  if (!browserPromise) {
+    browserPromise = (async () => {
+      for (const channel of ['chrome', undefined] as const) {
+        try {
+          browser = await chromium.launch({
+            channel,
+            args: CDP_ARGS,
+            headless: true,
+          });
+          return browser;
+        } catch {
+          browser = null;
+        }
       }
-    }
-    throw new Error('No usable Chromium found (Google Chrome or Playwright Chromium build).');
-  })();
+      browserPromise = null;
+      throw new Error('No usable Chromium found (Google Chrome or Playwright Chromium build).');
+    })();
+  }
   return browserPromise;
 }
 
@@ -83,12 +86,15 @@ export function buildResumeHtml(payload: ResolvedVariantPayload): string {
                 e.location || e.startDate || e.endDate || e.isCurrent
                   ? ` <span class="entry-dates">(${[
                       e.location,
-                      e.startDate &&
-                        (e.isCurrent
+                      e.startDate
+                        ? e.isCurrent
                           ? `${e.startDate} – Present`
                           : e.endDate
                             ? `${e.startDate} – ${e.endDate}`
-                            : e.startDate),
+                            : e.startDate
+                        : e.isCurrent
+                          ? 'Present'
+                          : (e.endDate ?? null),
                     ]
                       .filter(Boolean)
                       .map((s) => escapeHtml(String(s)))
@@ -233,10 +239,20 @@ export function buildResumeHtml(payload: ResolvedVariantPayload): string {
     <h1>${escapeHtml(title)}</h1>
     ${contactPieces.length > 0 ? `<div class="contact-line">${contactPieces.map(escapeHtml).join(' · ')}</div>` : ''}
     ${payload.summary ? `<div class="summary"><p>${escapeHtml(payload.summary)}</p></div>` : ''}
+    ${
+      payload.skills && payload.skills.length > 0
+        ? `<section class="resume-section"><h2>Core Skills</h2><p>${payload.skills.map(escapeHtml).join(' · ')}</p></section>`
+        : ''
+    }
     ${renderSection('Professional Experience', experience)}
     ${renderSection('Projects & Achievements', projects)}
     ${renderSection('Education', education)}
     ${renderSection('Certifications', certifications)}
+    ${
+      payload.languages && payload.languages.length > 0
+        ? `<section class="resume-section"><h2>Languages</h2><p>${payload.languages.map(escapeHtml).join(' · ')}</p></section>`
+        : ''
+    }
   </div>
 </body>
 </html>`;
@@ -272,5 +288,6 @@ export async function exportVariantPdf(payload: ResolvedVariantPayload): Promise
   } finally {
     await context.close();
     idleTimer = setTimeout(() => void recycleBrowser(), BROWSER_IDLE_MS);
+    idleTimer.unref?.();
   }
 }

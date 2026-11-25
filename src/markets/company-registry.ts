@@ -287,6 +287,9 @@ export function listCompanyRegistry(db: Db, filters: RegistryFilters = {}, now =
     ).map((value) => value.toLowerCase()),
   );
 
+  const watchedIds = new Set(db.prepare('SELECT company_id FROM company_watches').pluck().all() as string[]);
+  const rowById = new Map(rows.map((entry) => [entry.id, entry]));
+
   const byKey = new Map<string, { jobs: JobRow[]; sources: RegistrySource[] }>();
   for (const job of jobs) {
     const key = normalizeEmployerName(job.employer);
@@ -296,7 +299,7 @@ export function listCompanyRegistry(db: Db, filters: RegistryFilters = {}, now =
     byKey.set(key, bucket);
   }
   for (const source of sources) {
-    const row = rows.find((entry) => entry.id === source.company_id);
+    const row = rowById.get(source.company_id);
     if (!row) continue;
     const bucket = byKey.get(row.employer_key) ?? { jobs: [], sources: [] };
     bucket.sources.push({ source: source.source, board: source.board, lastSeenAt: source.last_seen_at });
@@ -372,7 +375,7 @@ export function listCompanyRegistry(db: Db, filters: RegistryFilters = {}, now =
           })),
         explanation,
         evidence,
-        isWatched: Boolean(db.prepare('SELECT 1 FROM company_watches WHERE company_id = ?').get(row.id)),
+        isWatched: watchedIds.has(row.id),
       } satisfies CompanyRegistryEntry;
     })
     .filter((entry) => {

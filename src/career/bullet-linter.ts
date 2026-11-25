@@ -16,6 +16,8 @@ export interface BulletLintResult {
   hasPassiveOpener: boolean;
   passiveOpenerMatch: string | null;
   cliches: string[];
+  wordCount: number;
+  warnings: string[];
   recommendation: string | null;
   metricPrompt: string | null;
 }
@@ -26,29 +28,41 @@ export interface RoleBulletAudit {
   quantifiedRate: number; // 0..1
   totalCliches: number;
   hasVisualSymmetryTell: boolean; // Flagged when all bullets have near-identical length
+  duplicateVerbs: string[];
   feedbackSummary: string;
 }
 
 const PASSIVE_OPENERS: readonly RegExp[] = [
+  /^was responsible for\b/i,
   /^responsible for\b/i,
   /^assisted with\b/i,
   /^worked on\b/i,
-  /^helped (?:to\b)?/i,
+  /^helped (?:to\b|with\b)?/i,
   /^participated in\b/i,
   /^duties included\b/i,
   /^supported the\b/i,
   /^involved in\b/i,
+  /^tasked with\b/i,
+  /^handled\b/i,
+  /^maintained\b/i,
+  /^utilized\b/i,
+  /^collaborated on\b/i,
+  /^contributed to\b/i,
 ];
 
 const METRIC_PATTERNS: readonly RegExp[] = [
-  /\b\d+(?:\.\d+)?%/, // Percentages (15%, 2.5%)
-  /\$\s*\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[kKmMbB])?\b/, // Currency ($500k, $1.2M)
-  /\b\d+\s*(?:ms|milliseconds?|seconds?|mins?|minutes?|hours?|days?|weeks?|months?)\b/i, // Latency / Time
-  /\b\d+(?:,\d{3})*(?:\+)?\s*(?:users?|customers?|clients?|engineers?|developers?|direct reports?|people|members?)\b/i, // Headcount / Users
-  /\b(?:reduced|increased|accelerated|decreased|cut|boosted|scaled)\s+(?:by\s+)?\d+/i, // Relative changes
-  /\b\d+(?:[kKmMbB]|\s*million|\s*billion|\s*thousand)\b/i, // Magnitude scale
-  /\b\d+(?:x|X|\s*times)\b/, // Multipliers (3x, 10x)
+  /\b\d+(?:\.\d+)?%/g, // Percentages (15%, 2.5%)
+  /(?:\$|€|£|₹)\s*\d+(?:,\d{3})*(?:\.\d+)?(?:\s*[kKmMbBlL])?\b/g, // Currency ($500k, €1.2M, ₹50L)
+  /\b\d+(?:\.\d+)?\s*(?:ms|milliseconds?|seconds?|secs?|mins?|minutes?|hours?|hrs?|days?|weeks?|months?|years?)\b/gi, // Latency / Time
+  /\b\d+(?:,\d{3})*(?:\+)?\s*(?:users?|customers?|clients?|engineers?|developers?|direct reports?|people|members?|teams?|services?|microservices?|apis?|endpoints?|requests?|events?|transactions?|records?)\b/gi, // Scale & entity counts
+  /\b(?:reduced|increased|accelerated|decreased|cut|boosted|scaled|improved|grew|saved)\s+(?:by\s+)?\d+(?:\.\d+)?/gi, // Relative changes
+  /\b\d+(?:\.\d+)?\s*(?:[kKmMbBtT]|million|billion|thousand)\b/gi, // Magnitude scale (10M, 50k)
+  /\b\d+(?:\.\d+)?(?:x|X|\s*times)\b/g, // Multipliers (3x, 10x)
+  /\b(?:p99|p95|p50|sla|slo|arr|mrr|qps|rps|tps)\b(?:\s*(?:of|to|by|at|<|>|=)?\s*\d+(?:\.\d+)?\s*(?:%|ms|s|k|m)?)?/gi, // Engineering/SaaS metrics
+  /\b\d+(?:\.\d+)?\s*(?:tb|gb|mb|kb)\b/gi, // Data volume
 ];
+
+const FIRST_PERSON_RE = /\b(?:I|my|me|we|our)\b/;
 
 const AI_CLICHES: readonly [RegExp, string][] = [
   [/\bdelve\b/i, 'delve (AI marker)'],
@@ -76,10 +90,15 @@ export function lintBullet(text: string): BulletLintResult {
       hasPassiveOpener: false,
       passiveOpenerMatch: null,
       cliches: [],
+      wordCount: 0,
+      warnings: [],
       recommendation: null,
       metricPrompt: null,
     };
   }
+
+  const wordList = trimmed.split(/\s+/).filter(Boolean);
+  const wordCount = wordList.length;
 
   // 1. Passive Opener check
   let hasPassiveOpener = false;
@@ -93,12 +112,16 @@ export function lintBullet(text: string): BulletLintResult {
     }
   }
 
-  // 2. Metrics check
+  // 2. Metrics check (multi-match)
   const metrics: string[] = [];
   for (const re of METRIC_PATTERNS) {
-    const m = trimmed.match(re);
-    if (m && !metrics.includes(m[0])) {
-      metrics.push(m[0]);
+    const flags = re.flags.includes('g') ? re.flags : `${re.flags}g`;
+    const globalRe = new RegExp(re.source, flags);
+    for (const m of trimmed.matchAll(globalRe)) {
+      const val = m[0].trim();
+      if (val && /\d/.test(val) && !metrics.includes(val)) {
+        metrics.push(val);
+      }
     }
   }
   const isQuantified = metrics.length > 0;
@@ -111,12 +134,25 @@ export function lintBullet(text: string): BulletLintResult {
     }
   }
 
+  // 4. Readability & craft warnings
+  const warnings: string[] = [];
+  if (trimmed.length > 220 || wordCount > 35) {
+    warnings.push(`Long bullet (${wordCount} words). Aim for 12–28 words so recruiters can scan in one glance.`);
+  } else if (wordCount > 0 && wordCount < 6) {
+    warnings.push('Very short bullet. Add how you accomplished it ([Z]) and measurable impact ([Y]).');
+  }
+  if (FIRST_PERSON_RE.test(trimmed)) {
+    warnings.push('Avoid first-person pronouns ("I", "my", "we", "our") in resume bullets.');
+  }
+
   // Calculate XYZ score (0..100)
   let score = 50; // Baseline
   if (isQuantified) score += 30;
   if (!hasPassiveOpener) score += 20;
   else score -= 25;
   score -= cliches.length * 15;
+  if (FIRST_PERSON_RE.test(trimmed)) score -= 5;
+  if (wordCount > 35) score -= 5;
   const xyzScore = Math.max(0, Math.min(100, score));
 
   // Determine prompt / recommendation
@@ -128,11 +164,13 @@ export function lintBullet(text: string): BulletLintResult {
 
   let recommendation: string | null = null;
   if (hasPassiveOpener) {
-    recommendation = `Replace passive starter "${passiveOpenerMatch}" with an active verb (e.g., Designed, Shipped, Automated, Spearheaded → Led).`;
+    recommendation = `Replace passive starter "${passiveOpenerMatch}" with an active verb (e.g., Designed, Shipped, Automated, Led).`;
   } else if (!isQuantified) {
     recommendation = 'Add a concrete measurement (e.g., "...reducing latency by 45%", "...across 12 engineers").';
   } else if (cliches.length > 0) {
     recommendation = `Remove buzzwords: ${cliches.join(', ')}.`;
+  } else if (warnings.length > 0) {
+    recommendation = warnings[0]!;
   }
 
   return {
@@ -143,6 +181,8 @@ export function lintBullet(text: string): BulletLintResult {
     hasPassiveOpener,
     passiveOpenerMatch,
     cliches,
+    wordCount,
+    warnings,
     recommendation,
     metricPrompt,
   };
@@ -157,6 +197,7 @@ export function lintRoleBullets(bullets: string[]): RoleBulletAudit {
       quantifiedRate: 0,
       totalCliches: 0,
       hasVisualSymmetryTell: false,
+      duplicateVerbs: [],
       feedbackSummary: 'No bullets found for this role.',
     };
   }
@@ -165,6 +206,19 @@ export function lintRoleBullets(bullets: string[]): RoleBulletAudit {
   const totalScore = results.reduce((acc, r) => acc + r.xyzScore, 0);
   const quantifiedCount = results.filter((r) => r.isQuantified).length;
   const totalCliches = results.reduce((acc, r) => acc + r.cliches.length, 0);
+
+  // Check duplicate leading verbs across the role
+  const verbCounts = new Map<string, number>();
+  for (const r of results) {
+    const firstWord = r.text
+      .split(/\s+/)[0]
+      ?.toLowerCase()
+      .replace(/[^a-z]/g, '');
+    if (firstWord && firstWord.length >= 3) {
+      verbCounts.set(firstWord, (verbCounts.get(firstWord) ?? 0) + 1);
+    }
+  }
+  const duplicateVerbs = [...verbCounts.entries()].filter(([, count]) => count >= 2).map(([verb]) => verb);
 
   // Check visual symmetry tell (LLM output signature: every bullet has near-identical character length)
   let hasVisualSymmetryTell = false;
@@ -190,6 +244,9 @@ export function lintRoleBullets(bullets: string[]): RoleBulletAudit {
   if (hasVisualSymmetryTell) {
     summary += 'Warning: Identical bullet lengths detected (common visual tell of unedited AI text). ';
   }
+  if (duplicateVerbs.length > 0) {
+    summary += `Repeated opening verb(s): ${duplicateVerbs.join(', ')}. `;
+  }
   if (totalCliches > 0) {
     summary += `${totalCliches} cliché/AI buzzword(s) found.`;
   }
@@ -200,6 +257,7 @@ export function lintRoleBullets(bullets: string[]): RoleBulletAudit {
     quantifiedRate,
     totalCliches,
     hasVisualSymmetryTell,
+    duplicateVerbs,
     feedbackSummary: summary.trim(),
   };
 }

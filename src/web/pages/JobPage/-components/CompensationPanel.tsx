@@ -22,18 +22,51 @@ const COMPARISON_BADGES: Record<
   INSUFFICIENT_DATA: { label: 'Insufficient Benchmark Data', variant: 'outline' },
 };
 
+function inferRoleFamily(title: string): string {
+  const lower = title.toLowerCase();
+  if (/\b(data|machine learning|ml|ai|analytics)\b/.test(lower)) return 'data_science';
+  if (/\b(product manager|product lead|pm)\b/.test(lower)) return 'product_management';
+  if (/\b(design|ux|ui|product designer)\b/.test(lower)) return 'design';
+  if (/\b(devops|sre|platform|infrastructure|cloud)\b/.test(lower)) return 'infrastructure';
+  return 'software_engineering';
+}
+
+function inferSeniority(title: string): string {
+  const lower = title.toLowerCase();
+  if (/\b(principal|distinguished|staff)\b/.test(lower)) return 'staff';
+  if (/\b(director|vp|head of|lead|manager|engineering manager)\b/.test(lower)) return 'lead';
+  if (/\b(senior|sr\.?)\b/.test(lower)) return 'senior';
+  if (/\b(junior|jr\.?|entry|associate|intern|graduate)\b/.test(lower)) return 'junior';
+  return 'mid';
+}
+
+function formatMoney(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${Math.round(amount).toLocaleString()}`;
+  }
+}
+
 export function CompensationPanel({ job }: Props) {
   const [benchmarks, setBenchmarks] = useState<CompensationBenchmarkRecord[]>([]);
   const [comparison, setComparison] = useState<CompensationComparison | null>(null);
   const [loading, setLoading] = useState(true);
 
   const countryCode = job.market.location.countryCode ?? 'US';
+  const roleFamily = inferRoleFamily(job.title);
+  const seniority = inferSeniority(job.title);
+  const displayCurrency = job.salary?.currency || benchmarks[0]?.currency || 'USD';
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
 
-    fetchCompensationBenchmarks({ countryCode })
+    fetchCompensationBenchmarks({ countryCode, roleFamily })
       .then((res) => {
         if (cancelled) return;
         setBenchmarks(res.benchmarks);
@@ -41,8 +74,8 @@ export function CompensationPanel({ job }: Props) {
         // If salary is present, evaluate it
         if (job.salary) {
           evaluateCompensationOffer({
-            roleFamily: 'software_engineering',
-            seniority: 'mid',
+            roleFamily,
+            seniority,
             countryCode,
             salary: job.salary,
           })
@@ -64,9 +97,10 @@ export function CompensationPanel({ job }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [countryCode, job.salary]);
+  }, [countryCode, job.salary, roleFamily, seniority]);
 
   const matchingBenchmark = benchmarks[0];
+  const benchmarkCurrency = matchingBenchmark?.currency || displayCurrency;
   const comparisonInfo = comparison
     ? (COMPARISON_BADGES[comparison.status] ?? COMPARISON_BADGES.INSUFFICIENT_DATA!)
     : null;
@@ -92,7 +126,7 @@ export function CompensationPanel({ job }: Props) {
             <p className="text-muted-foreground m-0">
               Annualized Posting Rate:{' '}
               <strong className="text-foreground">
-                ${Math.round(comparison.offeredAnnualized).toLocaleString()} USD/yr
+                {formatMoney(Math.round(comparison.offeredAnnualized), displayCurrency)} {displayCurrency}/yr
               </strong>
             </p>
           )}
@@ -100,7 +134,7 @@ export function CompensationPanel({ job }: Props) {
             <p className="text-muted-foreground m-0">
               Market Median (P50):{' '}
               <strong className="text-foreground">
-                ${Math.round(comparison.benchmarkAnnualizedP50).toLocaleString()} USD/yr
+                {formatMoney(Math.round(comparison.benchmarkAnnualizedP50), benchmarkCurrency)} {benchmarkCurrency}/yr
               </strong>
             </p>
           )}
@@ -124,19 +158,19 @@ export function CompensationPanel({ job }: Props) {
             <div>
               <span className="text-[10px] text-muted-foreground block">P25 (Low)</span>
               <strong className="text-sm font-semibold text-foreground">
-                {matchingBenchmark.p25 ? `$${(matchingBenchmark.p25 / 1000).toFixed(0)}k` : '—'}
+                {matchingBenchmark.p25 ? formatMoney(matchingBenchmark.p25, benchmarkCurrency) : '—'}
               </strong>
             </div>
             <div className="border-x border-border/60">
               <span className="text-[10px] text-muted-foreground block">P50 (Median)</span>
               <strong className="text-sm font-semibold text-primary">
-                {matchingBenchmark.p50 ? `$${(matchingBenchmark.p50 / 1000).toFixed(0)}k` : '—'}
+                {matchingBenchmark.p50 ? formatMoney(matchingBenchmark.p50, benchmarkCurrency) : '—'}
               </strong>
             </div>
             <div>
               <span className="text-[10px] text-muted-foreground block">P75 (High)</span>
               <strong className="text-sm font-semibold text-foreground">
-                {matchingBenchmark.p75 ? `$${(matchingBenchmark.p75 / 1000).toFixed(0)}k` : '—'}
+                {matchingBenchmark.p75 ? formatMoney(matchingBenchmark.p75, benchmarkCurrency) : '—'}
               </strong>
             </div>
           </div>
@@ -154,7 +188,7 @@ export function CompensationPanel({ job }: Props) {
       )}
 
       <p className="text-[10px] text-muted-foreground leading-relaxed pt-1 border-t border-border/40 m-0">
-        Percentiles are calculated only with minimum sample size $N \ge 5$. Currency conversions are never presented as
+        Percentiles are calculated only with minimum sample size N ≥ 5. Currency conversions are never presented as
         cost-of-living parity.
       </p>
     </section>
