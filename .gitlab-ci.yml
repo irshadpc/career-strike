@@ -1,0 +1,90 @@
+stages:
+  - lint
+  - test
+  - e2e
+  - release
+
+variables:
+  NODE_VERSION: "24"
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+
+.lint_template: &lint_template
+  stage: lint
+  image: node:$NODE_VERSION
+  before_script:
+    - npm ci
+  script:
+    - npm run lint
+  cache:
+    paths:
+      - .npm/
+
+.lint:
+  <<: *lint_template
+
+.test_template: &test_template
+  stage: test
+  image: node:$NODE_VERSION
+  parallel:
+    matrix:
+      - NODE_VERSION: ["22", "24"]
+        OS: ["ubuntu-latest", "macos-latest"]
+  before_script:
+    - npm ci
+  script:
+    - npm run typecheck
+    - npm test
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml
+    paths:
+      - test-results/
+  cache:
+    paths:
+      - .npm/
+
+.test:
+  <<: *test_template
+
+.e2e_template: &e2e_template
+  stage: e2e
+  image: node:$NODE_VERSION
+  before_script:
+    - npm ci
+    - npx playwright install --with-deps chromium
+  script:
+    - npm run test:e2e
+  artifacts:
+    when: always
+    paths:
+      - test-results/
+  cache:
+    paths:
+      - .npm/
+
+.e2e:
+  <<: *e2e_template
+
+.release:
+  stage: release
+  image: node:$NODE_VERSION
+  only:
+    - tags
+  before_script:
+    - npm ci
+  script:
+    - npm run lint
+    - npm run typecheck
+    - npm test
+    - npx playwright install --with-deps chromium
+    - npm run test:e2e
+    # Package the release
+    - version=${CI_COMMIT_TAG#v}
+    - npm pack
+    - sha256sum career-strike-${version}.tgz > career-strike-${version}.tgz.sha256
+    # Upload to GitHub Release (requires GH_TOKEN environment variable)
+    - if [ -n "$GH_TOKEN" ]; then gh release create $CI_COMMIT_TAG career-strike-${version}.tgz career-strike-${version}.tgz.sha256 --title "Career Strike $version" --notes "Release $CI_COMMIT_TAG"; fi
+  cache:
+    paths:
+      - .npm/
