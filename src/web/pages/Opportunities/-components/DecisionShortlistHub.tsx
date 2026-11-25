@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { type DecisionReadyShortlistEntry, fetchDecisionReadyShortlists } from '../../../api';
 import { Badge } from '../../../components/ui/badge';
 import { Button } from '../../../components/ui/button';
@@ -19,7 +19,7 @@ export function DecisionShortlistHub() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadShortlist = async () => {
+  const loadShortlist = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -30,11 +30,11 @@ export function DecisionShortlistHub() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadShortlist();
-  }, []);
+  }, [loadShortlist]);
 
   return (
     <section aria-labelledby="decision-shortlist-title" className="space-y-4 my-6">

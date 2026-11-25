@@ -11,7 +11,7 @@ export function Compare() {
   const [state, setState] = useState<
     { status: 'loading' } | { status: 'error' } | { status: 'ready'; jobs: JobDetail[] }
   >({ status: 'loading' });
-  const [attempt, setAttempt] = useState(0);
+  const [_attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,7 +28,7 @@ export function Compare() {
     return () => {
       cancelled = true;
     };
-  }, [key, attempt]);
+  }, [key]);
 
   return (
     <>
